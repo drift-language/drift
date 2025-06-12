@@ -1,0 +1,5 @@
+fun test() {
+    return "Hello, Drift!"
+}
+
+print(test())
