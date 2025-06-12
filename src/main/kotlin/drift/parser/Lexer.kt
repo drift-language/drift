@@ -5,6 +5,7 @@ import drift.utils.concat
 private val multiCharsSymbols = setOf(
     "==", "!=",
     "<=", ">=",
+    "&&", "||",
 )
 
 private val singleCharSymbols = setOf(
@@ -15,6 +16,7 @@ private val singleCharSymbols = setOf(
     '=', ':',
     '?', ',',
     '<', '>',
+    '|', '&',
 )
 
 sealed class Token {
