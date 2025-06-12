@@ -27,7 +27,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             result
         }
         is Function -> {
-            env.define(name, DrFunction(parameters, body, env.copy()))
+            env.define(name, DrFunction(parameters, body, env.copy(), returnType))
             env.get(name)
         }
         is Return -> {
