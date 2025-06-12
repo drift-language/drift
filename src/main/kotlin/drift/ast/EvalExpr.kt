@@ -30,7 +30,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         newEnv.define(param.name, value)
                     }
 
-                    return evalBlock(callee.body, newEnv)
+                    return evalBlock(callee.returnType, callee.body, newEnv)
                 }
                 is DrNativeFunction -> callee.impl(arguments)
                 else -> error("Cannot call non-function: ${callee.asString()}")
@@ -125,7 +125,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
     }
 }
 
-private fun evalBlock(statements: List<DrStmt>, env: DrEnv) : DrValue {
+private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
     try {
         var last: DrValue = DrNull
 
@@ -133,8 +133,16 @@ private fun evalBlock(statements: List<DrStmt>, env: DrEnv) : DrValue {
             last = stmt.eval(env)
         }
 
+        if (!isAssignable(last.type(), returnType)) {
+            error("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
+        }
+
         return last
     } catch (e: ReturnException) {
+        if (!isAssignable(e.value.type(), returnType)) {
+            error("Invalid return type: expected ${returnType.asString()}, got ${e.value.type().asString()}")
+        }
+
         return e.value
     }
 }
