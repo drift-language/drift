@@ -12,10 +12,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction { args ->
-            output.add(args.joinToString(" ") { it.second.asString() })
-            DrNull
-        })
+        env.define("print", DrNativeFunction(
+            impl = { args ->
+                args.map { output.add(it.second.asString()) }
+                DrNull
+            },
+            paramTypes = listOf(AnyType),
+            returnType = NullType
+        ))
 
         val stmt = If(
             condition = Literal(DrBool(true)),
@@ -35,10 +39,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction { args ->
-            output.add(args.joinToString(" ") { it.second.asString() })
-            DrNull
-        })
+        env.define("print", DrNativeFunction(
+            impl = { args ->
+                args.map { output.add(it.second.asString()) }
+                DrNull
+            },
+            paramTypes = listOf(AnyType),
+            returnType = NullType
+        ))
 
         val stmt = If(
             condition = Literal(DrBool(true)),
@@ -60,10 +68,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction { args ->
-            output.add(args.joinToString(" ") { it.second.asString() })
-            DrNull
-        })
+        env.define("print", DrNativeFunction(
+            impl = { args ->
+                args.map { output.add(it.second.asString()) }
+                DrNull
+            },
+            paramTypes = listOf(AnyType),
+            returnType = NullType
+        ))
 
         val stmt = If(
             condition = Literal(DrBool(false)),
@@ -86,10 +98,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction { args ->
-            output.add(args.joinToString(" ") { it.second.asString() })
-            DrNull
-        })
+        env.define("print", DrNativeFunction(
+            impl = { args ->
+                args.map { output.add(it.second.asString()) }
+                DrNull
+            },
+            paramTypes = listOf(AnyType),
+            returnType = NullType
+        ))
 
         val block = Block(listOf(
             ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))),
@@ -132,10 +148,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction { args ->
-            output.add(args.joinToString(" ") { it.second.asString() })
-            DrNull
-        })
+        env.define("print", DrNativeFunction(
+            impl = { args ->
+                args.map { output.add(it.second.asString()) }
+                DrNull
+            },
+            paramTypes = listOf(AnyType),
+            returnType = NullType
+        ))
 
         val call = Call(
             callee = Variable("print"),
