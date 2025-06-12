@@ -1,9 +1,6 @@
 package drift.ast
 
-import drift.runtime.DrBool
-import drift.runtime.DrEnv
-import drift.runtime.DrNull
-import drift.runtime.DrValue
+import drift.runtime.*
 
 fun DrStmt.eval(env: DrEnv): DrValue {
     return when (this) {
@@ -28,6 +25,14 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             }
 
             result
+        }
+        is Function -> {
+            env.define(name, DrFunction(parameters, body, env.copy()))
+            env.get(name)
+        }
+        is Return -> {
+            val value = value.eval(env)
+            throw ReturnException(value)
         }
     }
 }

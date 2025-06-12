@@ -33,6 +33,7 @@ sealed class Token {
         RETURN("return"),
         FOR("for"),
     }
+    data object EOL : Token()
 }
 
 fun lex(input: String): List<Token> {
@@ -79,9 +80,7 @@ fun lex(input: String): List<Token> {
 
             i = next
             continue
-        }
-
-        if (c in singleCharSymbols) {
+        } else if (c in singleCharSymbols) {
             val (token, next) = lexSymbol(input, i)
             tokens.add(token)
 
@@ -89,6 +88,8 @@ fun lex(input: String): List<Token> {
             continue
         }
     }
+
+    tokens.add(Token.EOL)
 
     return tokens
 }
@@ -139,7 +140,7 @@ fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
 }
 
 fun lexSymbol(input: String, startIndex: Int, length: Int = 1): Pair<Token.Symbol, Int> {
-    val c = input[startIndex]
+    val symbol = input.substring(startIndex, startIndex + length)
 
-    return Token.Symbol(c.toString()) to (startIndex + length)
+    return Token.Symbol(symbol) to (startIndex + length)
 }

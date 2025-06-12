@@ -8,14 +8,14 @@ import drift.runtime.DrFunction
 import drift.runtime.DrNull
 
 fun main() {
-    val env = DrEnv()
-    env.define("print", DrFunction { args ->
-        println(args.joinToString(" ") { it.asString() })
-        DrNull
-    })
-
-    val parser = Parser(lex("print(true)"))
-    val stmt = parser.parse()
-
-    stmt.eval(env)
+//    val env = DrEnv()
+//    env.define("print", DrFunction { args ->
+//        println(args.joinToString(" ") { it.asString() })
+//        DrNull
+//    })
+//
+//    val parser = Parser(lex("print(true)"))
+//    val stmt = parser.parse()
+//
+//    stmt.eval(env)
 }

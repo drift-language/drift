@@ -11,8 +11,15 @@ class BinaryExprTest {
         val tokens = lex(input)
         val parser = Parser(tokens)
         val expression = parser.parse()
+        val env = DrEnv()
 
-        return expression.eval(DrEnv())
+        var result: DrValue = DrNull
+
+        expression.forEach {
+            result = it.eval(env)
+        }
+
+        return result
     }
 
     @Test

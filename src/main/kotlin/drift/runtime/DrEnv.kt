@@ -8,7 +8,9 @@ class DrEnv(
         values[name] = value
     }
 
-    fun get(name: String): DrValue = values[name]
+    fun get(name: String) : DrValue = values[name]
         ?: parent?.get(name)
         ?: error("Undefined symbol: $name")
+
+    fun copy() : DrEnv = DrEnv(parent, values)
 }

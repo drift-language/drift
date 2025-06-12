@@ -7,13 +7,33 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         is Literal -> value
         is Variable -> env.get(name)
         is Call -> {
-            val calleeValue = callee.eval(env)
-            val argValues = args.map { it.eval(env) }
+            val callee = callee.eval(env)
+            val arguments = args.map { it.name to it.expr.eval(env) }
 
-            if (calleeValue is DrFunction) {
-                calleeValue.invoke(argValues)
-            } else {
-                error("Trying to call a non-function: ${calleeValue.asString()}")
+            when (callee) {
+                is DrFunction -> {
+                    val newEnv = DrEnv(parent = callee.closure)
+
+                    for ((index, param) in callee.params.withIndex()) {
+                        val value = if (param.isPositional) {
+                            val arg = arguments.getOrNull(index)
+                                ?: error("Missing positional argument for '${param.name}'")
+
+                            arg.second
+                        } else {
+                            val arg = arguments.find { it.first == param.name }
+                                ?: error("Missing positional argument for '${param.name}'")
+
+                            arg.second
+                        }
+
+                        newEnv.define(param.name, value)
+                    }
+
+                    return evalBlock(callee.body, newEnv)
+                }
+                is DrNativeFunction -> callee.impl(arguments)
+                else -> error("Cannot call non-function: ${callee.asString()}")
             }
         }
         is Binary -> {
@@ -102,5 +122,19 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+    }
+}
+
+private fun evalBlock(statements: List<DrStmt>, env: DrEnv) : DrValue {
+    try {
+        var last: DrValue = DrNull
+
+        for (stmt in statements) {
+            last = stmt.eval(env)
+        }
+
+        return last
+    } catch (e: ReturnException) {
+        return e.value
     }
 }

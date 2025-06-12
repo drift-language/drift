@@ -1,6 +1,7 @@
 package drift.parser
 
 import drift.ast.*
+import drift.ast.Function
 import drift.runtime.*
 
 class Parser(private val tokens: List<Token>) {
@@ -23,8 +24,18 @@ class Parser(private val tokens: List<Token>) {
 
     private fun current() : Token? = tokens.getOrNull(i)
     private fun advance() { i++ }
+    private fun isAtEnd(): Boolean = current() == Token.EOL
 
-    fun parse(): DrStmt = parseStatement()
+    fun parse(): List<DrStmt> {
+        val statements = mutableListOf<DrStmt>()
+
+        while (!isAtEnd()) {
+            val statement = parseStatement()
+            statements.add(statement)
+        }
+
+        return statements
+    }
 
     private fun parseStatement() : DrStmt {
         val token = current()
@@ -36,6 +47,11 @@ class Parser(private val tokens: List<Token>) {
             }
             is Token.Identifier -> when {
                 token.isKeyword(Token.Keyword.IF) -> parseClassicIf()
+                token.isKeyword(Token.Keyword.FUNCTION) -> parseFunction()
+                token.isKeyword(Token.Keyword.RETURN) -> {
+                    advance()
+                    parseReturn()
+                }
                 else -> ExprStmt(parseExpression())
             }
             else -> ExprStmt(parseExpression())
@@ -97,26 +113,31 @@ class Parser(private val tokens: List<Token>) {
 
         advance()
 
-        return if (current() is Token.Symbol && (current() as Token.Symbol).value == "(") {
+        return if (checkSymbol("(")) {
             advance()
 
-            val args = mutableListOf<DrExpr>()
+            val args = mutableListOf<Argument>()
 
-            while (current() !is Token.Symbol || (current() as Token.Symbol).value != ")") {
-                args.add(parseExpression())
+            while (!checkSymbol(")")) {
+                if (current() is Token.Identifier && peekSymbol("=")) {
+                    val name = (current() as? Token.Identifier)?.value
 
-                if (current() is Token.Symbol && (current() as Token.Symbol).value == ",") {
                     advance()
+                    expectSymbol("=")
+
+                    val valueExpression = parseExpression()
+
+                    args.add(Argument(name, valueExpression))
                 } else {
-                    break
+                    val valueExpression = parseExpression()
+
+                    args.add(Argument(null, valueExpression))
                 }
+
+                if (!matchSymbol(",")) break
             }
 
-            if (current() !is Token.Symbol || (current() as Token.Symbol).value != ")") {
-                error("Expected ')' after arguments")
-            }
-
-            advance()
+            expectSymbol(")")
 
             Call(Variable(id.value), args)
         } else {
@@ -124,7 +145,7 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
-    private fun parseBlock() : DrStmt {
+    private fun parseBlock() : Block {
         val open = current()
 
         if (open !is Token.Symbol || open.value != "{") {
@@ -158,7 +179,7 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
-    private fun parseClassicIf() : DrStmt {
+    private fun parseClassicIf() : If {
         val token = current()
 
         if (token !is Token.Identifier || !token.isKeyword(Token.Keyword.IF)) {
@@ -181,7 +202,7 @@ class Parser(private val tokens: List<Token>) {
         return If(condition, thenBlock, elseBlock)
     }
 
-    private fun parseDriftIf(condition: DrExpr) : DrExpr {
+    private fun parseDriftIf(condition: DrExpr) : Conditional {
         advance()
 
         val thenBlock = parseStatementOrBlock()
@@ -195,6 +216,39 @@ class Parser(private val tokens: List<Token>) {
         return Conditional(condition, thenBlock, elseBlock)
     }
 
+    private fun parseFunction() : Function {
+        advance()
+
+        val nameToken = expect<Token.Identifier>("Expected function name")
+        val name = nameToken.value
+
+        advance()
+
+        expectSymbol("(")
+
+        val parameters = mutableListOf<FunctionParameter>()
+
+        while (!checkSymbol(")")) {
+            val isPositional: Boolean = matchSymbol("*")
+            val paramToken = expect<Token.Identifier>("Expected parameter name")
+
+            parameters.add(FunctionParameter(paramToken.value, isPositional))
+
+            if (!matchSymbol(",")) break
+        }
+
+        advance()
+
+        expectSymbol(")")
+
+        val body = parseBlock().statements
+
+        return Function(name, parameters, body)
+    }
+
+    private fun parseReturn() : DrStmt =
+        Return(parseExpression())
+
 
     private fun expectSymbol(expected: String) {
         val token = current()
@@ -204,5 +258,35 @@ class Parser(private val tokens: List<Token>) {
         }
 
         advance()
+    }
+
+    private fun checkSymbol(value: String) : Boolean {
+        val token = current()
+
+        return token is Token.Symbol && token.value == value
+    }
+
+    private fun matchSymbol(value: String) : Boolean {
+        val token = current()
+
+        if (token is Token.Symbol && token.value == value) {
+            advance()
+
+            return true
+        }
+
+        return false
+    }
+
+    private fun peekSymbol(value: String) : Boolean {
+        val next = tokens.getOrNull(i + 1)
+
+        return next is Token.Symbol && next.value == value
+    }
+
+    private inline fun <reified T : Token> expect(message: String) : T {
+        val token = current()
+
+        return token as? T ?: error("Expected '$message' but found $token")
     }
 }

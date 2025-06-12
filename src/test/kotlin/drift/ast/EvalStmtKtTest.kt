@@ -12,15 +12,15 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrFunction { args ->
-            output.add(args.joinToString(" ") { it.asString() })
+        env.define("print", DrNativeFunction { args ->
+            output.add(args.joinToString(" ") { it.second.asString() })
             DrNull
         })
 
         val stmt = If(
             condition = Literal(DrBool(true)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Literal(DrString("yes"))))
+                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
             ),
             elseBranch = null
         )
@@ -35,18 +35,18 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrFunction { args ->
-            output.add(args.joinToString(" ") { it.asString() })
+        env.define("print", DrNativeFunction { args ->
+            output.add(args.joinToString(" ") { it.second.asString() })
             DrNull
         })
 
         val stmt = If(
             condition = Literal(DrBool(true)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Literal(DrString("yes"))))
+                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
             ),
             elseBranch = ExprStmt(
-                Call(Variable("print"), listOf(Literal(DrString("no"))))
+                Call(Variable("print"), listOf(Argument(null, Literal(DrString("no")))))
             )
         )
 
@@ -60,18 +60,18 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrFunction { args ->
-            output.add(args.joinToString(" ") { it.asString() })
+        env.define("print", DrNativeFunction { args ->
+            output.add(args.joinToString(" ") { it.second.asString() })
             DrNull
         })
 
         val stmt = If(
             condition = Literal(DrBool(false)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Literal(DrString("yes"))))
+                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
             ),
             elseBranch = ExprStmt(
-                Call(Variable("print"), listOf(Literal(DrString("no"))))
+                Call(Variable("print"), listOf(Argument(null, Literal(DrString("no")))))
             )
         )
 
@@ -86,14 +86,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrFunction { args ->
-            output.add(args.joinToString(" ") { it.asString() })
+        env.define("print", DrNativeFunction { args ->
+            output.add(args.joinToString(" ") { it.second.asString() })
             DrNull
         })
 
         val block = Block(listOf(
-            ExprStmt(Call(Variable("print"), listOf(Literal(DrString("yes"))))),
-            ExprStmt(Call(Variable("print"), listOf(Literal(DrString("no")))))
+            ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))),
+            ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("no"))))))
         ))
 
         block.eval(env)
@@ -132,14 +132,14 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrFunction { args ->
-            output.add(args.joinToString(" ") { it.asString() })
+        env.define("print", DrNativeFunction { args ->
+            output.add(args.joinToString(" ") { it.second.asString() })
             DrNull
         })
 
         val call = Call(
             callee = Variable("print"),
-            args = listOf(Literal(DrString("hello")))
+            args = listOf(Argument(null, Literal(DrString("hello"))))
         )
 
         val result = call.eval(env)
