@@ -38,16 +38,17 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun parseStatement() : DrStmt {
-        val token = current()
-
-        return when (token) {
+        return when (val token = current()) {
             is Token.Symbol -> when (token.value) {
                 "{" -> parseBlock()
                 else -> ExprStmt(parseExpression())
             }
             is Token.Identifier -> when {
                 token.isKeyword(Token.Keyword.IF) -> parseClassicIf()
-                token.isKeyword(Token.Keyword.FUNCTION) -> parseFunction()
+                token.isKeyword(Token.Keyword.FUNCTION) -> {
+                    advance()
+                    parseFunction()
+                }
                 token.isKeyword(Token.Keyword.RETURN) -> {
                     advance()
                     parseReturn()
@@ -217,33 +218,65 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun parseFunction() : Function {
-        advance()
-
         val nameToken = expect<Token.Identifier>("Expected function name")
         val name = nameToken.value
 
         advance()
-
         expectSymbol("(")
 
         val parameters = mutableListOf<FunctionParameter>()
 
-        while (!checkSymbol(")")) {
-            val isPositional: Boolean = matchSymbol("*")
-            val paramToken = expect<Token.Identifier>("Expected parameter name")
+        if (!checkSymbol(")")) {
+            do {
+                val isPositional: Boolean = matchSymbol("*")
+                val paramToken = expect<Token.Identifier>("Expected parameter name")
 
-            parameters.add(FunctionParameter(paramToken.value, isPositional))
+                advance()
 
-            if (!matchSymbol(",")) break
+                var paramType: DrType = AnyType
+
+                if (matchSymbol(":")) {
+                    paramType = parseType()
+                }
+
+                parameters.add(FunctionParameter(paramToken.value, isPositional, paramType))
+            } while (matchSymbol(","))
+        }
+
+        expectSymbol(")")
+
+        var returnType: DrType = AnyType
+
+        if (matchSymbol(":")) {
+            returnType = parseType()
+        }
+
+        val body = parseBlock().statements
+
+        return Function(name, parameters, body, returnType)
+    }
+
+    private fun parseType() : DrType {
+        val token = expect<Token.Identifier>("Expected type name")
+        val type: DrType = when (token.value) {
+            "Int" -> IntType
+            "String" -> StringType
+            "Bool" -> BoolType
+            "Null" -> NullType
+            "Void" -> VoidType
+            "Any" -> AnyType
+            else -> error("Unknown type ${token.value}")
         }
 
         advance()
 
-        expectSymbol(")")
+        val isOptional = matchSymbol("?")
 
-        val body = parseBlock().statements
-
-        return Function(name, parameters, body)
+        return if (isOptional) {
+            OptionalType(type)
+        } else {
+            type
+        }
     }
 
     private fun parseReturn() : DrStmt =
