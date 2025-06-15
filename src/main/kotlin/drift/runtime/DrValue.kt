@@ -1,5 +1,6 @@
 package drift.runtime
 
+import drift.ast.Class
 import drift.ast.DrStmt
 import drift.ast.FunctionParameter
 
@@ -52,10 +53,42 @@ data class DrNativeFunction(
         returnType)
 }
 
+data class DrClass(val name: String, val fields: List<FunctionParameter>) : DrValue {
+
+    override fun asString() = "<class $name>"
+
+    override fun type(): DrType = ObjectType(name)
+}
+
+object DrVoid : DrValue {
+    override fun asString() = "void"
+
+    override fun type() = VoidType
+}
+
 object DrNull : DrValue {
     override fun asString() = "null"
 
     override fun type(): DrType = NullType
+}
+
+object DrLast : DrValue {
+    override fun asString() = "last"
+
+    override fun type(): DrType = LastType
+}
+
+data class DrInstance(
+    val klass: DrClass,
+    val values: Map<String, DrValue>) : DrValue {
+
+    override fun type(): DrType = ObjectType(klass.name)
+
+    override fun asString() : String {
+        val content = values.entries.joinToString(", ") { "${it.key}=${it.value.asString()}" }
+
+        return "<${klass.name} $content>"
+    }
 }
 
 
@@ -66,6 +99,8 @@ fun parseLiteral(text: String): DrValue {
         return DrBool(text == "true")
     } else if (text.toIntOrNull() != null) {
         return DrInt(text.toInt())
+    } else if (text == "null") {
+        return DrNull
     } else {
         return error("Unknown type: $text")
     }
