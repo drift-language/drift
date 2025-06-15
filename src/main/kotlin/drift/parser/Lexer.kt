@@ -1,5 +1,6 @@
 package drift.parser
 
+import drift.exceptions.DriftLexerException
 import drift.utils.concat
 
 private val multiCharsSymbols = setOf(
@@ -17,6 +18,7 @@ private val singleCharSymbols = setOf(
     '?', ',',
     '<', '>',
     '|', '&',
+    '?', '!'
 )
 
 sealed class Token {
