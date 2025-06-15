@@ -171,9 +171,23 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
     try {
         var last: DrValue = DrNull
+        var hasReturnStatement = false
 
         for (stmt in statements) {
             last = stmt.eval(env)
+
+            if (stmt is Return) {
+                hasReturnStatement = true
+            }
+        }
+
+        if (!hasReturnStatement) {
+            return when (returnType) {
+                VoidType -> DrVoid
+                AnyType -> DrVoid
+                LastType -> last
+                else     -> error("Missing return statement")
+            }
         }
 
         if (!isAssignable(last.type(), returnType)) {
