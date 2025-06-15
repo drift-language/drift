@@ -45,6 +45,18 @@ fun lex(input: String): List<Token> {
     while (i < input.length) {
         val c = input[i]
 
+        if (c == '\r' && input[i + 1] == '\n') {
+            tokens.add(Token.NewLine)
+            i += 2
+            continue
+        }
+
+        if (c == '\n' || c == '\r') {
+            tokens.add(Token.NewLine)
+            i++
+            continue
+        }
+
         if (c.isWhitespace()) {
             i++
             continue
