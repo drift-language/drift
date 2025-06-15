@@ -35,5 +35,9 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             val value = value.eval(env)
             throw ReturnException(value)
         }
+        is Class -> {
+            env.define(name, DrClass(name, fields))
+            DrVoid
+        }
     }
 }
