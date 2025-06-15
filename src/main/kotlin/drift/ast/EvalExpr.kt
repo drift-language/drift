@@ -122,6 +122,28 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+        is Lambda -> DrFunction(parameters, body, env.copy(), returnType)
+        is Unary -> {
+            val value = expr.eval(env)
+
+            return when (operator) {
+                "!" -> {
+                    if (value !is DrBool)
+                        throw DriftRuntimeException(
+                            "Cannot negate non-boolean: ${value.type()}")
+
+                    DrBool(!value.value)
+                }
+                "-" -> {
+                    if (value !is DrInt)
+                        throw DriftRuntimeException(
+                            "Cannot negate non-integer: ${value.type()}")
+
+                    DrInt(-value.value)
+                }
+                else -> throw DriftRuntimeException("Unknown unary operator '$operator'")
+            }
+        }
     }
 }
 
