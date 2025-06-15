@@ -27,6 +27,7 @@ sealed class Token {
     data class StringLiteral(val value: String) : Token()
     data class IntLiteral(val value: Int) : Token()
     data class BoolLiteral(val value: Boolean) : Token()
+    data object NullLiteral : Token()
     data class Symbol(val value: String) : Token()
     enum class Keyword(val value: String) {
         IF("if"),
@@ -149,6 +150,7 @@ fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
     return when (word) {
         "true" -> Token.BoolLiteral(true) to i
         "false" -> Token.BoolLiteral(false) to i
+        "null" -> Token.NullLiteral to i
         else -> Token.Identifier(word) to i
     }
 }
