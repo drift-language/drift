@@ -37,6 +37,7 @@ sealed class Token {
         FUNCTION("fun"),
         RETURN("return"),
         FOR("for"),
+        CLASS("class"),
     }
     data object EOL : Token()
     data object NewLine : Token()
