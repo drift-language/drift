@@ -3,6 +3,7 @@ package drift.parser
 import drift.runtime.DrEnv
 import drift.runtime.DrInt
 import drift.runtime.DrNull
+import drift.runtime.DrVoid
 import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -31,7 +32,7 @@ class FunctionTest {
             test()
         """.trimIndent())
 
-        assertEquals(DrNull, result)
+        assertEquals(DrVoid, result)
     }
 
     @Test
@@ -42,7 +43,7 @@ class FunctionTest {
             test(x = 1)
         """.trimIndent())
 
-        assertEquals(DrNull, result)
+        assertEquals(DrVoid, result)
     }
 
     @Test
@@ -53,6 +54,19 @@ class FunctionTest {
             test(x = 1, y = 2)
         """.trimIndent())
 
-        assertEquals(DrNull, result)
+        assertEquals(DrVoid, result)
+    }
+
+    @Test
+    fun `Function without parameters and parenthesis`() {
+        val result = evalProgram("""
+            fun test {
+                return 1
+            }
+            
+            test()
+        """.trimIndent())
+
+        assertEquals(DrInt(1), result)
     }
 }

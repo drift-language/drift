@@ -2,6 +2,7 @@ package drift.parser
 
 import drift.ast.Function
 import drift.ast.eval
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -67,7 +68,7 @@ class FunctionTypeTest {
         val statements = Parser(tokens).parse()
         val env = DrEnv()
 
-        assertThrows<IllegalStateException> {
+        assertThrows<DriftTypeException> {
             for (statement in statements) {
                 statement.eval(env)
             }
@@ -105,8 +106,8 @@ class FunctionTypeTest {
 
         assertEquals("test2", function.name)
         assertEquals(UnionType(listOf(
-            StringType,
             IntType,
+            StringType,
         )), function.parameters[0].type)
     }
 }
