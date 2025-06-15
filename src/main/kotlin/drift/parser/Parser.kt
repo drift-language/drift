@@ -150,7 +150,7 @@ class Parser(private val tokens: List<Token>) {
         val open = current()
 
         if (open !is Token.Symbol || open.value != "{") {
-            error("Expected '{' but found $open")
+            throw DriftParserException("Expected '{' but found $open")
         }
 
         advance()
@@ -184,7 +184,7 @@ class Parser(private val tokens: List<Token>) {
         val token = current()
 
         if (token !is Token.Identifier || !token.isKeyword(Token.Keyword.IF)) {
-            error("Expected 'if' but found $token")
+            throw DriftParserException("Expected 'if' but found $token")
         }
 
         advance()
@@ -287,7 +287,7 @@ class Parser(private val tokens: List<Token>) {
         val token = current()
 
         if (token !is Token.Symbol || token.value != expected) {
-            error("Expected '$expected' but found $token")
+            throw DriftParserException("Expected '$expected' but found $token")
         }
 
         advance()

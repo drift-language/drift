@@ -105,7 +105,7 @@ fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
     }
 
     if (i >= input.length) {
-        error("Unterminated string literal")
+        throw DriftLexerException("Unterminated string literal")
     }
 
     val content = input.substring(start, i)

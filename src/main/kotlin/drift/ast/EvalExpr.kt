@@ -1,5 +1,7 @@
 package drift.ast
 
+import drift.exceptions.DriftRuntimeException
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
 
 fun DrExpr.eval(env: DrEnv): DrValue {
@@ -17,14 +19,18 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     for ((index, param) in callee.params.withIndex()) {
                         val value = if (param.isPositional) {
                             val arg = arguments.getOrNull(index)
-                                ?: error("Missing positional argument for '${param.name}'")
+                                ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
 
                             arg.second
                         } else {
                             val arg = arguments.find { it.first == param.name }
-                                ?: error("Missing positional argument for '${param.name}'")
+                                ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
 
                             arg.second
+                        }
+
+                        if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
+                            throw DriftTypeException("Invalid argument for '${param.name}'")
                         }
 
                         newEnv.define(param.name, value)
@@ -68,14 +74,16 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt(leftValue.value + rightValue.value)
                         leftValue is DrString && rightValue is DrString ->
                             DrString(leftValue.value + rightValue.value)
-                        else -> error("Unsupported '+' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '+' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "-" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrInt(leftValue.value - rightValue.value)
-                        else -> error("Unsupported '-' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '-' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "*" -> {
@@ -84,7 +92,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt(leftValue.value * rightValue.value)
                         leftValue is DrString && rightValue is DrInt ->
                             DrString(leftValue.value.repeat(rightValue.value))
-                        else -> error("Unsupported '*' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '*' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "/" -> {
@@ -105,28 +114,32 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value > rightValue.value)
-                        else -> error("Unsupported '>' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '>' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "<" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value < rightValue.value)
-                        else -> error("Unsupported '<' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '<' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 ">=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value >= rightValue.value)
-                        else -> error("Unsupported '>=' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '>=' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "<=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value <= rightValue.value)
-                        else -> error("Unsupported '<=' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(
+                            "Unsupported '<=' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 else -> error("Unknown binary operator '$operator'")
@@ -191,13 +204,13 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
         }
 
         if (!isAssignable(last.type(), returnType)) {
-            error("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
+            throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
         }
 
         return last
     } catch (e: ReturnException) {
         if (!isAssignable(e.value.type(), returnType)) {
-            error("Invalid return type: expected ${returnType.asString()}, got ${e.value.type().asString()}")
+            throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${e.value.type().asString()}")
         }
 
         return e.value
