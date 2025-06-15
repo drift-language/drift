@@ -18,13 +18,14 @@ object BoolType : DrType {
 object NullType : DrType {
     override fun asString(): String = "Null"
 }
-
 object VoidType : DrType {
     override fun asString(): String = "Void"
 }
-
 object AnyType : DrType {
     override fun asString(): String = "Any"
+}
+object LastType : DrType {
+    override fun asString(): String = "Last"
 }
 
 data class OptionalType(val inner: DrType) : DrType {
@@ -37,6 +38,10 @@ data class UnionType(val options: List<DrType>) : DrType {
 
 data class FunctionType(val paramTypes: List<DrType>, val returnType: DrType) : DrType {
     override fun asString() = "(${paramTypes.joinToString(", ") { it.asString() }}) -> ${returnType.asString()}"
+}
+
+data class ObjectType(val className: String) : DrType {
+    override fun asString() = className
 }
 
 
