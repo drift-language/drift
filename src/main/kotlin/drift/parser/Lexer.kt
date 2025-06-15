@@ -39,6 +39,7 @@ sealed class Token {
         FOR("for"),
     }
     data object EOL : Token()
+    data object NewLine : Token()
 }
 
 fun lex(input: String): List<Token> {
