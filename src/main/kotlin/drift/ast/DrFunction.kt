@@ -1,7 +1,6 @@
 package drift.ast
 
-import drift.runtime.AnyType
-import drift.runtime.DrType
+import drift.runtime.*
 
 data class Function(
     val name: String,
