@@ -33,6 +33,27 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     return evalBlock(callee.returnType, callee.body, newEnv)
                 }
                 is DrNativeFunction -> callee.impl(arguments)
+                is DrClass -> {
+                    if (arguments.size != callee.fields.size) {
+                        error("Wrong number of arguments for class '${callee.name}'")
+                    }
+
+                    val valueMap = mutableMapOf<String, DrValue>()
+
+                    for ((index, field) in callee.fields.withIndex()) {
+                        val value: DrValue = arguments[index].second
+
+                        if (!isAssignable(value.type(), field.type)) {
+                            throw DriftTypeException(
+                                "Field '${field.name}' of '${callee.name}' " +
+                                "expects ${field.type}, got ${value.type()}")
+                        }
+
+                        valueMap[field.name] = value
+                    }
+
+                    return DrInstance(callee, valueMap)
+                }
                 else -> error("Cannot call non-function: ${callee.asString()}")
             }
         }
