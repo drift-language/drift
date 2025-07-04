@@ -1,8 +1,11 @@
 package drift.parser
 
 import drift.ast.eval
+import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
+import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class BinaryExprTest {
@@ -55,5 +58,14 @@ class BinaryExprTest {
         val result = evalExpr("1 + 1 == 2")
 
         assertEquals(DrBool(true), result)
+    }
+
+    @Test
+    fun `Division by zero should throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                let x = 1 / 0
+            """.trimIndent())
+        }
     }
 }
