@@ -12,36 +12,56 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             val callee = callee.eval(env)
             val arguments = args.map { it.name to it.expr.eval(env) }
 
+            fun applyFunction(
+                fn: Function,
+                closure: DrEnv,
+                args: List<Pair<String?, DrValue>>,
+                instance: DrInstance? = null) {
+
+                for ((index, param) in fn.parameters.withIndex()) {
+                    val value = if (param.isPositional) {
+                        val arg = arguments.getOrNull(index)
+                            ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
+
+                        arg.second
+                    } else {
+                        val arg = arguments.find { it.first == param.name }
+                            ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
+
+                        arg.second
+                    }
+
+                    if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
+                        throw DriftTypeException("Invalid argument for '${param.name}'")
+                    }
+
+                    closure.define(param.name, value)
+                }
+            }
+
             when (callee) {
                 is DrFunction -> {
                     val newEnv = DrEnv(parent = callee.closure)
 
-                    for ((index, param) in callee.params.withIndex()) {
-                        val value = if (param.isPositional) {
-                            val arg = arguments.getOrNull(index)
-                                ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
+                    applyFunction(callee.let, newEnv, arguments)
 
-                            arg.second
-                        } else {
-                            val arg = arguments.find { it.first == param.name }
-                                ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
-
-                            arg.second
+                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
+                }
+                is DrMethod -> {
+                    val newEnv = DrEnv(parent = callee.closure).apply {
+                        if (callee.instance is DrInstance) {
+                            define("this", callee.instance)
                         }
-
-                        if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
-                            throw DriftTypeException("Invalid argument for '${param.name}'")
-                        }
-
-                        newEnv.define(param.name, value)
                     }
 
-                    return evalBlock(callee.returnType, callee.body, newEnv)
+                    applyFunction(callee.let, newEnv, arguments, callee.instance)
+
+                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
                 is DrNativeFunction -> callee.impl(arguments)
                 is DrClass -> {
                     if (arguments.size != callee.fields.size) {
-                        error("Wrong number of arguments for class '${callee.name}'")
+                        throw DriftRuntimeException("Wrong number of arguments for class '${callee.name}'")
                     }
 
                     val valueMap = mutableMapOf<String, DrValue>()
@@ -60,12 +80,15 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     return DrInstance(callee, valueMap)
                 }
-                else -> error("Cannot call non-function: ${callee.asString()}")
+                else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
             }
         }
         is Binary -> {
-            val leftValue = left.eval(env)
-            val rightValue = right.eval(env)
+            fun unwrap(v: DrValue) : DrValue =
+                if (v is DrVariable) v.value else v
+
+            val leftValue = unwrap(left.eval(env))
+            val rightValue = unwrap(right.eval(env))
 
             return when (operator) {
                 "+" -> {
@@ -100,12 +123,12 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt -> {
                             if (rightValue.value == 0) {
-                                error("Division by zero is not allowed")
+                                throw DriftRuntimeException("Division by zero is not allowed")
                             }
 
                             DrInt(leftValue.value / rightValue.value)
                         }
-                        else -> error("Unsupported '/' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException("Unsupported '/' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
                 "==" -> DrBool(leftValue == rightValue)
@@ -142,13 +165,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             "Unsupported '<=' for types ${leftValue::class} and ${rightValue::class}")
                     }
                 }
-                else -> error("Unknown binary operator '$operator'")
+                else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
             }
         }
         is Conditional -> {
             val conditionValue = condition.eval(env)
 
-            if (conditionValue !is DrBool) error("Condition must be boolean")
+            if (conditionValue !is DrBool) throw DriftRuntimeException("Condition must be boolean")
 
             return if (conditionValue.value) {
                 thenBranch.eval(env)
@@ -156,7 +179,10 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
-        is Lambda -> DrFunction(parameters, body, env.copy(), returnType)
+        is Lambda -> {
+            val f = Function("", this.parameters, this.body, this.returnType)
+            DrFunction(f, env.copy())
+        }
         is Unary -> {
             val value = expr.eval(env)
 
@@ -177,6 +203,34 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 else -> throw DriftRuntimeException("Unknown unary operator '$operator'")
             }
+        }
+        is Assign -> {
+            val v = value.eval(env)
+            env.assign(name, v)
+            v
+        }
+        is Get -> {
+            val obj = receiver.eval(env)
+            val instance = when (obj) {     // TODO: refactor with Set duplicate fragment
+                is DrInstance -> obj
+                is DrVariable -> obj.value as? DrInstance
+                else -> null
+            } ?: throw DriftRuntimeException("Only instances have properties")
+
+            instance.get(name)
+        }
+        is Set -> {
+            val obj = receiver.eval(env)
+            val instance = when (obj) {
+                is DrInstance -> obj
+                is DrVariable -> obj.value as? DrInstance
+                else -> null
+            } ?: throw DriftRuntimeException("Only instances can have properties assigned")
+
+            val v = value.eval(env)
+
+            instance.set(name, v)
+            v
         }
     }
 }
@@ -199,7 +253,7 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
                 VoidType -> DrVoid
                 AnyType -> DrVoid
                 LastType -> last
-                else     -> error("Missing return statement")
+                else     -> throw DriftRuntimeException("Missing return statement")
             }
         }
 

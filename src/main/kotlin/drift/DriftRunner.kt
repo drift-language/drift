@@ -5,6 +5,7 @@ import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
 import java.io.File
+import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     if (args.isEmpty()) {

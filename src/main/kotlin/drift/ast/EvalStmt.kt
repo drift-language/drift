@@ -27,7 +27,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             result
         }
         is Function -> {
-            val function = DrFunction(parameters, body, env.copy(), returnType)
+            val function = DrFunction(this, env.copy())
             env.define(name, function)
             function
         }
@@ -36,8 +36,18 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             throw ReturnException(value)
         }
         is Class -> {
-            env.define(name, DrClass(name, fields))
+            val klass = DrClass(name, fields, methods.map {
+                DrMethod(it, env, null)
+            })
+            env.define(name, klass)
             DrVoid
+        }
+        is Let -> {
+            val v = value.eval(env)
+
+            env.define(name, DrVariable(name, type, v, isMutable))
+
+            v
         }
     }
 }

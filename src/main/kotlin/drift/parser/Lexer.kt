@@ -18,7 +18,8 @@ private val singleCharSymbols = setOf(
     '?', ',',
     '<', '>',
     '|', '&',
-    '?', '!'
+    '?', '!',
+    '.',
 )
 
 sealed class Token {
@@ -38,6 +39,8 @@ sealed class Token {
         RETURN("return"),
         FOR("for"),
         CLASS("class"),
+        IMMUTLET("let"),
+        MUTLET("var"),
     }
     data object EOL : Token()
     data object NewLine : Token()
@@ -54,46 +57,32 @@ fun lex(input: String): List<Token> {
             tokens.add(Token.NewLine)
             i += 2
             continue
-        }
-
-        if (c == '\n' || c == '\r') {
+        } else if (c == '\n' || c == '\r') {
             tokens.add(Token.NewLine)
             i++
             continue
-        }
-
-        if (c.isWhitespace()) {
+        } else if (c.isWhitespace()) {
             i++
             continue
-        }
-
-        if (c == '"') {
+        } else if (c == '"') {
             val (token, next) = lexString(input, i)
             tokens.add(token)
 
             i = next
             continue
-        }
-
-        if (c.isDigit()) {
+        } else if (c.isDigit()) {
             val (token, next) = lexDigit(input, i)
             tokens.add(token)
 
             i = next
             continue
-        }
-
-        if (c.isLetter() || c == '_') {
+        } else if (c.isLetter() || c == '_') {
             val (token, next) = lexWord(input, i)
             tokens.add(token)
 
             i = next
             continue
-        }
-
-        val twoChar = input.substring(i).take(2)
-
-        if (twoChar in multiCharsSymbols) {
+        } else if (input.substring(i).take(2) in multiCharsSymbols) {
             val (token, next) = lexSymbol(input, i, 2)
             tokens.add(token)
 
@@ -105,6 +94,8 @@ fun lex(input: String): List<Token> {
 
             i = next
             continue
+        } else {
+            throw DriftLexerException("Unexpected character '$c'")
         }
     }
 
