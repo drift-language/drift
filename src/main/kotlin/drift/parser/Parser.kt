@@ -662,7 +662,7 @@ class Parser(private val tokens: List<Token>) {
         }
 
         val hasArrow = (tokens[j] as? Token.Symbol)?.value == "->"
-        val hasBrace = (tokens[j+1] as? Token.Symbol)?.value == "{"
+        val hasBrace = (tokens.getOrNull(j + 1) as? Token.Symbol)?.value == "{"
 
         return tokens.getOrNull(j) is Token.Symbol && hasArrow && hasBrace
     }
