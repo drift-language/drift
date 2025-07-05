@@ -1,6 +1,8 @@
 package drift
 
 import drift.ast.eval
+import drift.check.SymbolCollector
+import drift.check.TypeChecker
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
@@ -22,9 +24,13 @@ fun main(args: Array<String>) {
 
     val source = file.readText()
 
-    val tokens = lex(source)
-    val statements = Parser(tokens).parse()
     val env = DrEnv()
+
+    val tokens = lex(source)
+    val ast = Parser(tokens).parse()
+
+    SymbolCollector(env).collect(ast)
+    TypeChecker(env).check(ast)
 
     env.define("print", DrNativeFunction(
         impl = { args ->
@@ -35,7 +41,7 @@ fun main(args: Array<String>) {
         returnType = NullType
     ))
 
-    for (statement in statements) {
+    for (statement in ast) {
         statement.eval(env)
     }
 }
