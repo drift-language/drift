@@ -33,7 +33,8 @@ data class DrFunction(
     val let: Function,
     val closure: DrEnv) : DrValue {
 
-    override fun asString(): String = "function"
+    override fun asString(): String =
+        "<[function@${hashCode()}] ${type().asString()}>"
     override fun type(): DrType = FunctionType(
         let.parameters.map { it.type },
         let.returnType)
@@ -61,7 +62,8 @@ data class DrMethod(
     val closure: DrEnv,
     val instance: DrInstance? = null) : DrValue {
 
-    override fun asString(): String = "<method ${let.name}>"
+    override fun asString(): String =
+        "<[function@${hashCode()}] ${type().asString()}>"
     override fun type(): DrType = FunctionType(
         let.parameters.map { it.type },
         let.returnType)
@@ -94,7 +96,8 @@ data class DrNativeFunction(
     val paramTypes: List<DrType>,
     val returnType: DrType = AnyType) : DrValue {
 
-    override fun asString(): String = "native function"
+    override fun asString(): String =
+        "<[native@${hashCode()}] ${type().asString()}>"
 
     override fun type(): DrType = FunctionType(
         paramTypes,
