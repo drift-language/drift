@@ -497,23 +497,22 @@ class Parser(private val tokens: List<Token>) {
 
         advance()
 
-        expectSymbol("(")
+        if (matchSymbol("(")) {
+            if (!checkSymbol(")")) {
+                do {
+                    val paramToken = expect<Token.Identifier>("Expected field name")
 
-        if (!checkSymbol(")")) {
-            do {
-                val paramToken = expect<Token.Identifier>("Expected field name")
+                    advance()
 
-                advance()
+                    expectSymbol(":")
+                    val fieldType = parseType()
 
-                expectSymbol(":")
+                    fields.add(FunctionParameter(paramToken.value, true, fieldType))
+                } while (matchSymbol(","))
+            }
 
-                val fieldType = parseType()
-
-                fields.add(FunctionParameter(paramToken.value, true, fieldType))
-            } while (matchSymbol(","))
+            expectSymbol(")")
         }
-
-        expectSymbol(")")
 
         if (matchSymbol("{")) {
             while (!checkSymbol("}")) {
