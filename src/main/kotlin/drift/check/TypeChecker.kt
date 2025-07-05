@@ -22,9 +22,7 @@ class TypeChecker (private val env: DrEnv) {
                 checkStatement(stmt.thenBranch)
                 stmt.elseBranch?.let { checkStatement(it) }
             }
-            else -> {
-                // TODO
-            }
+            else -> {}
         }
     }
 
@@ -50,7 +48,6 @@ class TypeChecker (private val env: DrEnv) {
                 checkExpr(expr.thenBranch)
                 expr.elseBranch?.let { checkExpr(it) }
             }
-            // TODO
             else -> {}
         }
     }
