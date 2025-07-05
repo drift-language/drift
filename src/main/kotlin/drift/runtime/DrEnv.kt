@@ -57,7 +57,10 @@ class DrEnv(
     fun resolveClass(name: String) : DrClass? =
         classes[name] ?: parent?.resolveClass(name)
 
-    fun copy() : DrEnv = DrEnv(parent, values, classes)
+    fun copy() : DrEnv = DrEnv(
+        parent,
+        values.toMutableMap(),
+        classes.toMutableMap())
 
     fun isTopLevel() : Boolean = parent == null
 }
