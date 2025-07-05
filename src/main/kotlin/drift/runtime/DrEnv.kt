@@ -27,14 +27,14 @@ class DrEnv(
 
     fun assign(name: String, value: DrValue) {
         val variable: DrVariable = resolve(name) as? DrVariable
-            ?: throw DriftRuntimeException("Variable '$name' does no longer be assigned")
+            ?: throw DriftRuntimeException("Variable '$name' does not exist")
 
         variable.set(value)
     }
 
     fun assignClass(name: String, klass: DrClass) {
         if (!classes.containsKey(name))
-            throw DriftRuntimeException("Class '$name' does no longer be assigned")
+            throw DriftRuntimeException("Class '$name' does not exist")
 
         classes[name] = klass
     }
