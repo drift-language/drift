@@ -1,5 +1,6 @@
 package drift.parser
 
+import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrEnv
 import drift.runtime.DrInt
 import drift.runtime.DrNull
@@ -7,6 +8,7 @@ import drift.runtime.DrVoid
 import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class FunctionTest {
@@ -68,5 +70,15 @@ class FunctionTest {
         """.trimIndent())
 
         assertEquals(DrInt(1), result)
+    }
+
+    @Test
+    fun `Function with explicit return type without return statement must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                fun test : Int { }
+                test()
+            """.trimIndent())
+        }
     }
 }
