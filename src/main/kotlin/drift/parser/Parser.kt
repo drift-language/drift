@@ -5,6 +5,7 @@ import drift.ast.Function
 import drift.ast.Set
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
 
 class Parser(private val tokens: List<Token>) {
@@ -564,7 +565,7 @@ class Parser(private val tokens: List<Token>) {
             val next = parseType()
 
             if (next is LastType)
-                throw DriftRuntimeException("Cannot unite Last type")
+                throw DriftTypeException("Cannot unite Last type")
 
             unionTypes.add(next)
         }
