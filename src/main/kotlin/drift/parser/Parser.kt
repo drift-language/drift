@@ -234,8 +234,8 @@ class Parser(private val tokens: List<Token>) {
                         else -> throw DriftParserException("Invalid assignment target")
                     }
                 } else if (op == "?") {
-                    left = parseDriftIf(left)
-                    
+                    left = parseDriftIfOrTernary(left)
+
                     continue
                 }
 
@@ -376,18 +376,37 @@ class Parser(private val tokens: List<Token>) {
         return If(condition, thenBlock, elseBlock)
     }
 
-    private fun parseDriftIf(condition: DrExpr) : Conditional {
-        advance()
+    private fun parseDriftIfOrTernary(condition: DrExpr) : DrExpr {
+        val thenBlock: Any = parseDriftIfOrTernaryBranch()
+        var elseBlock: Any? = null
 
-        val thenBlock = parseStatementOrBlock()
-        var elseBlock: DrStmt? = null
-
-        if (current() is Token.Symbol && (current() as Token.Symbol).value == ":") {
-            advance()
-            elseBlock = parseStatementOrBlock()
+        if (matchSymbol(":")) {
+            elseBlock = parseDriftIfOrTernaryBranch()
         }
 
-        return Conditional(condition, thenBlock, elseBlock)
+        return when {
+            thenBlock is DrStmt && (elseBlock == null || elseBlock is DrStmt) ->
+                Conditional(condition, thenBlock, elseBlock as? DrStmt)
+            thenBlock is ExprStmt && (elseBlock == null || elseBlock is ExprStmt) ->
+                Ternary(
+                    condition,
+                    (thenBlock).expr,
+                    (elseBlock as? ExprStmt)?.expr)
+            thenBlock is ExprStmt && elseBlock == null ->
+                Ternary(condition, thenBlock.expr, null)
+            else -> throw DriftParserException("Invalid Drift IF/ELSE branches")
+        }
+    }
+
+    private fun parseDriftIfOrTernaryBranch(): Any {
+        return when (current()) {
+            is Token.Symbol -> if (checkSymbol("{")) {
+                parseBlock()
+            } else {
+                ExprStmt(parseExpression())
+            }
+            else -> ExprStmt(parseExpression())
+        }
     }
 
     private fun parseFunction() : Function {

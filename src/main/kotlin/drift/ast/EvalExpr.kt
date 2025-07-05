@@ -170,6 +170,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         }
         is Conditional -> {
             val conditionValue = condition.eval(env)
+        is Ternary -> {
+            val conditionValue = condition.eval(env)
 
             if (conditionValue !is DrBool) throw DriftRuntimeException("Condition must be boolean")
 
