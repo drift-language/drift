@@ -253,7 +253,9 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
 
         if (result is DrReturn) {
             if (!isAssignable(result.type(), returnType)) {
-                throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
+                throw DriftTypeException(
+                    "Invalid return type: expected ${returnType.asString()}, " +
+                    "got ${result.type().asString()}")
             }
 
             return result.value
