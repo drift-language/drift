@@ -334,7 +334,6 @@ class Parser(private val tokens: List<Token>) {
             statements.add(statement)
 
             val next = current()
-            println("NEXT CHECK = $next")
 
             when (next) {
                 is Token.NewLine -> advance()
