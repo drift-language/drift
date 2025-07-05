@@ -9,12 +9,15 @@ import drift.runtime.*
 
 fun evalProgram(source: String) : DrValue {
     val tokens = lex(source)
-    val statements = Parser(tokens).parse()
+    val ast = Parser(tokens).parse()
     val env = DrEnv()
+
+    SymbolCollector(env).collect(ast)
+    TypeChecker(env).check(ast)
 
     var result: DrValue = DrNull
 
-    for (statement in statements) {
+    for (statement in ast) {
         result = statement.eval(env)
     }
 
