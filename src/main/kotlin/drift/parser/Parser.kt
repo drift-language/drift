@@ -515,7 +515,7 @@ class Parser(private val tokens: List<Token>) {
         }
 
         if (matchSymbol("{")) {
-            while (!checkSymbol("}")) {
+            while (!matchSymbol("}")) {
                 val c = current()
 
                 if (c !is Token.Identifier || !c.isKeyword(Token.Keyword.FUNCTION)) {
