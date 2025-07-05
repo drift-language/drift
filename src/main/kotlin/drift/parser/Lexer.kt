@@ -53,7 +53,7 @@ fun lex(input: String): List<Token> {
     while (i < input.length) {
         val c = input[i]
 
-        if (c == '\r' && input[i + 1] == '\n') {
+        if (c == '\r' && i + 1 < input.length && input[i + 1] == '\n') {
             tokens.add(Token.NewLine)
             i += 2
             continue
