@@ -53,7 +53,7 @@ data class DrFunction(
                 return result.value
         }
 
-        return DrNull
+        throw DriftRuntimeException("Missing return statement")
     }
 }
 
@@ -87,7 +87,7 @@ data class DrMethod(
                 return result.value
         }
 
-        return DrNull
+        throw DriftRuntimeException("Missing return statement")
     }
 }
 
