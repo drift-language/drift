@@ -28,7 +28,10 @@ class AssignTest {
             )
         }
 
-        for (statement in statements) {
+        SymbolCollector(env).collect(ast)
+        TypeChecker(env).check(ast)
+
+        for (statement in ast) {
             statement.eval(env)
         }
 

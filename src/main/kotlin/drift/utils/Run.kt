@@ -1,6 +1,8 @@
 package drift.utils
 
 import drift.ast.eval
+import drift.check.SymbolCollector
+import drift.check.TypeChecker
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
@@ -23,7 +25,7 @@ fun evalWithOutputs(source: String) : MutableList<String> {
     val output = mutableListOf<String>()
 
     val tokens = lex(source)
-    val statements = Parser(tokens).parse()
+    val ast = Parser(tokens).parse()
     val env = DrEnv().apply {
         define("test", DrNativeFunction(
             impl = { args ->
@@ -34,7 +36,10 @@ fun evalWithOutputs(source: String) : MutableList<String> {
             returnType = NullType))
     }
 
-    for (statement in statements) {
+    SymbolCollector(env).collect(ast)
+    TypeChecker(env).check(ast)
+
+    for (statement in ast) {
         statement.eval(env)
     }
 

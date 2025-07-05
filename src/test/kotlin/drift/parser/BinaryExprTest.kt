@@ -1,6 +1,8 @@
 package drift.parser
 
 import drift.ast.eval
+import drift.check.SymbolCollector
+import drift.check.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import drift.utils.evalProgram
@@ -11,14 +13,15 @@ import kotlin.test.assertEquals
 class BinaryExprTest {
 
     private fun evalExpr(input: String) : DrValue {
-        val tokens = lex(input)
-        val parser = Parser(tokens)
-        val expression = parser.parse()
         val env = DrEnv()
+        val ast = Parser(lex(input)).parse()
+
+        SymbolCollector(env).collect(ast)
+        TypeChecker(env).check(ast)
 
         var result: DrValue = DrNull
 
-        expression.forEach {
+        ast.forEach {
             result = it.eval(env)
         }
 
