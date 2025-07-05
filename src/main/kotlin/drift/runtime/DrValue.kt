@@ -200,3 +200,7 @@ data object DrNotAssigned : DrValue {
     override fun type(): DrType = UnknownType
 }
 
+data class DrReturn(val value: DrValue) : DrValue {
+    override fun asString(): String = value.asString()
+    override fun type(): DrType = value.type()
+}
