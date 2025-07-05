@@ -1,5 +1,6 @@
 package drift.ast
 
+import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 
 fun DrStmt.eval(env: DrEnv): DrValue {
@@ -27,9 +28,15 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             result
         }
         is Function -> {
-            val function = DrFunction(this, env.copy())
-            env.define(name, function)
-            function
+            val f = DrFunction(this, env.copy())
+
+            if (env.isTopLevel()) {
+                env.forceDefine(name, f)
+            } else {
+                env.define(name, f)
+            }
+
+            f
         }
         is Return -> {
             val value = value.eval(env)
@@ -39,13 +46,26 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             val klass = DrClass(name, fields, methods.map {
                 DrMethod(it, env, null)
             })
-            env.define(name, klass)
+
+            if (env.isTopLevel()) {
+                env.assignClass(name, klass)
+            } else {
+                env.defineClass(name, klass)
+            }
+
             DrVoid
         }
         is Let -> {
             val v = value.eval(env)
 
-            env.define(name, DrVariable(name, type, v, isMutable))
+            if (env.isTopLevel()) {
+                val variable = env.resolve(name) as? DrVariable
+                    ?: throw DriftRuntimeException("Variable $name not found in global scope")
+
+                variable.set(v)
+            } else {
+                env.define(name, DrVariable(name, type, v, isMutable))
+            }
 
             v
         }

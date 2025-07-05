@@ -7,6 +7,7 @@ private val multiCharsSymbols = setOf(
     "==", "!=",
     "<=", ">=",
     "&&", "||",
+    "->",
 )
 
 private val singleCharSymbols = setOf(
@@ -24,7 +25,7 @@ private val singleCharSymbols = setOf(
 
 sealed class Token {
     data class Identifier(val value: String) : Token() {
-        fun isKeyword(expected: Token.Keyword): Boolean =
+        fun isKeyword(expected: Keyword): Boolean =
             this.value == expected.value
     }
     data class StringLiteral(val value: String) : Token()

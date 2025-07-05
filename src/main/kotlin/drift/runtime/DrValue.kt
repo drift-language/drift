@@ -118,23 +118,23 @@ data class DrVariable(val name: String, val type: DrType, var value: DrValue, va
     override fun type() = value.type()
 
     fun set(newValue: DrValue) {
-        if (!isMutable)
-            throw DriftRuntimeException("Cannot assign to immutable variable $name")
+        if (!isAssignable(newValue.type(), type))
+            throw DriftRuntimeException("Cannot assign ${newValue.type()} to a $type variable")
 
-        if (type != AnyType && newValue.type() != type)
-            throw DriftRuntimeException("Cannot assign ${value.type()} to a $type variable")
+        if (value != DrNotAssigned && !isMutable)
+            throw DriftRuntimeException("Cannot assign to immutable variable $name")
 
         value = newValue
     }
 }
 
-object DrVoid : DrValue {
+data object DrVoid : DrValue {
     override fun asString() = "void"
 
     override fun type() = VoidType
 }
 
-object DrNull : DrValue {
+data object DrNull : DrValue {
     override fun asString() = "null"
 
     override fun type(): DrType = NullType
@@ -159,8 +159,6 @@ data class DrInstance(
         } catch (e: DriftRuntimeException) {
             default
         }
-
-        return default
     }
 
     fun get(name: String) : DrValue {
@@ -196,3 +194,9 @@ data class DrInstance(
             .call(args, DrEnv())
     }
 }
+
+data object DrNotAssigned : DrValue {
+    override fun asString(): String = UnknownType.asString()
+    override fun type(): DrType = UnknownType
+}
+

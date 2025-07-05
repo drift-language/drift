@@ -5,7 +5,6 @@ import drift.ast.Function
 import drift.ast.Set
 import drift.exceptions.DriftParserException
 import drift.runtime.*
-import kotlin.system.exitProcess
 
 class Parser(private val tokens: List<Token>) {
     private var i = 0
@@ -117,9 +116,11 @@ class Parser(private val tokens: List<Token>) {
             AnyType
         }
 
-        expectSymbol("=")
-
-        val expr = parseExpression()
+        val expr = if (matchSymbol("=")) {
+            parseExpression()
+        } else {
+            Literal(DrNotAssigned)
+        }
 
         return Let(name, type, expr, isMutable)
     }
@@ -333,6 +334,7 @@ class Parser(private val tokens: List<Token>) {
             statements.add(statement)
 
             val next = current()
+            println("NEXT CHECK = $next")
 
             when (next) {
                 is Token.NewLine -> advance()
@@ -481,6 +483,8 @@ class Parser(private val tokens: List<Token>) {
             returnType = parseType()
         }
 
+        expectSymbol("->")
+
         val body = parseBlock().statements
 
         return Lambda(parameters, body, returnType)
@@ -541,7 +545,7 @@ class Parser(private val tokens: List<Token>) {
             "Void"      -> VoidType
             "Any"       -> AnyType
             "Last"      -> LastType
-            else        -> throw DriftParserException("Unknown type ${token.value}")
+            else        -> ClassType(token.value)
         }
 
         advance()
@@ -614,9 +618,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun isLambda() : Boolean {
-        val c: Token? = tokens.getOrNull(i)
-
-        if (c !is Token.Symbol || c.value != "(")
+        if (!checkSymbol("("))
             return false
 
         var j = i + 1
@@ -660,6 +662,9 @@ class Parser(private val tokens: List<Token>) {
             }
         }
 
-        return tokens.getOrNull(j) is Token.Symbol && (tokens[j] as Token.Symbol).value == "{"
+        val hasArrow = (tokens[j] as? Token.Symbol)?.value == "->"
+        val hasBrace = (tokens[j+1] as? Token.Symbol)?.value == "{"
+
+        return tokens.getOrNull(j) is Token.Symbol && hasArrow && hasBrace
     }
 }

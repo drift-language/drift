@@ -7,7 +7,9 @@ import drift.runtime.*
 fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
         is Literal -> value
-        is Variable -> env.get(name)
+        is Variable -> env.resolve(name)
+            ?: env.resolveClass(name)
+            ?: throw DriftRuntimeException("Undefined symbol: $name")
         is Call -> {
             val callee = callee.eval(env)
             val arguments = args.map { it.name to it.expr.eval(env) }
@@ -174,6 +176,15 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         }
         is Conditional -> {
             val conditionValue = condition.eval(env)
+
+            if (conditionValue !is DrBool) throw DriftRuntimeException("Condition must be boolean")
+
+            return if (conditionValue.value) {
+                thenBranch.eval(env)
+            } else {
+                elseBranch?.eval(env) ?: DrNull
+            }
+        }
         is Ternary -> {
             val conditionValue = condition.eval(env)
 

@@ -1,31 +1,32 @@
 package drift.runtime
 
-import kotlin.math.exp
-
 sealed interface DrType {
     fun asString() : String
 }
 
-object IntType : DrType {
+data object IntType : DrType {
     override fun asString(): String = "Int"
 }
-object StringType : DrType {
+data object StringType : DrType {
     override fun asString(): String = "String"
 }
-object BoolType : DrType {
+data object BoolType : DrType {
     override fun asString(): String = "Bool"
 }
-object NullType : DrType {
+data object NullType : DrType {
     override fun asString(): String = "Null"
 }
-object VoidType : DrType {
+data object VoidType : DrType {
     override fun asString(): String = "Void"
 }
-object AnyType : DrType {
+data object AnyType : DrType {
     override fun asString(): String = "Any"
 }
-object LastType : DrType {
+data object LastType : DrType {
     override fun asString(): String = "Last"
+}
+data object UnknownType : DrType {
+    override fun asString(): String = "Unknown"
 }
 
 data class OptionalType(val inner: DrType) : DrType {
@@ -44,13 +45,18 @@ data class ObjectType(val className: String) : DrType {
     override fun asString() = className
 }
 
+data class ClassType(val name: String) : DrType {
+    override fun asString(): String = name
+}
+
 
 fun isAssignable(valueType: DrType, expected: DrType): Boolean {
-    if (expected == AnyType || valueType == expected) return true
+    if (expected == AnyType || valueType == UnknownType || valueType == expected) return true
 
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)
         is UnionType -> expected.options.any { isAssignable(valueType, it) }
+        is ClassType -> valueType is ObjectType && expected.name == valueType.className
         else -> false
     }
 }
