@@ -91,6 +91,14 @@ class DriftRuntimeException(
     pos: Int = 0)
     : DriftException(message, token, sourceName, line, pos)
 
+class DriftSemanticException(
+    message: String,
+    token: Token? = null,
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0)
+    : DriftException(message, token, sourceName, line, pos)
+
 
 /**
  * Drift exception to not use outside engine.
