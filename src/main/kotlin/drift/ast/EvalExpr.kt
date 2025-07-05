@@ -175,22 +175,14 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             }
         }
         is Conditional -> {
-            val conditionValue = condition.eval(env)
-
-            if (conditionValue !is DrBool) throw DriftRuntimeException("Condition must be boolean")
-
-            return if (conditionValue.value) {
+            return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
             } else {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
         is Ternary -> {
-            val conditionValue = condition.eval(env)
-
-            if (conditionValue !is DrBool) throw DriftRuntimeException("Condition must be boolean")
-
-            return if (conditionValue.value) {
+            return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
             } else {
                 elseBranch?.eval(env) ?: DrNull
@@ -252,6 +244,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
     }
 }
 
+
 private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
     var last: DrValue = DrNull
 
@@ -275,4 +268,15 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
         LastType -> last
         else     -> throw DriftRuntimeException("Missing return statement")
     }
+}
+
+
+private fun evalCondition(condition: DrExpr, env: DrEnv) : Boolean {
+    val conditionValue = condition.eval(env)
+
+    if (conditionValue !is DrBool) {
+        throw DriftRuntimeException("Condition must be boolean")
+    }
+
+    return conditionValue.value
 }
