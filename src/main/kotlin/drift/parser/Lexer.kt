@@ -19,8 +19,7 @@ private val singleCharSymbols = setOf(
     '?', ',',
     '<', '>',
     '|', '&',
-    '?', '!',
-    '.',
+    '!', '.',
 )
 
 sealed class Token {
