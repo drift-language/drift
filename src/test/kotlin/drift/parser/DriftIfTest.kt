@@ -7,6 +7,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 class DriftIfTest {
 
     private fun parse(code: String): List<DrStmt> {
+        println(lex(code))
         return Parser(lex(code)).parse()
     }
 
@@ -14,12 +15,12 @@ class DriftIfTest {
     fun `Chained drift-styled IF-ELSE with braces`() {
         assertDoesNotThrow {
             parse("""
-                x == 1 ? {
+                x == 0 ? {
                     return 1
                 } : x > 2 ? {
-                    return 2
-                } : {
                     return 3
+                } : {
+                    return 4
                 }
             """.trimIndent())
         }

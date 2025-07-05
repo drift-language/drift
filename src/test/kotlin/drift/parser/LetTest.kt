@@ -2,17 +2,20 @@ package drift.parser
 
 import drift.ast.DrStmt
 import drift.ast.eval
+import drift.check.SymbolCollector
+import drift.check.TypeChecker
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class LetTest {
 
     private fun parse(code: String): List<DrValue> {
-        val statements: List<DrStmt> = Parser(lex(code)).parse()
+        val ast: List<DrStmt> = Parser(lex(code)).parse()
         val outputs = mutableListOf<DrValue>()
         val env = DrEnv().apply {
             define(
@@ -81,16 +84,13 @@ class LetTest {
 
     @Test
     fun `Declare immutable variable with wrong type`() {
-        val output = parse("""
-            let a : String = 1
-            
-            print(a)
-        """.trimIndent())
-
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                let a : String = 1
+                
+                print(a)
+            """.trimIndent())
+        }
     }
 
     @Test
@@ -137,16 +137,13 @@ class LetTest {
 
     @Test
     fun `Declare mutable variable with wrong type`() {
-        val output = parse("""
-            var a : String = 1
-            
-            print(a)
-        """.trimIndent())
-
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                var a : String = 1
+                
+                print(a)
+            """.trimIndent())
+        }
     }
 
     @Test
@@ -219,6 +216,16 @@ class LetTest {
         assertThrows<DriftParserException> {
             parse("""
                 var 55 = 0
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Declare using union int & class types`() {
+        assertDoesNotThrow {
+            parse("""
+                class User(name: String)
+                let u: User|Int = User("Bob")
             """.trimIndent())
         }
     }

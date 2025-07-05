@@ -40,7 +40,7 @@ class LambdaTest {
     @Test
     fun `Lambda without parameter`() {
         val l = lambda("""
-            print(() { return 42 } ())
+            print(() -> { return 42 } ())
         """.trimIndent())
 
         assertEquals(listOf("42"), l)
@@ -49,7 +49,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one implicitly typed parameter`() {
         val l = lambda("""
-            print((x) { return x } (1))
+            print((x) -> { return x } (1))
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -58,7 +58,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one explicitly typed parameter`() {
         val l = lambda("""
-            print((x: Int) { return x } (1))
+            print((x: Int) -> { return x } (1))
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -67,7 +67,7 @@ class LambdaTest {
     @Test
     fun `Lambda with two implicitly typed parameters`() {
         val l = lambda("""
-            print((x, y) { return x + y } (1, 2))
+            print((x, y) -> { return x + y } (1, 2))
         """.trimIndent())
 
         assertEquals(listOf("3"), l)
@@ -76,7 +76,7 @@ class LambdaTest {
     @Test
     fun `Lambda with two explicitly typed parameters`() {
         val l = lambda("""
-            print((x: Int, y: Int) { return x + y } (1, 2))
+            print((x: Int, y: Int) -> { return x + y } (1, 2))
         """.trimIndent())
 
         assertEquals(listOf("3"), l)
@@ -85,7 +85,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one explicitly typed parameter and union return type`() {
         val l = lambda("""
-            print((x: Int): Int|String { return x } (1))
+            print((x: Int): Int|String -> { return x } (1))
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -94,7 +94,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one explicitly union typed parameter and return type`() {
         val l = lambda("""
-            print((x: Int|String): Int { return x } (1))
+            print((x: Int|String): Int -> { return x } (1))
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -103,7 +103,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one explicitly optional typed parameter and return type`() {
         val l = lambda("""
-            print((x: Int?): Int { return x } (1))
+            print((x: Int?): Int -> { return x } (1))
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -112,7 +112,7 @@ class LambdaTest {
     @Test
     fun `Lambda with one explicitly typed parameter and optional return type`() {
         val l = lambda("""
-            print((x: Int): Int? { return null } (1))
+            print((x: Int): Int? -> { return null } (1))
         """.trimIndent())
 
         assertEquals(listOf("null"), l)
@@ -121,7 +121,7 @@ class LambdaTest {
     @Test
     fun `Lambda with Last special return type`() {
         val l = lambda("""
-            print((): Last { 1 } ())
+            print((): Last -> { 1 } ())
         """.trimIndent())
 
         assertEquals(listOf("1"), l)
@@ -131,7 +131,7 @@ class LambdaTest {
     fun `Lambda with same parameter defined two times must throw exception`() {
         assertThrows<DriftParserException> {
             lambda("""
-                print((x, x) { return x } ())
+                print((x, x) -> { return x } ())
             """.trimIndent())
         }
     }
