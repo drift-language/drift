@@ -90,6 +90,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             val leftValue = unwrap(left.eval(env))
             val rightValue = unwrap(right.eval(env))
 
+            fun unsupportedOperator(op: String, leftType: DrType, rightType: DrType) : String =
+                "Unsupported operator '$op' for types ${leftType.asString()} and ${rightType.asString()}"
+
             return when (operator) {
                 "+" -> {
                     when {
@@ -97,16 +100,16 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt(leftValue.value + rightValue.value)
                         leftValue is DrString && rightValue is DrString ->
                             DrString(leftValue.value + rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '+' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "+", leftValue.type(), rightValue.type()))
                     }
                 }
                 "-" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrInt(leftValue.value - rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '-' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "-", leftValue.type(), rightValue.type()))
                     }
                 }
                 "*" -> {
@@ -115,8 +118,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt(leftValue.value * rightValue.value)
                         leftValue is DrString && rightValue is DrInt ->
                             DrString(leftValue.value.repeat(rightValue.value))
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '*' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "*", leftValue.type(), rightValue.type()))
                     }
                 }
                 "/" -> {
@@ -128,7 +131,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                             DrInt(leftValue.value / rightValue.value)
                         }
-                        else -> throw DriftRuntimeException("Unsupported '/' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "/", leftValue.type(), rightValue.type()))
                     }
                 }
                 "==" -> DrBool(leftValue == rightValue)
@@ -137,32 +141,32 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value > rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '>' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            ">", leftValue.type(), rightValue.type()))
                     }
                 }
                 "<" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value < rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '<' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "<", leftValue.type(), rightValue.type()))
                     }
                 }
                 ">=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value >= rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '>=' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            ">=", leftValue.type(), rightValue.type()))
                     }
                 }
                 "<=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value <= rightValue.value)
-                        else -> throw DriftRuntimeException(
-                            "Unsupported '<=' for types ${leftValue::class} and ${rightValue::class}")
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "<=", leftValue.type(), rightValue.type()))
                     }
                 }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
