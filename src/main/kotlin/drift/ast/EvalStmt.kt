@@ -7,11 +7,14 @@ fun DrStmt.eval(env: DrEnv): DrValue {
     return when (this) {
         is ExprStmt -> expr.eval(env)
         is Block -> {
-            val subEnv = DrEnv(parent = env)
+            val subEnv = DrEnv(env)
             var last: DrValue = DrNull
 
             for (statement in statements) {
                 last = statement.eval(subEnv)
+
+                if (last is DrReturn)
+                    return last
             }
 
             last
@@ -40,7 +43,8 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         }
         is Return -> {
             val value = value.eval(env)
-            throw ReturnException(value)
+
+            DrReturn(value)
         }
         is Class -> {
             val klass = DrClass(name, fields, methods.map {

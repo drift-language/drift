@@ -253,37 +253,26 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 }
 
 private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
-    try {
-        var last: DrValue = DrNull
-        var hasReturnStatement = false
+    var last: DrValue = DrNull
 
-        for (stmt in statements) {
-            last = stmt.eval(env)
+    for (stmt in statements) {
+        val result = stmt.eval(env)
 
-            if (stmt is Return) {
-                hasReturnStatement = true
+        if (result is DrReturn) {
+            if (!isAssignable(result.type(), returnType)) {
+                throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
             }
+
+            return result.value
         }
 
-        if (!hasReturnStatement) {
-            return when (returnType) {
-                VoidType -> DrVoid
-                AnyType -> DrVoid
-                LastType -> last
-                else     -> throw DriftRuntimeException("Missing return statement")
-            }
-        }
+        last = result
+    }
 
-        if (!isAssignable(last.type(), returnType)) {
-            throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${last.type().asString()}")
-        }
-
-        return last
-    } catch (e: ReturnException) {
-        if (!isAssignable(e.value.type(), returnType)) {
-            throw DriftTypeException("Invalid return type: expected ${returnType.asString()}, got ${e.value.type().asString()}")
-        }
-
-        return e.value
+    return when (returnType) {
+        VoidType -> DrVoid
+        AnyType -> DrVoid
+        LastType -> last
+        else     -> throw DriftRuntimeException("Missing return statement")
     }
 }

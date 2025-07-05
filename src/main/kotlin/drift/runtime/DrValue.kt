@@ -45,12 +45,11 @@ data class DrFunction(
             local.define(param.name, arg)
         }
 
-        try {
-            for (statement in let.body) {
-                statement.eval(local)
-            }
-        } catch (e: ReturnException) {
-            return e.value
+        for (statement in let.body) {
+            val result = statement.eval(local)
+
+            if (result is DrReturn)
+                return result.value
         }
 
         return DrNull
@@ -72,7 +71,6 @@ data class DrMethod(
             throw DriftRuntimeException("No instance found for ${let.name}")
 
         val local = DrEnv(parent = env)
-        val output = mutableListOf<DrValue>()
 
         local.define("this", instance)
 
@@ -80,15 +78,14 @@ data class DrMethod(
             local.define(param.name, arg)
         }
 
-        try {
-            for (statement in let.body) {
-                output.add(statement.eval(local))
-            }
-        } catch (e: ReturnException) {
-            return e.value
+        for (statement in let.body) {
+            val result = statement.eval(local)
+
+            if (result is DrReturn)
+                return result.value
         }
 
-        return output.last()
+        return DrNull
     }
 }
 
