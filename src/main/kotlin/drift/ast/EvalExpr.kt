@@ -266,7 +266,7 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
 
     return when (returnType) {
         VoidType -> DrVoid
-        AnyType -> DrVoid
+        AnyType  -> DrVoid
         LastType -> last
         else     -> throw DriftRuntimeException("Missing return statement")
     }

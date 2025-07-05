@@ -35,7 +35,7 @@ fun main(args: Array<String>) {
     env.define("print", DrNativeFunction(
         impl = { args ->
             println(args.joinToString(" ") { it.second.asString() })
-            DrNull
+            DrVoid
         },
         paramTypes = listOf(AnyType),
         returnType = NullType
