@@ -632,9 +632,10 @@ class Parser(private val tokens: List<Token>) {
                     ")" -> {
                         depth--
 
-                        if (depth == 0)
+                        if (depth == 0) {
                             j++
                             break
+                        }
                     }
                 }
             }
