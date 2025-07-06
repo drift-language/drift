@@ -3,6 +3,7 @@ package drift.ast
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
+import drift.helper.unwrap
 import drift.runtime.*
 
 fun DrExpr.eval(env: DrEnv): DrValue {
@@ -12,7 +13,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             ?: env.resolveClass(name)
             ?: throw DriftRuntimeException("Undefined symbol: $name")
         is Call -> {
-            val callee = callee.eval(env)
+            val callee = unwrap(callee.eval(env))
             val arguments = args.map { it.name to it.expr.eval(env) }
 
             fun applyFunction(
@@ -44,24 +45,28 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             when (callee) {
                 is DrFunction -> {
-                    val newEnv = DrEnv(parent = callee.closure)
+                    val newEnv = DrEnv(parent = callee.closure.copy())
 
                     applyFunction(callee.let, newEnv, arguments)
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
                 is DrMethod -> {
-                    val newEnv = DrEnv(parent = callee.closure).apply {
+                    if (callee.nativeImpl != null) {
+                        return callee.nativeImpl.impl(callee.instance, arguments)
+                    }
+
+                    val newEnv = DrEnv(parent = callee.closure.copy()).apply {
                         if (callee.instance is DrInstance) {
                             define("this", callee.instance)
                         }
                     }
 
-                    applyFunction(callee.let, newEnv, arguments, callee.instance)
+                    applyFunction(callee.let, newEnv, arguments, callee.instance as? DrInstance)
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
-                is DrNativeFunction -> callee.impl(arguments)
+                is DrNativeFunction -> callee.impl(null, arguments)
                 is DrClass -> {
                     if (arguments.size != callee.fields.size) {
                         throw DriftRuntimeException("Wrong number of arguments for class '${callee.name}'")
@@ -82,6 +87,17 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     }
 
                     return DrInstance(callee, valueMap)
+                }
+                is DrLambda -> {
+                    val newEnv = DrEnv(callee.closure).apply {
+                        println("debug capture + ${callee.captures}")
+                        callee.captures.forEach { name, value ->
+                            forceDefine(name, value) }
+                    }
+
+                    applyFunction(callee.let, newEnv, arguments)
+
+                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
                 else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
             }
@@ -191,7 +207,12 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         }
         is Lambda -> {
             val f = Function("", this.parameters, this.body, this.returnType)
-            DrFunction(f, env.copy())
+            val capture = env.all()
+                .filterKeys { it != this.name }
+                .mapValues { (_, v) -> unwrap(v) }
+                .toMap()
+
+            DrLambda(f, env.copy(), capture)
         }
         is Unary -> {
             val value = expr.eval(env)
@@ -220,14 +241,25 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             v
         }
         is Get -> {
-            val obj = receiver.eval(env)
-            val instance = when (obj) {     // TODO: refactor with Set duplicate fragment
-                is DrInstance -> obj
-                is DrVariable -> obj.value as? DrInstance
-                else -> null
-            } ?: throw DriftRuntimeException("Only instances have properties")
+            val obj = unwrap(receiver.eval(env))
 
-            instance.get(name)
+            val klass = env.resolveClass(obj.type().asString())
+                ?: throw DriftRuntimeException("No class found for ${obj.type().asString()}")
+
+            if (obj is DrInstance) {
+                obj.values[name]?.let { return it }
+            }
+
+            klass.methods.find { it.let.name == name }?.let { method ->
+                return DrMethod(
+                    let = method.let,
+                    closure = env,
+                    instance = obj,
+                    nativeImpl = method.nativeImpl
+                )
+            }
+
+            throw DriftRuntimeException("Property or method '$name' not found on class ${klass.name}")
         }
         is Set -> {
             val obj = receiver.eval(env)
@@ -259,7 +291,7 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
                     "got ${result.type().asString()}")
             }
 
-            return result.value
+            return unwrap(result.value)
         }
 
         last = result
@@ -268,7 +300,7 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
     return when (returnType) {
         VoidType -> DrVoid
         AnyType  -> DrVoid
-        LastType -> last
+        LastType -> unwrap(last)
         else     -> throw DriftRuntimeException("Missing return statement")
     }
 }

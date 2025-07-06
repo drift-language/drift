@@ -43,6 +43,8 @@ class DrEnv(
         ?: parent?.get(name)
         ?: throw DriftRuntimeException("Undefined symbol: $name")
 
+    fun all() : Map<String, DrValue> = values
+
     fun getClasses() : Set<String> {
         val aggregated = parent?.getClasses()?.toMutableSet()
             ?: mutableSetOf()

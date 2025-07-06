@@ -24,7 +24,7 @@ class BlockTest {
         val env = DrEnv().apply {
             define(
                 "print", DrNativeFunction(
-                    impl = { args ->
+                    impl = { _, args ->
                         args.map { output.add(it.second.asString()) }
                         DrNull
                     },

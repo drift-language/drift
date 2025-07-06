@@ -1,8 +1,8 @@
 package drift.parser
 
 import drift.ast.eval
-import drift.check.SymbolCollector
-import drift.check.TypeChecker
+import drift.checkers.SymbolCollector
+import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import drift.utils.evalProgram

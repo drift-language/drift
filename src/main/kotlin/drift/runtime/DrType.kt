@@ -1,18 +1,11 @@
 package drift.runtime
 
+import kotlin.math.exp
+
 sealed interface DrType {
     fun asString() : String
 }
 
-data object IntType : DrType {
-    override fun asString(): String = "Int"
-}
-data object StringType : DrType {
-    override fun asString(): String = "String"
-}
-data object BoolType : DrType {
-    override fun asString(): String = "Bool"
-}
 data object NullType : DrType {
     override fun asString(): String = "Null"
 }
@@ -51,7 +44,11 @@ data class ClassType(val name: String) : DrType {
 
 
 fun isAssignable(valueType: DrType, expected: DrType): Boolean {
-    if (expected == AnyType || valueType == UnknownType || valueType == expected) return true
+    if (valueType == UnknownType || expected == AnyType)
+        return true
+
+    if (expected is ObjectType && valueType is ObjectType)
+        return expected.className == valueType.className
 
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)

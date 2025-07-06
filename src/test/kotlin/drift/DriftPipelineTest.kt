@@ -1,14 +1,12 @@
 package drift
 
 import drift.ast.eval
-import drift.check.SymbolCollector
-import drift.check.TypeChecker
-import drift.exceptions.DriftRuntimeException
+import drift.checkers.SymbolCollector
+import drift.checkers.TypeChecker
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.DrEnv
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertNotNull
 
 class DriftPipelineTest {

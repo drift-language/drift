@@ -1,6 +1,7 @@
 package drift.ast
 
 import drift.exceptions.DriftRuntimeException
+import drift.helper.unwrap
 import drift.runtime.*
 
 fun DrStmt.eval(env: DrEnv): DrValue {
@@ -48,7 +49,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         }
         is Class -> {
             val klass = DrClass(name, fields, methods.map {
-                DrMethod(it, env, null)
+                DrMethod(it, env)
             })
 
             if (env.isTopLevel()) {

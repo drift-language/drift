@@ -6,6 +6,7 @@ import drift.runtime.DrInt
 import drift.runtime.DrNull
 import drift.runtime.DrVoid
 import drift.utils.evalProgram
+import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -80,5 +81,18 @@ class FunctionTest {
                 test()
             """.trimIndent())
         }
+    }
+
+    @Test
+    fun `Lambda must use environment values dynamically`() {
+        val l = evalWithOutputs("""
+            var a = 1
+            fun b : Last {a}
+            test(b())
+            a = 2
+            test(b())
+        """.trimIndent())
+
+        assertEquals(listOf("1", "2"), l)
     }
 }

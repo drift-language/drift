@@ -14,19 +14,19 @@ sealed interface DrValue {
 data class DrString(val value: String) : DrValue {
     override fun asString() = value
 
-    override fun type() = StringType
+    override fun type() = ObjectType("String")
 }
 
 data class DrInt(val value: Int) : DrValue {
     override fun asString() = value.toString()
 
-    override fun type() = IntType
+    override fun type() = ObjectType("Int")
 }
 
 data class DrBool(val value: Boolean) : DrValue {
     override fun asString() = value.toString()
 
-    override fun type() = BoolType
+    override fun type() = ObjectType("Bool")
 }
 
 data class DrFunction(
@@ -40,7 +40,7 @@ data class DrFunction(
         let.returnType)
 
     fun call(args: List<DrValue>, env: DrEnv) : DrValue {
-        val local = DrEnv(parent = env)
+        val local = DrEnv(parent = env.copy())
 
         for ((param, arg) in let.parameters.zip(args)) {
             local.define(param.name, arg)
@@ -57,10 +57,23 @@ data class DrFunction(
     }
 }
 
+data class DrLambda(
+    val let: Function,
+    val closure: DrEnv,
+    val captures: Map<String, DrValue>) : DrValue {
+
+    override fun asString(): String =
+        "<[function@${hashCode()}] ${type().asString()}>"
+    override fun type(): DrType = FunctionType(
+        let.parameters.map { it.type },
+        let.returnType)
+}
+
 data class DrMethod(
     val let: Function,
     val closure: DrEnv,
-    val instance: DrInstance? = null) : DrValue {
+    val instance: DrValue? = null,
+    val nativeImpl: DrNativeFunction? = null) : DrValue {
 
     override fun asString(): String =
         "<[function@${hashCode()}] ${type().asString()}>"
@@ -69,10 +82,13 @@ data class DrMethod(
         let.returnType)
 
     fun call(args: List<DrValue>, env: DrEnv) : DrValue {
-        if (instance == null)
-            throw DriftRuntimeException("No instance found for ${let.name}")
+        if (nativeImpl != null)
+            return nativeImpl.impl(instance, args.map { null to it })
 
-        val local = DrEnv(parent = env)
+        val local = DrEnv(parent = env.copy())
+
+        if (instance == null)
+            throw DriftRuntimeException("Class instance lost")
 
         local.define("this", instance)
 
@@ -92,7 +108,8 @@ data class DrMethod(
 }
 
 data class DrNativeFunction(
-    val impl: (List<Pair<String?, DrValue>>) -> DrValue,
+    val name: String? = null,
+    val impl: (receiver: DrValue?, args: List<Pair<String?, DrValue>>) -> DrValue,
     val paramTypes: List<DrType>,
     val returnType: DrType = AnyType) : DrValue {
 

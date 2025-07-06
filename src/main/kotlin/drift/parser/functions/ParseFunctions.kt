@@ -88,5 +88,5 @@ internal fun Parser.parseLambda() : DrExpr {
 
     val body = parseBlock().statements
 
-    return Lambda(parameters, body, returnType)
+    return Lambda(null, parameters, body, returnType)
 }

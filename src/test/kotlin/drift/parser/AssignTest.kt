@@ -2,8 +2,8 @@ package drift.parser
 
 import drift.ast.DrStmt
 import drift.ast.eval
-import drift.check.SymbolCollector
-import drift.check.TypeChecker
+import drift.checkers.SymbolCollector
+import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import org.junit.jupiter.api.Test
@@ -19,7 +19,7 @@ class AssignTest {
         val env = DrEnv().apply {
             define(
                 "print", DrNativeFunction(
-                    impl = { args ->
+                    impl = { _, args ->
                         outputs.add(args[0].second)
                         DrNull
                     },

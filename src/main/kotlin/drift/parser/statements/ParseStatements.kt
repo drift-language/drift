@@ -58,10 +58,14 @@ internal fun Parser.parseLet(isMutable: Boolean) : DrStmt {
         AnyType
     }
 
-    val expr = if (matchSymbol("=")) {
+    var expr = if (matchSymbol("=")) {
         parseExpression()
     } else {
         Literal(DrNotAssigned)
+    }
+
+    if (expr is Lambda) {
+        expr = expr.copy(name)
     }
 
     return Let(name, type, expr, isMutable)

@@ -9,9 +9,9 @@ import drift.runtime.*
 internal fun Parser.parseType() : DrType {
     val token = expect<Token.Identifier>("Expected type name")
     val type: DrType = when (token.value) {
-        "Int"       -> IntType
-        "String"    -> StringType
-        "Bool"      -> BoolType
+        "Int"       -> ObjectType("Int")
+        "String"    -> ObjectType("String")
+        "Bool"      -> ObjectType("Bool")
         "Null"      -> NullType
         "Void"      -> VoidType
         "Any"       -> AnyType
