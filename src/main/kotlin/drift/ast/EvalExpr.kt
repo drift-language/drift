@@ -2,6 +2,7 @@ package drift.ast
 
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
+import drift.helper.evalCondition
 import drift.runtime.*
 
 fun DrExpr.eval(env: DrEnv): DrValue {
@@ -270,15 +271,4 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
         LastType -> last
         else     -> throw DriftRuntimeException("Missing return statement")
     }
-}
-
-
-private fun evalCondition(condition: DrExpr, env: DrEnv) : Boolean {
-    val conditionValue = condition.eval(env)
-
-    if (conditionValue !is DrBool) {
-        throw DriftRuntimeException("Condition must be boolean")
-    }
-
-    return conditionValue.value
 }

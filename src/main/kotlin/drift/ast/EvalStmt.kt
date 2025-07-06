@@ -22,7 +22,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is If -> {
             var result: DrValue = DrNull
 
-            if (condition.eval(env) == DrBool(true)) {
+            if (drift.helper.evalCondition(condition, env)) {
                 result = thenBranch.eval(env)
             } else if (elseBranch != null) {
                 result = elseBranch.eval(env)
