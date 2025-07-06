@@ -11,7 +11,7 @@ data class Call(val callee: DrExpr, val args: List<Argument>) : DrExpr
 data class Binary(val left: DrExpr, val operator: String, val right: DrExpr) : DrExpr
 data class Conditional(val condition: DrExpr, val thenBranch: DrStmt, val elseBranch: DrStmt?) : DrExpr
 data class Ternary(val condition: DrExpr, val thenBranch: DrExpr, val elseBranch: DrExpr?) : DrExpr
-data class Lambda(val parameters: List<FunctionParameter>, val body: List<DrStmt>, val returnType: DrType) : DrExpr
+data class Lambda(val name: String? = null, val parameters: List<FunctionParameter>, val body: List<DrStmt>, val returnType: DrType) : DrExpr
 data class Unary(val operator: String, val expr: DrExpr) : DrExpr
 data class Assign(val name: String, val value: DrExpr) : DrExpr
 data class Get(val receiver: DrExpr, val name: String) : DrExpr
