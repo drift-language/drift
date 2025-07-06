@@ -141,11 +141,9 @@ class Parser(private val tokens: List<Token>) {
             j++
         }
 
-        // Si on a un type de retour
         if (tokens.getOrNull(j)?.let { it is Token.Symbol && it.value == ":" } == true) {
-            j++ // Skip ':'
+            j++
 
-            // Accepter des types comme Int | String? ou Int?
             while (j < tokens.size) {
                 val t = tokens[j]
 
