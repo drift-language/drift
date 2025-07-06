@@ -1,4 +1,4 @@
-package drift.check
+package drift.checkers
 
 import drift.ast.*
 import drift.exceptions.DriftSemanticException
