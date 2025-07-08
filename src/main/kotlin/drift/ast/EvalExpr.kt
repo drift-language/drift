@@ -4,17 +4,22 @@ import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
 import drift.helper.unwrap
+import drift.helper.validateValue
 import drift.runtime.*
 
 fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
         is Literal -> value
-        is Variable -> env.resolve(name)
-            ?: env.resolveClass(name)
-            ?: throw DriftRuntimeException("Undefined symbol: $name")
+        is Variable -> {
+            val value = env.resolve(name)
+                ?: env.resolveClass(name)
+                ?: throw DriftRuntimeException("Undefined symbol: $name")
+
+            validateValue(unwrap(value))
+        }
         is Call -> {
             val callee = unwrap(callee.eval(env))
-            val arguments = args.map { it.name to it.expr.eval(env) }
+            val arguments = args.map { it.name to validateValue(it.expr.eval(env)) }
 
             fun applyFunction(
                 fn: Function,
@@ -90,14 +95,14 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 is DrLambda -> {
                     val newEnv = DrEnv(callee.closure).apply {
-                        println("debug capture + ${callee.captures}")
-                        callee.captures.forEach { name, value ->
-                            forceDefine(name, value) }
+                        callee.captures.forEach { (name, value) ->
+                            forceDefine(name, value)
+                        }
                     }
 
                     applyFunction(callee.let, newEnv, arguments)
 
-                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
+                    return evalBlock(callee.let.returnType, callee.let.body, newEnv, true)
                 }
                 else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
             }
@@ -236,7 +241,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             }
         }
         is Assign -> {
-            val v = value.eval(env)
+            val v = validateValue(value.eval(env))
             env.assign(name, v)
             v
         }
@@ -247,7 +252,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 ?: throw DriftRuntimeException("No class found for ${obj.type().asString()}")
 
             if (obj is DrInstance) {
-                obj.values[name]?.let { return it }
+                obj.values[name]?.let {
+                    return validateValue(it)
+                }
             }
 
             klass.methods.find { it.let.name == name }?.let { method ->
