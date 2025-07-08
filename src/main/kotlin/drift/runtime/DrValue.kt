@@ -34,7 +34,7 @@ data class DrFunction(
     val closure: DrEnv) : DrValue {
 
     override fun asString(): String =
-        "<[function@${hashCode()}] ${type().asString()}>"
+        "<[function@${hashCode()}] ${let.name} ${type().asString()}>"
     override fun type(): DrType = FunctionType(
         let.parameters.map { it.type },
         let.returnType)
@@ -63,7 +63,7 @@ data class DrLambda(
     val captures: Map<String, DrValue>) : DrValue {
 
     override fun asString(): String =
-        "<[function@${hashCode()}] ${type().asString()}>"
+        "<[lambda#${hashCode()}] ${type().asString()}>"
     override fun type(): DrType = FunctionType(
         let.parameters.map { it.type },
         let.returnType)
@@ -75,8 +75,16 @@ data class DrMethod(
     val instance: DrValue? = null,
     val nativeImpl: DrNativeFunction? = null) : DrValue {
 
-    override fun asString(): String =
-        "<[function@${hashCode()}] ${type().asString()}>"
+    override fun asString(): String {
+        val i: DrInstance? = instance as? DrInstance
+        var sourceString = "#"
+
+        if (i is DrInstance) {
+            sourceString = "${i.klass.name}#${i.hashCode()}"
+        }
+
+        return "<[function#${hashCode()}] $sourceString.${let.name} ${type().asString()}>"
+    }
     override fun type(): DrType = FunctionType(
         let.parameters.map { it.type },
         let.returnType)
@@ -96,11 +104,17 @@ data class DrMethod(
             local.define(param.name, arg)
         }
 
-        for (statement in let.body) {
-            val result = statement.eval(local)
+        var last : DrValue
 
-            if (result is DrReturn)
-                return result.value
+        for (statement in let.body) {
+            last = statement.eval(local)
+
+            if (last is DrReturn)
+                return last.value
+        }
+
+        if (let.returnType == LastType) {
+
         }
 
         throw DriftRuntimeException("Missing return statement")
@@ -114,7 +128,7 @@ data class DrNativeFunction(
     val returnType: DrType = AnyType) : DrValue {
 
     override fun asString(): String =
-        "<[native@${hashCode()}] ${type().asString()}>"
+        "<[native#${hashCode()}] ${type().asString()}>"
 
     override fun type(): DrType = FunctionType(
         paramTypes,
@@ -126,7 +140,7 @@ data class DrClass(
     val fields: List<FunctionParameter>,
     val methods: List<DrMethod>) : DrValue {
 
-    override fun asString() = "<class $name>"
+    override fun asString() = "<[class@${hashCode()}] $name>"
     override fun type(): DrType = ObjectType(name)
 }
 
@@ -163,18 +177,29 @@ data class DrInstance(
 
     override fun type(): DrType = ObjectType(klass.name)
     override fun asString() : String {
-        val default = "<class ${klass.name} | instance ${this.hashCode()}>"
+        val default = "<[class#${klass.hashCode()}] ${klass.name} | instance ${this.hashCode()}>"
 
-        return try {
-            val result = callMethod("asString", emptyList())
+        try {
+            val method = klass.methods.firstOrNull { it.let.name == "asString" }
+                ?: throw DriftRuntimeException("Method 'asString' not found on class ${klass.name}")
 
+            val local = DrEnv()
+            local.define("this", this)
+            var result: DrValue? = null
+            for (statement in method.let.body) {
+                val evalResult = statement.eval(local)
+                if (evalResult is DrReturn) {
+                    result = evalResult.value
+                    break
+                }
+                result = evalResult
+            }
             if (result !is DrString) {
                 throw DriftTypeException("asString must return String")
             }
-
-            result.asString()
+            return result.asString()
         } catch (e: DriftRuntimeException) {
-            default
+            return default
         }
     }
 
@@ -201,14 +226,6 @@ data class DrInstance(
             throw DriftRuntimeException("Cannot assign to undeclared property '${klass.name}.$name'")
 
         values[name] = value
-    }
-
-    private fun callMethod(name: String, args: List<DrValue>) : DrValue {
-        val method = klass.methods.firstOrNull { it.let.name == name }
-            ?: throw DriftRuntimeException("Method '$name' not found on class ${klass.name}")
-
-        return method.copy(instance = this)
-            .call(args, DrEnv())
     }
 }
 
