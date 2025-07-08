@@ -19,7 +19,10 @@ internal fun Parser.parseStatement() : DrStmt {
             else -> ExprStmt(parseExpression())
         }
         is Token.Identifier -> when {
-            token.isKeyword(Token.Keyword.IF) -> parseClassicIf()
+            token.isKeyword(Token.Keyword.IF) -> {
+                advance()
+                parseClassicIf()
+            }
             token.isKeyword(Token.Keyword.FUNCTION) -> {
                 advance()
                 parseFunction()
@@ -50,13 +53,16 @@ internal fun Parser.parseLet(isMutable: Boolean) : DrStmt {
     val nameToken = expect<Token.Identifier>("Expected variable name")
     val name = nameToken.value
 
-    advance()
+    advance(peekSymbol(":", true) || peekSymbol("=", true))
 
     val type : DrType = if (matchSymbol(":")) {
         parseType()
     } else {
         AnyType
     }
+
+    if (peekSymbol("="))
+        skip(Token.NewLine)
 
     var expr = if (matchSymbol("=")) {
         parseExpression()
@@ -80,14 +86,6 @@ internal fun Parser.parseStatementOrBlock() : DrStmt {
 }
 
 internal fun Parser.parseClassicIf() : If {
-    val token = current()
-
-    if (token !is Token.Identifier || !token.isKeyword(Token.Keyword.IF)) {
-        throw DriftParserException("Expected 'if' but found $token")
-    }
-
-    advance()
-
     val condition = parseExpression()
     val thenBlock = parseBlock()
     var elseBlock: DrStmt? = null
@@ -121,12 +119,12 @@ internal fun Parser.parseBlock() : Block {
             ?: throw DriftParserException("Unterminated block, expected '}'")
 
         if (token is Token.Symbol && token.value == "}") {
-            advance()
+            advance(false)
             break
         }
 
         if (token is Token.NewLine) {
-            advance()
+            advance(false)
             continue
         }
 
@@ -136,7 +134,7 @@ internal fun Parser.parseBlock() : Block {
         val next = current()
 
         when (next) {
-            is Token.NewLine -> advance()
+            is Token.NewLine -> advance(false)
             is Token.Symbol -> if (next.value != "}")
                 throw DriftParserException("Expected newline or '}' after statement but found $next")
             else -> throw DriftParserException("Expected newline or '}' after statement but found $next")
