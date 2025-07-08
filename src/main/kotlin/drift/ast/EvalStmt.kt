@@ -2,6 +2,7 @@ package drift.ast
 
 import drift.exceptions.DriftRuntimeException
 import drift.helper.unwrap
+import drift.helper.validateValue
 import drift.runtime.*
 
 fun DrStmt.eval(env: DrEnv): DrValue {
@@ -43,7 +44,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             f
         }
         is Return -> {
-            val value = value.eval(env)
+            val value = validateValue(value.eval(env))
 
             DrReturn(value)
         }
@@ -61,7 +62,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             DrVoid
         }
         is Let -> {
-            val v = value.eval(env)
+            val v = validateValue(value.eval(env), ignoreNotAssigned = true)
 
             if (env.isTopLevel()) {
                 val variable = env.resolve(name) as? DrVariable

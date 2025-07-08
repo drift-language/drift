@@ -30,6 +30,7 @@ fun main(args: Array<String>) {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
 
+
     SymbolCollector(env).collect(ast)
     TypeChecker(env).check(ast)
 

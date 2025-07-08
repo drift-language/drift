@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class BlockTest {
+
     @Test
     fun `Parse and eval block with two print statements`() {
         val input = """
