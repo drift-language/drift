@@ -42,26 +42,36 @@ sealed class Token {
         IMMUTLET("let"),
         MUTLET("var"),
     }
-    data object EOL : Token()
+    data object Whitespace: Token()
     data object NewLine : Token()
+    data object EOL : Token()
 }
 
 fun lex(input: String): List<Token> {
     val tokens = mutableListOf<Token>()
     var i = 0
+    var depth = 0
 
     while (i < input.length) {
         val c = input[i]
 
         if (c == '\r' && i + 1 < input.length && input[i + 1] == '\n') {
-            tokens.add(Token.NewLine)
+            if (depth == 0)
+                tokens.add(Token.NewLine)
+
             i += 2
             continue
         } else if (c == '\n' || c == '\r') {
-            tokens.add(Token.NewLine)
+            if (depth == 0)
+                tokens.add(Token.NewLine)
+
             i++
             continue
-        } else if (c.isWhitespace()) {
+        }
+
+        if (c.isWhitespace()) {
+            tokens.add(Token.Whitespace)
+
             i++
             continue
         } else if (c == '"') {
@@ -93,6 +103,12 @@ fun lex(input: String): List<Token> {
             tokens.add(token)
 
             i = next
+
+            if (listOf('(', '[').contains(c))
+                depth++
+            else if (listOf(')', ']').contains(c))
+                depth--
+
             continue
         } else {
             throw DriftLexerException("Unexpected character '$c'")
