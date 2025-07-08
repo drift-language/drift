@@ -101,10 +101,10 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
 
 internal fun Parser.parsePrimary() : DrExpr {
     return when (val token = current()) {
-        is Token.StringLiteral -> { advance(); Literal(DrString(token.value)) }
-        is Token.IntLiteral -> { advance(); Literal(DrInt(token.value)) }
-        is Token.BoolLiteral -> { advance(); Literal(DrBool(token.value)) }
-        is Token.NullLiteral -> { advance(); Literal(DrNull) }
+        is Token.StringLiteral -> { advance(false); Literal(DrString(token.value)) }
+        is Token.IntLiteral -> { advance(false); Literal(DrInt(token.value)) }
+        is Token.BoolLiteral -> { advance(false); Literal(DrBool(token.value)) }
+        is Token.NullLiteral -> { advance(false); Literal(DrNull) }
         is Token.Identifier -> parseCallOrVariable()
         is Token.Symbol -> when (token.value) {
             "(" -> {
@@ -116,6 +116,7 @@ internal fun Parser.parsePrimary() : DrExpr {
 
                 val expression = parseExpression()
                 expectSymbol(")")
+
                 expression
             }
             else -> throw DriftParserException("Unexpected token ${token.value}")
@@ -130,7 +131,7 @@ internal fun Parser.parseUnary() : DrExpr {
     if (token is Token.Symbol && token.value in listOf("!", "-")) {
         val op = token.value
 
-        advance()
+        advance(false)
 
         val right = parseUnary()
 

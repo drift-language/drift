@@ -19,7 +19,7 @@ internal fun Parser.parseType() : DrType {
         else        -> ClassType(token.value)
     }
 
-    advance()
+    advance(ignoreNewLines = false, ignoreWhitespaces = !peekSymbol("?"))
 
     val isOptional = matchSymbol("?")
     val left: DrType =

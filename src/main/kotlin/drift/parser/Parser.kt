@@ -33,10 +33,20 @@ class Parser(private val tokens: List<Token>) {
     )
 
     internal fun current() : Token? = tokens.getOrNull(i)
-    internal fun advance() {
+    internal fun advance(
+        ignoreNewLines: Boolean = true,
+        ignoreWhitespaces: Boolean = true) {
+
         i++
 
-        val c = current()
+        var c = current()
+
+        while (ignoreNewLines && c == Token.NewLine
+            || ignoreWhitespaces && c == Token.Whitespace) {
+
+            i++
+            c = current()
+        }
 
         if (c is Token.Symbol) {
             if (c.value in listOf("(", "[", "{")) depth++
@@ -81,7 +91,7 @@ class Parser(private val tokens: List<Token>) {
             throw DriftParserException("Expected '$expected' but found $token")
         }
 
-        advance()
+        advance(false)
     }
 
     internal fun checkSymbol(value: String) : Boolean {
@@ -94,7 +104,7 @@ class Parser(private val tokens: List<Token>) {
         val token = current()
 
         if (token is Token.Symbol && token.value == value) {
-            advance()
+            advance(false)
 
             return true
         }
@@ -102,8 +112,20 @@ class Parser(private val tokens: List<Token>) {
         return false
     }
 
-    internal fun peekSymbol(value: String) : Boolean {
-        val next = tokens.getOrNull(i + 1)
+    internal fun peekSymbol(
+        value: String,
+        ignoreNewLines: Boolean = false,
+        ignoreWhitespaces: Boolean = true) : Boolean {
+
+        var j = i + 1
+
+        while (ignoreNewLines && tokens.getOrNull(j) == Token.NewLine
+            || ignoreWhitespaces && tokens.getOrNull(j) == Token.Whitespace) {
+
+            j++
+        }
+
+        val next = tokens.getOrNull(j)
 
         return next is Token.Symbol && next.value == value
     }

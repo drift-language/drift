@@ -15,7 +15,7 @@ internal fun Parser.parseClass() : Class {
     val fields = mutableListOf<FunctionParameter>()
     val methods = mutableListOf<Function>()
 
-    advance()
+    advance(false)
 
     if (matchSymbol("(")) {
         if (!checkSymbol(")")) {
