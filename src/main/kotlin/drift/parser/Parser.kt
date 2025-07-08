@@ -141,6 +141,14 @@ class Parser(private val tokens: List<Token>) {
             return false
 
         var j = i + 1
+
+        fun localAdvance() {
+            do {
+                j++
+            } while (tokens.getOrNull(j) == Token.NewLine
+                || tokens.getOrNull(j) == Token.Whitespace)
+        }
+
         var depth = 1
 
         while (j < tokens.size) {
@@ -153,18 +161,18 @@ class Parser(private val tokens: List<Token>) {
                         depth--
 
                         if (depth == 0) {
-                            j++
+                            localAdvance()
                             break
                         }
                     }
                 }
             }
 
-            j++
+            localAdvance()
         }
 
         if (tokens.getOrNull(j)?.let { it is Token.Symbol && it.value == ":" } == true) {
-            j++
+            localAdvance()
 
             while (j < tokens.size) {
                 val t = tokens[j]
@@ -176,13 +184,18 @@ class Parser(private val tokens: List<Token>) {
                 }
 
                 if (!isTypePart) break
-                j++
+
+                localAdvance()
             }
         }
 
         val hasArrow = (tokens[j] as? Token.Symbol)?.value == "->"
-        val hasBrace = (tokens.getOrNull(j + 1) as? Token.Symbol)?.value == "{"
 
-        return tokens.getOrNull(j) is Token.Symbol && hasArrow && hasBrace
+        return tokens.getOrNull(j) is Token.Symbol && hasArrow
+    }
+
+    internal fun skip(token: Token) {
+        while (current() == token)
+            advance()
     }
 }
