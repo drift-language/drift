@@ -285,7 +285,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 }
 
 
-private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
+private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
     var last: DrValue = DrNull
 
     for (stmt in statements) {
@@ -304,10 +304,21 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
         last = result
     }
 
-    return when (returnType) {
-        VoidType -> DrVoid
-        AnyType  -> DrVoid
-        LastType -> unwrap(last)
+    return when {
+        returnType == LastType -> unwrap(last)
+        implicitLastAsReturnByDefault -> {
+            val v = unwrap(last)
+
+            if (isAssignable(v.type(), returnType)) {
+                v
+            } else {
+                throw DriftTypeException(
+                    "Invalid return type: expected ${returnType.asString()}, " +
+                    "got ${v.type().asString()}")
+            }
+        }
+        returnType == VoidType -> DrVoid
+        returnType == AnyType  -> DrVoid
         else     -> throw DriftRuntimeException("Missing return statement")
     }
 }
