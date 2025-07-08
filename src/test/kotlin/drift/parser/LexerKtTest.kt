@@ -31,6 +31,7 @@ class LexerKtTest {
                 Token.Symbol("("),
                 Token.IntLiteral(1),
                 Token.Symbol(","),
+                Token.Whitespace,
                 Token.IntLiteral(23),
                 Token.Symbol(")"),
                 Token.EOL
@@ -46,6 +47,7 @@ class LexerKtTest {
         assertEquals(
             listOf(
                 Token.BoolLiteral(true),
+                Token.Whitespace,
                 Token.BoolLiteral(false),
                 Token.EOL
             ),
@@ -61,9 +63,13 @@ class LexerKtTest {
             listOf(
                 Token.Symbol("{"),
                 Token.Identifier("x"),
+                Token.Whitespace,
                 Token.Symbol("="),
+                Token.Whitespace,
                 Token.IntLiteral(1),
+                Token.Whitespace,
                 Token.Symbol("+"),
+                Token.Whitespace,
                 Token.IntLiteral(2),
                 Token.Symbol("}"),
                 Token.EOL

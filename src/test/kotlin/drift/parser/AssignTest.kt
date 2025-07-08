@@ -140,4 +140,15 @@ class AssignTest {
             """.trimIndent())
         }
     }
+
+    @Test
+    fun `Assign mutable variable with void value must throw`() {
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                fun test {}
+                
+                var a = test()
+            """.trimIndent())
+        }
+    }
 }

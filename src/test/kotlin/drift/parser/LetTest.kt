@@ -229,4 +229,26 @@ class LetTest {
             """.trimIndent())
         }
     }
+
+    @Test
+    fun `Declare immutable variable with void value must throw`() {
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                fun test {}
+                
+                let a = test()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Declare mutable variable with void value must throw`() {
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                fun test {}
+                
+                var a = test()
+            """.trimIndent())
+        }
+    }
 }
