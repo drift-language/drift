@@ -133,8 +133,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrInt(leftValue.value + rightValue.value)
-                        leftValue is DrString && rightValue is DrString ->
-                            DrString(leftValue.value + rightValue.value)
+                        leftValue is DrString && rightValue is DrPrimary ->
+                            DrString(leftValue.value + rightValue.asString())
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "+", leftValue.type(), rightValue.type()))
                     }
