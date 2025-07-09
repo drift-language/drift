@@ -1,3 +1,12 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.cli
 
 import drift.ast.Function
@@ -15,6 +24,15 @@ import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
 import java.io.File
+
+
+/******************************************************************************
+ * DRIFT RUNNER
+ *
+ * This runner file permits to evaluate and execute a Drift file.
+ ******************************************************************************/
+
+
 
 fun main(args: Array<String>) {
     if (args.isEmpty()) {

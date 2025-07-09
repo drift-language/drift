@@ -1,3 +1,12 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.parser.expressions
 
 import drift.ast.*
@@ -5,13 +14,36 @@ import drift.ast.Set
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
-import drift.parser.functions.parseLambda
+import drift.parser.callables.parseLambda
 import drift.parser.statements.parseBlock
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
 
+
+/******************************************************************************
+ * DRIFT EXPRESSIONS PARSER METHODS
+ *
+ * All methods permitting to parse expressions are defined in this file.
+ ******************************************************************************/
+
+
+
+/**
+ * Attempt to parse an expression
+ *
+ * This method dispatches to the corresponding parsing
+ * method for the provided expression.
+ *
+ * @param minPrecedence Minimum operator priority index
+ * @return Constructed expression AST object
+ * @throws DriftParserException Many cases may throw:
+ * - On object field access/assign:
+ *   - If none identifier follows the dot '.'
+ * - On binary and special operator assignment:
+ *   - If target is neither a variable nor an object field
+ */
 internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
     var left = parseUnary()
 
@@ -99,6 +131,28 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
     return left
 }
 
+
+
+/**
+ * Attempt to parse a primary expression.
+ *
+ * This method dispatches to the corresponding parsing
+ * method for the provided primary expression.
+ *
+ * A primary expression is a native expression like a string,
+ * an integer or a lambda, for example.
+ *
+ * ```
+ * "Hello"
+ * 1
+ * true
+ * () -> {}
+ * ```
+ *
+ * @return Constructed literal or lambda or parentheses
+ * expression AST object
+ * @throws DriftParserException If a token is unexpected
+ */
 internal fun Parser.parsePrimary() : DrExpr {
     return when (val token = current()) {
         is Token.StringLiteral -> { advance(false); Literal(DrString(token.value)) }
@@ -125,6 +179,18 @@ internal fun Parser.parsePrimary() : DrExpr {
     }
 }
 
+
+
+/**
+ * Parse an unary expression
+ *
+ * ```
+ * -1
+ * !booleanExpression
+ * ```
+ *
+ * @return Constructed primary parsing result AST object
+ */
 internal fun Parser.parseUnary() : DrExpr {
     val token = current()
 
@@ -141,9 +207,22 @@ internal fun Parser.parseUnary() : DrExpr {
     return parsePrimary()
 }
 
+
+
+/**
+ * Parse a callable call or variable access expression
+ *
+ * ```
+ * variable      // Variable access
+ * call()        // Callable call
+ * ```
+ *
+ * @return Constructed variable access or callable call
+ * value AST object
+ */
 internal fun Parser.parseCallOrVariable() : DrExpr {
-    val id = current() as Token.Identifier
-    var expression: DrExpr = Variable(id.value)
+    val name = current() as Token.Identifier
+    var expression: DrExpr = Variable(name.value)
 
     advance()
 
@@ -154,6 +233,20 @@ internal fun Parser.parseCallOrVariable() : DrExpr {
     return expression
 }
 
+
+
+/**
+ * Attempt to parse a callable call arguments expression
+ *
+ * ```
+ * call(x = 1, y = 2)   // With parameters names
+ * call(1, 2)           // Without parameters names
+ * ```
+ *
+ * @return Constructed callable call AST object
+ * @throws DriftParserException If the parameters expression
+ * is unterminated, without ')' symbol at end
+ */
 internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
     advance()
 
@@ -177,6 +270,16 @@ internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
     return Call(target, args)
 }
 
+
+
+/**
+ * Attempt to parse a named argument
+ *
+ * @return Call argument AST object
+ * @throws DriftParserException Two cases may throw:
+ * - If none name is provided to an argument
+ * - If none '=' symbol is found
+ */
 internal fun Parser.parseArgument() : Argument {
     val token = current()
 
@@ -193,6 +296,31 @@ internal fun Parser.parseArgument() : Argument {
     return Argument(name, expr)
 }
 
+
+
+/**
+ * Attempt to parse a Drift-style conditional expression
+ * or a ternary expression
+ *
+ * ```
+ * // Drift-style conditional
+ * condition ? {
+ *      ...
+ * } : elseCondition ? {
+ *      ...
+ * } : {
+ *      ...
+ * }
+ *
+ * // Ternary
+ * let a = condition ? 1 : 2
+ * ```
+ *
+ * @param condition Condition expression
+ * @return [Conditional] or [Ternary] AST object
+ * @throws DriftParserException If a Drift-style conditional
+ * expression branch is invalid
+ */
 internal fun Parser.parseDriftIfOrTernary(condition: DrExpr) : DrExpr {
     val thenBlock: Any = parseDriftIfOrTernaryBranch()
     var elseBlock: Any? = null
@@ -202,19 +330,27 @@ internal fun Parser.parseDriftIfOrTernary(condition: DrExpr) : DrExpr {
     }
 
     return when {
-        thenBlock is DrStmt && (elseBlock == null || elseBlock is DrStmt) ->
+        thenBlock is Block && (elseBlock == null || elseBlock is Block) ->
             Conditional(condition, thenBlock, elseBlock as? DrStmt)
         thenBlock is ExprStmt && (elseBlock == null || elseBlock is ExprStmt) ->
             Ternary(
                 condition,
                 (thenBlock).expr,
                 (elseBlock as? ExprStmt)?.expr)
-        thenBlock is ExprStmt && elseBlock == null ->
-            Ternary(condition, thenBlock.expr, null)
+//        thenBlock is ExprStmt && elseBlock == null ->
+//            Ternary(condition, thenBlock.expr, null)
         else -> throw DriftParserException("Invalid Drift IF/ELSE branches")
     }
 }
 
+
+
+/**
+ * Parse a Drift-style conditional expression or ternary
+ * expression branch
+ *
+ * @return Constructed [Block] or [ExprStmt] AST object
+ */
 internal fun Parser.parseDriftIfOrTernaryBranch(): Any {
     return when (current()) {
         is Token.Symbol -> if (checkSymbol("{")) {

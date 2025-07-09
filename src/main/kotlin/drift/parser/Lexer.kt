@@ -1,8 +1,26 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.parser
 
 import drift.exceptions.DriftLexerException
 import drift.utils.concat
 
+
+/******************************************************************************
+ * MAIN DRIFT LEXER
+ *
+ * This file is the main one of the Drift programming language lexer.
+ ******************************************************************************/
+
+
+/** Set of all symbols having 2+ characters */
 private val multiCharsSymbols = setOf(
     "==", "!=",
     "<=", ">=",
@@ -10,6 +28,8 @@ private val multiCharsSymbols = setOf(
     "->", "..",
 )
 
+
+/** Set of all symbols having once character */
 private val singleCharSymbols = setOf(
     '(', ')',
     '{', '}',
@@ -22,16 +42,111 @@ private val singleCharSymbols = setOf(
     '!', '.',
 )
 
+
+
+/**
+ * This class contains all types of token
+ */
 sealed class Token {
+
+
+    /**
+     * Identifier token type.
+     *
+     * An identifier is a word that could
+     * match with entity name or keyword.
+     *
+     * ```
+     * keyword
+     * ```
+     */
     data class Identifier(val value: String) : Token() {
+        /** @return If the identifier is the expected keyword */
         fun isKeyword(expected: Keyword): Boolean =
             this.value == expected.value
     }
+
+
+
+    /**
+     * String literal token type.
+     *
+     * It represents double-quoted words: a string.
+     *
+     * ```
+     * "Hello, World!"
+     * ```
+     */
     data class StringLiteral(val value: String) : Token()
+
+
+
+    /**
+     * Integer literal token type.
+     *
+     * It represents an integer.
+     *
+     * ```
+     * 1
+     * ```
+     */
     data class IntLiteral(val value: Int) : Token()
+
+
+
+    /**
+     * Boolean literal token type.
+     *
+     * It represents a boolean.
+     *
+     * ```
+     * true
+     * false
+     * ```
+     */
     data class BoolLiteral(val value: Boolean) : Token()
+
+
+
+    /**
+     * NULL literal token type.
+     *
+     * ```
+     * null
+     * ```
+     */
     data object NullLiteral : Token()
+
+
+
+    /**
+     * Symbol token type.
+     *
+     * A symbol is a single or multi characters operator,
+     * used to compute an expression like boolean comparison
+     * or arithmetical equation, for example.
+     *
+     * ```
+     * 1 + 1                                // Addition operator '+'
+     * true ? thenBlock : elseBlock         // Ternary operators '?' and ':'
+     * 1..9                                 // Range operator '..'
+     * ```
+     */
     data class Symbol(val value: String) : Token()
+
+
+
+    /**
+     * Keyword token type.
+     *
+     * A keyword is a reserved identifier, used to
+     * execute native Drift statements.
+     *
+     * ```
+     * fun
+     * class
+     * ```
+     */
     enum class Keyword(val value: String) {
         IF("if"),
         ELSE("else"),
@@ -43,11 +158,34 @@ sealed class Token {
         MUTLET("var"),
         AS("as"),
     }
+
+
+
+    /** Whitespace token type */
     data object Whitespace: Token()
+
+
+
+    /** NewLine token type */
     data object NewLine : Token()
-    data object EOL : Token()
+
+
+
+    /** End Of File (EOF) token type */
+    data object EOF : Token()
 }
 
+
+
+/**
+ * Main lexer function.
+ *
+ * This function tokenizes the provided source code.
+ *
+ * @param input Source code to lex
+ * @return List of tokens
+ * @throws DriftLexerException If a character is unexpected
+ */
 fun lex(input: String): List<Token> {
     val tokens = mutableListOf<Token>()
     var i = 0
@@ -82,7 +220,7 @@ fun lex(input: String): List<Token> {
             i = next
             continue
         } else if (c.isDigit()) {
-            val (token, next) = lexDigit(input, i)
+            val (token, next) = lexInt(input, i)
             tokens.add(token)
 
             i = next
@@ -116,11 +254,22 @@ fun lex(input: String): List<Token> {
         }
     }
 
-    tokens.add(Token.EOL)
+    tokens.add(Token.EOF)
 
     return tokens
 }
 
+
+
+/**
+ * This function tokenizes a string expression
+ *
+ * @param input Source code
+ * @param startIndex Start index of the expression to tokenize
+ * @return A pair composed by the [Token.StringLiteral] object and the next
+ * character position index
+ * @throws DriftLexerException If the string expression is unterminated (unclosed)
+ */
 fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
     var i = startIndex + 1
     val start = i
@@ -138,7 +287,17 @@ fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
     return Token.StringLiteral(content) to (i + 1)
 }
 
-fun lexDigit(input: String, startIndex: Int): Pair<Token.IntLiteral, Int> {
+
+
+/**
+ * This function tokenizes an integer expression
+ *
+ * @param input Source code
+ * @param startIndex Start index of the expression to tokenize
+ * @return A pair composed by the [Token.IntLiteral] object and the next
+ * character position index
+ */
+fun lexInt(input: String, startIndex: Int): Pair<Token.IntLiteral, Int> {
     var i = startIndex
     var final: Int = 0
 
@@ -150,6 +309,18 @@ fun lexDigit(input: String, startIndex: Int): Pair<Token.IntLiteral, Int> {
     return Token.IntLiteral(final) to i
 }
 
+
+
+/**
+ * This function tokenizes a word.
+ *
+ * Null, booleans and identifiers are lexed by this function.
+ *
+ * @param input Source code
+ * @param startIndex Start index of the expression to tokenize
+ * @return A pair composed by the [Token] object and the next
+ * character position index
+ */
 fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
     var i = startIndex
 
@@ -167,6 +338,17 @@ fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
     }
 }
 
+
+
+/**
+ * This function tokenizes a symbol
+ *
+ * @param input Source code
+ * @param startIndex Start index of the expression to tokenize
+ * @param length Length of the symbol, by default = 1
+ * @return A pair composed by the [Token.Symbol] object and the next
+ * character position index
+ */
 fun lexSymbol(input: String, startIndex: Int, length: Int = 1): Pair<Token.Symbol, Int> {
     val symbol = input.substring(startIndex, startIndex + length)
 

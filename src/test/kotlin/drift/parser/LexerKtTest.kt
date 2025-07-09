@@ -15,7 +15,7 @@ class LexerKtTest {
                 Token.Symbol("("),
                 Token.StringLiteral("Hello World"),
                 Token.Symbol(")"),
-                Token.EOL
+                Token.EOF
             ),
             tokens
         )
@@ -34,7 +34,7 @@ class LexerKtTest {
                 Token.Whitespace,
                 Token.IntLiteral(23),
                 Token.Symbol(")"),
-                Token.EOL
+                Token.EOF
             ),
             tokens
         )
@@ -49,7 +49,7 @@ class LexerKtTest {
                 Token.BoolLiteral(true),
                 Token.Whitespace,
                 Token.BoolLiteral(false),
-                Token.EOL
+                Token.EOF
             ),
             tokens
         )
@@ -72,7 +72,7 @@ class LexerKtTest {
                 Token.Whitespace,
                 Token.IntLiteral(2),
                 Token.Symbol("}"),
-                Token.EOL
+                Token.EOF
             ),
             tokens
         )

@@ -1,3 +1,12 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.ast
 
 import drift.exceptions.DriftRuntimeException
@@ -18,9 +27,28 @@ import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
 
+
+/******************************************************************************
+ * DRIFT EXPRESSIONS EVALUATOR
+ *
+ * This evaluator computes all Drift expressions.
+ ******************************************************************************/
+
+
+
+/**
+ * Expressions evaluator method
+ *
+ * @param env Environment instance
+ * @return Computed expression value
+ * @see DrExpr
+ */
 fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
+        // Literal
         is Literal -> value
+
+        // Variable access
         is Variable -> {
             val value = env.resolve(name)
                 ?: env.resolveClass(name)
@@ -28,6 +56,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             validateValue(unwrap(value))
         }
+
+        // Callable call
         is Call -> {
             val callee = unwrap(callee.eval(env))
             val arguments = args.map { it.name to validateValue(it.expr.eval(env)) }
@@ -118,6 +148,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
             }
         }
+
+        // Binary computing
         is Binary -> {
             fun unwrap(v: DrValue) : DrValue =
                 if (v is DrVariable) v.value else v
@@ -215,6 +247,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
             }
         }
+
+        // Conditional computing
         is Conditional -> {
             return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
@@ -222,6 +256,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+
+        // Ternary computing
         is Ternary -> {
             return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
@@ -229,6 +265,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+
+        // Lambda computing
         is Lambda -> {
             val f = Function("", this.parameters, this.body, this.returnType)
             val capture = env.all()
@@ -238,6 +276,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             DrLambda(f, env.copy(), capture)
         }
+
+        // Unary computing
         is Unary -> {
             val value = expr.eval(env)
 
@@ -259,11 +299,15 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 else -> throw DriftRuntimeException("Unknown unary operator '$operator'")
             }
         }
+
+        // Variable assignment
         is Assign -> {
             val v = validateValue(value.eval(env))
             env.assign(name, v)
             v
         }
+
+        // Object field getter
         is Get -> {
             val obj = unwrap(receiver.eval(env))
 
@@ -287,6 +331,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             throw DriftRuntimeException("Property or method '$name' not found on class ${klass.name}")
         }
+
+        // Object field setter
         is Set -> {
             val obj = receiver.eval(env)
             val instance = when (obj) {

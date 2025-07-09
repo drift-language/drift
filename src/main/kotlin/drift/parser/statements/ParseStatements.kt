@@ -1,3 +1,12 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.parser.statements
 
 import drift.ast.*
@@ -6,12 +15,29 @@ import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.classes.parseClass
 import drift.parser.expressions.parseExpression
-import drift.parser.functions.parseFunction
+import drift.parser.callables.parseFunction
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
 import drift.runtime.values.specials.DrNotAssigned
 
+
+/******************************************************************************
+ * DRIFT STATEMENTS PARSER METHODS
+ *
+ * All methods permitting to parse statements are defined in this file.
+ ******************************************************************************/
+
+
+
+/**
+ * Parse a statement expression.
+ *
+ * This method permits to dispatch to the corresponding
+ * parsing method for the provided statement expression.
+ *
+ * @return Constructed statement AST object
+ */
 internal fun Parser.parseStatement() : DrStmt {
     return when (val token = current()) {
         is Token.Symbol -> when (token.value) {
@@ -53,12 +79,27 @@ internal fun Parser.parseStatement() : DrStmt {
     }
 }
 
-internal fun Parser.parseLet(isMutable: Boolean) : DrStmt {
+
+
+/**
+ * Attempt to parse a variable declaration expression
+ *
+ * ```
+ * let immutable = value
+ * var mutable = value
+ * ```
+ *
+ * @param isMutable If the variable to declare is mutable
+ * @return Constructed variable declaration AST object
+ * @throws DriftParserException If the variable name is not found
+ */
+internal fun Parser.parseLet(isMutable: Boolean) : Let {
     val nameToken = expect<Token.Identifier>("Expected variable name")
     val name = nameToken.value
 
     advance(peekSymbol(":", true) || peekSymbol("=", true))
 
+    // Type definition
     val type : DrType = if (matchSymbol(":")) {
         parseType()
     } else {
@@ -68,6 +109,7 @@ internal fun Parser.parseLet(isMutable: Boolean) : DrStmt {
     if (peekSymbol("="))
         skip(Token.NewLine)
 
+    // Value initialization
     var expr = if (matchSymbol("=")) {
         parseExpression()
     } else {
@@ -81,14 +123,22 @@ internal fun Parser.parseLet(isMutable: Boolean) : DrStmt {
     return Let(name, type, expr, isMutable)
 }
 
-internal fun Parser.parseStatementOrBlock() : DrStmt {
-    return if (current() is Token.Symbol && (current() as Token.Symbol).value == "{") {
-        parseBlock()
-    } else {
-        ExprStmt(parseExpression())
-    }
-}
 
+
+/**
+ * Parse a classic conditional statement expression
+ *
+ * ```
+ * if condition {
+ *
+ * } else {
+ *
+ * }
+ * ```
+ *
+ * @return Constructed classic conditional statement
+ * AST object
+ */
 internal fun Parser.parseClassicIf() : If {
     val condition = parseExpression()
     val thenBlock = parseBlock()
@@ -104,9 +154,40 @@ internal fun Parser.parseClassicIf() : If {
     return If(condition, thenBlock, elseBlock)
 }
 
-internal fun Parser.parseReturn() : DrStmt =
+
+
+/**
+ * Parse a return statement expression
+ *
+ * ```
+ * return value
+ * ```
+ *
+ * @return Constructed return statement AST object
+ */
+internal fun Parser.parseReturn() : Return =
     Return(parseExpression())
 
+
+
+/**
+ * Attempt to parse a block statement expression
+ *
+ * ```
+ * {
+ *      statement
+ *      statement2
+ * }
+ * ```
+ *
+ * @return Constructed block statement AST object
+ * @throws DriftParserException Many cases may
+ * throw this exception:
+ * - If the '{' character is not found
+ * - If the block is unterminated
+ * - If two statements are not separated by a newline
+ * or a '}' symbol
+ */
 internal fun Parser.parseBlock() : Block {
     val open = current()
 
@@ -148,7 +229,23 @@ internal fun Parser.parseBlock() : Block {
     return Block(statements)
 }
 
-internal fun Parser.parseFor() : DrStmt {
+
+
+/**
+ * Attempt to parse a for statement expression
+ *
+ * ```
+ * for iterable { as x
+ *      statement
+ * }
+ * ```
+ *
+ * @return Constructed for statement AST object
+ * @throws DriftParserException Two cases may throw:
+ * - If none variable follows the 'as' keyword
+ * - If the for statement is not closed by the '}' symbol
+ */
+internal fun Parser.parseFor() : For {
     val iterable = parseExpression()
 
     expectSymbol("{")
