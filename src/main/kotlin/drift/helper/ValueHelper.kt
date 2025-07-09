@@ -1,10 +1,10 @@
 package drift.helper
 
 import drift.exceptions.DriftRuntimeException
-import drift.runtime.DrNotAssigned
 import drift.runtime.DrValue
-import drift.runtime.DrVariable
-import drift.runtime.DrVoid
+import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.variables.DrVariable
 
 fun unwrap(value: DrValue) : DrValue {
     var current = value

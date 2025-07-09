@@ -9,8 +9,8 @@ import drift.parser.expressions.parseExpression
 import drift.parser.functions.parseFunction
 import drift.parser.types.parseType
 import drift.runtime.AnyType
-import drift.runtime.DrNotAssigned
 import drift.runtime.DrType
+import drift.runtime.values.specials.DrNotAssigned
 
 internal fun Parser.parseStatement() : DrStmt {
     return when (val token = current()) {
@@ -30,6 +30,10 @@ internal fun Parser.parseStatement() : DrStmt {
             token.isKeyword(Token.Keyword.RETURN) -> {
                 advance()
                 parseReturn()
+            }
+            token.isKeyword(Token.Keyword.FOR) -> {
+                advance()
+                parseFor()
             }
             token.isKeyword(Token.Keyword.CLASS) -> {
                 advance()
@@ -142,4 +146,37 @@ internal fun Parser.parseBlock() : Block {
     }
 
     return Block(statements)
+}
+
+internal fun Parser.parseFor() : DrStmt {
+    val iterable = parseExpression()
+
+    expectSymbol("{")
+
+    val variables = mutableListOf<String>()
+
+    val c = current()
+
+    if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
+        advance(false)
+
+        do {
+            val name = expect<Token.Identifier>(
+                "Expected variable name after '${Token.Keyword.AS}'").value
+
+            variables.add(name)
+
+            advance(false)
+        } while (matchSymbol(","))
+    }
+
+    val statements = mutableListOf<DrStmt>()
+
+    while (!checkSymbol("}")) {
+        statements.add(parseStatement())
+    }
+
+    expectSymbol("}")
+
+    return For(iterable, variables, Block(statements))
 }

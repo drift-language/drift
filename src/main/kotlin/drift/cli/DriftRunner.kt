@@ -8,6 +8,12 @@ import drift.exceptions.DriftRuntimeException
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
+import drift.runtime.values.callables.DrMethod
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrVoid
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -72,7 +78,6 @@ fun main(args: Array<String>) {
         )))
 
         defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-
         defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
     }
 

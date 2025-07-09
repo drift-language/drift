@@ -7,10 +7,10 @@ import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.functions.parseLambda
 import drift.parser.statements.parseBlock
-import drift.runtime.DrBool
-import drift.runtime.DrInt
-import drift.runtime.DrNull
-import drift.runtime.DrString
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrNull
 
 internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
     var left = parseUnary()

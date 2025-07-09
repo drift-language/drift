@@ -1,10 +1,10 @@
 package drift.runtime.values.variables
 
 import drift.exceptions.DriftRuntimeException
-import drift.runtime.DrNotAssigned
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.isAssignable
+import drift.runtime.values.specials.DrNotAssigned
 
 
 data class DrVariable(val name: String, val type: DrType, var value: DrValue, val isMutable: Boolean) : DrValue {

@@ -30,6 +30,8 @@ class Parser(private val tokens: List<Token>) {
 
         "*"     to 5,
         "/"     to 5,
+
+        ".."    to 6,
     )
 
     internal fun current() : Token? = tokens.getOrNull(i)

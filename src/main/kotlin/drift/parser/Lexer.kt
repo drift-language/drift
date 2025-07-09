@@ -7,7 +7,7 @@ private val multiCharsSymbols = setOf(
     "==", "!=",
     "<=", ">=",
     "&&", "||",
-    "->",
+    "->", "..",
 )
 
 private val singleCharSymbols = setOf(
@@ -41,6 +41,7 @@ sealed class Token {
         CLASS("class"),
         IMMUTLET("let"),
         MUTLET("var"),
+        AS("as"),
     }
     data object Whitespace: Token()
     data object NewLine : Token()

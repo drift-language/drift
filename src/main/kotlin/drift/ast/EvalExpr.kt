@@ -6,6 +6,17 @@ import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
+import drift.runtime.values.callables.*
+import drift.runtime.values.containers.DrRange
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.oop.DrInstance
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrPrimary
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrNull
+import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.variables.DrVariable
 
 fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
@@ -191,6 +202,14 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrBool(leftValue.value <= rightValue.value)
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "<=", leftValue.type(), rightValue.type()))
+                    }
+                }
+                ".." -> {
+                    when {
+                        leftValue is DrInt && rightValue is DrInt ->
+                            DrRange(leftValue, rightValue)
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "..", leftValue.type(), rightValue.type()))
                     }
                 }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")

@@ -3,6 +3,10 @@ package drift.checkers
 import drift.ast.*
 import drift.ast.Function
 import drift.runtime.*
+import drift.runtime.values.callables.DrFunction
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.variables.DrVariable
 
 class SymbolCollector(private val env: DrEnv) {
     fun collect(ast: List<DrStmt>) {

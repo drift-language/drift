@@ -13,3 +13,4 @@ data class Class(
     val fields: MutableList<FunctionParameter> = mutableListOf(),
     val methods: MutableList<Function> = mutableListOf()) : DrStmt
 data class Let(val name: String, val type: DrType, val value: DrExpr, val isMutable: Boolean) : DrStmt
+data class For(val iterable: DrExpr, val variables: List<String>, val body: DrStmt) : DrStmt

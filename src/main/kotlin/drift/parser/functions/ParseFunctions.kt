@@ -9,7 +9,6 @@ import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.runtime.AnyType
-import drift.runtime.DrReturn
 import drift.runtime.DrType
 
 internal fun Parser.parseFunction() : Function {
