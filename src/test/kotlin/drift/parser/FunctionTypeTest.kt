@@ -2,6 +2,8 @@ package drift.parser
 
 import drift.ast.Function
 import drift.ast.eval
+import drift.exceptions.DriftParserException
+import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.runtime.*
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -29,14 +31,14 @@ class FunctionTypeTest {
         """.trimIndent())
 
         assertEquals("add", function.name)
-        assertEquals(IntType, function.returnType)
+        assertEquals(ObjectType("Int"), function.returnType)
         assertEquals(2, function.parameters.size)
 
         assertEquals("x", function.parameters[0].name)
-        assertEquals(IntType, function.parameters[0].type)
+        assertEquals(ObjectType("Int"), function.parameters[0].type)
 
         assertEquals("y", function.parameters[1].name)
-        assertEquals(IntType, function.parameters[1].type)
+        assertEquals(ObjectType("Int"), function.parameters[1].type)
     }
 
     @Test
@@ -82,7 +84,7 @@ class FunctionTypeTest {
         """.trimIndent())
 
         assertEquals("maybeName", function.name)
-        assertEquals(OptionalType(StringType), function.returnType)
+        assertEquals(OptionalType(ObjectType("String")), function.returnType)
     }
 
     @Test
@@ -93,8 +95,8 @@ class FunctionTypeTest {
 
         assertEquals("test1", function.name)
         assertEquals(UnionType(listOf(
-            StringType,
-            IntType,
+            ObjectType("String"),
+            ObjectType("Int"),
         )), function.returnType)
     }
 
@@ -106,8 +108,18 @@ class FunctionTypeTest {
 
         assertEquals("test2", function.name)
         assertEquals(UnionType(listOf(
-            IntType,
-            StringType,
+            ObjectType("Int"),
+            ObjectType("String"),
         )), function.parameters[0].type)
+    }
+
+    @Test
+    fun `Function with union return type Int and Last must throw`() {
+        assertThrows<DriftTypeException> {
+            parseFunctionFromSource("""
+                fun test(): Int|Last { return 1 }
+                test()
+            """.trimIndent())
+        }
     }
 }

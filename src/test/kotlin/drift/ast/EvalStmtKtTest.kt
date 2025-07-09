@@ -13,7 +13,7 @@ class EvalStmtKtTest {
 
         val env = DrEnv()
         env.define("print", DrNativeFunction(
-            impl = { args ->
+            impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
                 DrNull
             },
@@ -40,7 +40,7 @@ class EvalStmtKtTest {
 
         val env = DrEnv()
         env.define("print", DrNativeFunction(
-            impl = { args ->
+            impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
                 DrNull
             },
@@ -69,7 +69,7 @@ class EvalStmtKtTest {
 
         val env = DrEnv()
         env.define("print", DrNativeFunction(
-            impl = { args ->
+            impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
                 DrNull
             },
@@ -99,7 +99,7 @@ class EvalStmtKtTest {
 
         val env = DrEnv()
         env.define("print", DrNativeFunction(
-            impl = { args ->
+            impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
                 DrNull
             },
@@ -149,7 +149,7 @@ class EvalStmtKtTest {
 
         val env = DrEnv()
         env.define("print", DrNativeFunction(
-            impl = { args ->
+            impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
                 DrNull
             },

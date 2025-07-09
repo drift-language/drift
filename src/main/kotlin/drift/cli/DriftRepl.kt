@@ -1,7 +1,4 @@
-package drift
-
-import drift.runtime.*
-import kotlin.system.exitProcess
+package drift.cli
 
 
 fun main() {

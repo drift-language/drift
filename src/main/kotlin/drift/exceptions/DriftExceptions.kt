@@ -1,11 +1,29 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.exceptions
 
 import drift.parser.Token
 
+
+/******************************************************************************
+ * DRIFT INTERNAL EXCEPTION CLASSES
+ *
+ * All Drift engine exception classes are defined in this file.
+ ******************************************************************************/
+
+
+
 /**
  * Main Drift exception class, inherited
  * from main Kotlin exception class.
- * <p>
+ *
  * Must be used as parent for any Drift engine exception.
  *
  * @property message
@@ -20,6 +38,7 @@ sealed class DriftException(
     val sourceName: String? = null,
     val line: Int? = null,
     val pos: Int? = null) : Exception(message)
+
 
 
 /**
@@ -39,6 +58,8 @@ class DriftLexerException(
     pos: Int = 0)
     : DriftException(message, token, sourceName, line, pos)
 
+
+
 /**
  * Drift exception to throw on error on parsing.
  *
@@ -55,6 +76,8 @@ class DriftParserException(
     line: Int = 0,
     pos: Int = 0)
     : DriftException(message, token, sourceName, line, pos)
+
+
 
 /**
  * Drift exception to throw on any type error,
@@ -74,6 +97,8 @@ class DriftTypeException(
     pos: Int = 0)
     : DriftException(message, token, sourceName, line, pos)
 
+
+
 /**
  * Drift exception to throw on runtime error.
  *
@@ -91,6 +116,17 @@ class DriftRuntimeException(
     pos: Int = 0)
     : DriftException(message, token, sourceName, line, pos)
 
+
+
+/**
+ * Drift exception to throw on semantic error.
+ *
+ * @property message
+ * @property token The token that caused the exception, if applicable
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 class DriftSemanticException(
     message: String,
     token: Token? = null,
@@ -100,9 +136,10 @@ class DriftSemanticException(
     : DriftException(message, token, sourceName, line, pos)
 
 
+
 /**
  * Drift exception to not use outside engine.
- * <p>
+ *
  * This exception must be thrown on internal engine error.
  *
  * @property message

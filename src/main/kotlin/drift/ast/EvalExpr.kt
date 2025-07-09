@@ -1,18 +1,66 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
 package drift.ast
 
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
+import drift.helper.evalCondition
+import drift.helper.unwrap
+import drift.helper.validateValue
 import drift.runtime.*
+import drift.runtime.values.callables.*
+import drift.runtime.values.containers.DrRange
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.oop.DrInstance
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrPrimary
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrNull
+import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.variables.DrVariable
 
+
+/******************************************************************************
+ * DRIFT EXPRESSIONS EVALUATOR
+ *
+ * This evaluator computes all Drift expressions.
+ ******************************************************************************/
+
+
+
+/**
+ * Expressions evaluator method
+ *
+ * @param env Environment instance
+ * @return Computed expression value
+ * @see DrExpr
+ */
 fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
+        // Literal
         is Literal -> value
-        is Variable -> env.resolve(name)
-            ?: env.resolveClass(name)
-            ?: throw DriftRuntimeException("Undefined symbol: $name")
+
+        // Variable access
+        is Variable -> {
+            val value = env.resolve(name)
+                ?: env.resolveClass(name)
+                ?: throw DriftRuntimeException("Undefined symbol: $name")
+
+            validateValue(unwrap(value))
+        }
+
+        // Callable call
         is Call -> {
-            val callee = callee.eval(env)
-            val arguments = args.map { it.name to it.expr.eval(env) }
+            val callee = unwrap(callee.eval(env))
+            val arguments = args.map { it.name to validateValue(it.expr.eval(env)) }
 
             fun applyFunction(
                 fn: Function,
@@ -43,24 +91,28 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             when (callee) {
                 is DrFunction -> {
-                    val newEnv = DrEnv(parent = callee.closure)
+                    val newEnv = DrEnv(parent = callee.closure.copy())
 
                     applyFunction(callee.let, newEnv, arguments)
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
                 is DrMethod -> {
-                    val newEnv = DrEnv(parent = callee.closure).apply {
+                    if (callee.nativeImpl != null) {
+                        return callee.nativeImpl.impl(callee.instance, arguments)
+                    }
+
+                    val newEnv = DrEnv(parent = callee.closure.copy()).apply {
                         if (callee.instance is DrInstance) {
                             define("this", callee.instance)
                         }
                     }
 
-                    applyFunction(callee.let, newEnv, arguments, callee.instance)
+                    applyFunction(callee.let, newEnv, arguments, callee.instance as? DrInstance)
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv)
                 }
-                is DrNativeFunction -> callee.impl(arguments)
+                is DrNativeFunction -> callee.impl(null, arguments)
                 is DrClass -> {
                     if (arguments.size != callee.fields.size) {
                         throw DriftRuntimeException("Wrong number of arguments for class '${callee.name}'")
@@ -82,9 +134,22 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     return DrInstance(callee, valueMap)
                 }
+                is DrLambda -> {
+                    val newEnv = DrEnv(callee.closure).apply {
+                        callee.captures.forEach { (name, value) ->
+                            forceDefine(name, value)
+                        }
+                    }
+
+                    applyFunction(callee.let, newEnv, arguments)
+
+                    return evalBlock(callee.let.returnType, callee.let.body, newEnv, true)
+                }
                 else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
             }
         }
+
+        // Binary computing
         is Binary -> {
             fun unwrap(v: DrValue) : DrValue =
                 if (v is DrVariable) v.value else v
@@ -100,8 +165,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrInt(leftValue.value + rightValue.value)
-                        leftValue is DrString && rightValue is DrString ->
-                            DrString(leftValue.value + rightValue.value)
+                        leftValue is DrString && rightValue is DrPrimary ->
+                            DrString(leftValue.value + rightValue.asString())
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "+", leftValue.type(), rightValue.type()))
                     }
@@ -171,9 +236,19 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             "<=", leftValue.type(), rightValue.type()))
                     }
                 }
+                ".." -> {
+                    when {
+                        leftValue is DrInt && rightValue is DrInt ->
+                            DrRange(leftValue, rightValue)
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "..", leftValue.type(), rightValue.type()))
+                    }
+                }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
             }
         }
+
+        // Conditional computing
         is Conditional -> {
             return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
@@ -181,6 +256,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+
+        // Ternary computing
         is Ternary -> {
             return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
@@ -188,10 +265,19 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 elseBranch?.eval(env) ?: DrNull
             }
         }
+
+        // Lambda computing
         is Lambda -> {
             val f = Function("", this.parameters, this.body, this.returnType)
-            DrFunction(f, env.copy())
+            val capture = env.all()
+                .filterKeys { it != this.name }
+                .mapValues { (_, v) -> unwrap(v) }
+                .toMap()
+
+            DrLambda(f, env.copy(), capture)
         }
+
+        // Unary computing
         is Unary -> {
             val value = expr.eval(env)
 
@@ -213,21 +299,40 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 else -> throw DriftRuntimeException("Unknown unary operator '$operator'")
             }
         }
+
+        // Variable assignment
         is Assign -> {
-            val v = value.eval(env)
+            val v = validateValue(value.eval(env))
             env.assign(name, v)
             v
         }
-        is Get -> {
-            val obj = receiver.eval(env)
-            val instance = when (obj) {     // TODO: refactor with Set duplicate fragment
-                is DrInstance -> obj
-                is DrVariable -> obj.value as? DrInstance
-                else -> null
-            } ?: throw DriftRuntimeException("Only instances have properties")
 
-            instance.get(name)
+        // Object field getter
+        is Get -> {
+            val obj = unwrap(receiver.eval(env))
+
+            val klass = env.resolveClass(obj.type().asString())
+                ?: throw DriftRuntimeException("No class found for ${obj.type().asString()}")
+
+            if (obj is DrInstance) {
+                obj.values[name]?.let {
+                    return validateValue(it)
+                }
+            }
+
+            klass.methods.find { it.let.name == name }?.let { method ->
+                return DrMethod(
+                    let = method.let,
+                    closure = env,
+                    instance = obj,
+                    nativeImpl = method.nativeImpl
+                )
+            }
+
+            throw DriftRuntimeException("Property or method '$name' not found on class ${klass.name}")
         }
+
+        // Object field setter
         is Set -> {
             val obj = receiver.eval(env)
             val instance = when (obj) {
@@ -245,7 +350,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 }
 
 
-private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) : DrValue {
+private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
     var last: DrValue = DrNull
 
     for (stmt in statements) {
@@ -258,27 +363,27 @@ private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv) :
                     "got ${result.type().asString()}")
             }
 
-            return result.value
+            return unwrap(result.value)
         }
 
         last = result
     }
 
-    return when (returnType) {
-        VoidType -> DrVoid
-        AnyType -> DrVoid
-        LastType -> last
+    return when {
+        returnType == LastType -> unwrap(last)
+        implicitLastAsReturnByDefault -> {
+            val v = unwrap(last)
+
+            if (isAssignable(v.type(), returnType)) {
+                v
+            } else {
+                throw DriftTypeException(
+                    "Invalid return type: expected ${returnType.asString()}, " +
+                    "got ${v.type().asString()}")
+            }
+        }
+        returnType == VoidType -> DrVoid
+        returnType == AnyType  -> DrVoid
         else     -> throw DriftRuntimeException("Missing return statement")
     }
-}
-
-
-private fun evalCondition(condition: DrExpr, env: DrEnv) : Boolean {
-    val conditionValue = condition.eval(env)
-
-    if (conditionValue !is DrBool) {
-        throw DriftRuntimeException("Condition must be boolean")
-    }
-
-    return conditionValue.value
 }

@@ -15,7 +15,7 @@ class ParserTest {
         val env = DrEnv().apply {
             define(
                 "test", DrNativeFunction(
-                    impl = { args ->
+                    impl = { _, args ->
                         DrNull
                     },
                     paramTypes = listOf(AnyType),

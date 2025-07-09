@@ -2,8 +2,8 @@ package drift.parser
 
 import drift.ast.DrStmt
 import drift.ast.eval
-import drift.check.SymbolCollector
-import drift.check.TypeChecker
+import drift.checkers.SymbolCollector
+import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import org.junit.jupiter.api.Test
@@ -19,7 +19,7 @@ class AssignTest {
         val env = DrEnv().apply {
             define(
                 "print", DrNativeFunction(
-                    impl = { args ->
+                    impl = { _, args ->
                         outputs.add(args[0].second)
                         DrNull
                     },
@@ -137,6 +137,17 @@ class AssignTest {
         assertThrows<DriftRuntimeException> {
             parse("""
                 b = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign mutable variable with void value must throw`() {
+        assertThrows<DriftRuntimeException> {
+            parse("""
+                fun test {}
+                
+                var a = test()
             """.trimIndent())
         }
     }

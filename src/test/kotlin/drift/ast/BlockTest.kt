@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class BlockTest {
+
     @Test
     fun `Parse and eval block with two print statements`() {
         val input = """
@@ -24,7 +25,7 @@ class BlockTest {
         val env = DrEnv().apply {
             define(
                 "print", DrNativeFunction(
-                    impl = { args ->
+                    impl = { _, args ->
                         args.map { output.add(it.second.asString()) }
                         DrNull
                     },

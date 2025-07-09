@@ -133,7 +133,7 @@ class ClassTest {
             test(u)
         """.trimIndent())
 
-        assertEquals("<class User | instance", result.substring(0, 22))
+        assertEquals("<[class#", result.substring(0, 8))
     }
 
     @Test
@@ -147,6 +147,19 @@ class ClassTest {
                 test(u)
             """.trimIndent())
         }
+    }
+
+    @Test
+    fun `Class with valid asString must return custom string`() {
+        evalWithOutput("""
+            class U {
+                fun asString : String {
+                    return "Hello"
+                }
+            }   
+            let u = U()
+            test(u)
+        """.trimIndent())
     }
 
     @Test

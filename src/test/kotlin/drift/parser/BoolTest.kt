@@ -26,7 +26,7 @@ class BoolTest {
     fun `Compare two same integers with == operator`() {
         val exp = evalExpr("1 == 1")
 
-        assertEquals(exp.type(), BoolType)
+        assertEquals(exp.type(), ObjectType("Bool"))
         assertEquals(exp, DrBool(true))
     }
 
@@ -34,7 +34,7 @@ class BoolTest {
     fun `Compare two different integers with == operator`() {
         val exp = evalExpr("1 == 2")
 
-        assertEquals(exp.type(), BoolType)
+        assertEquals(exp.type(), ObjectType("Bool"))
         assertEquals(exp, DrBool(false))
     }
 
@@ -42,7 +42,7 @@ class BoolTest {
     fun `Compare two same integers with != operator`() {
         val exp = evalExpr("1 != 1")
 
-        assertEquals(exp.type(), BoolType)
+        assertEquals(exp.type(), ObjectType("Bool"))
         assertEquals(exp, DrBool(false))
     }
 
@@ -50,7 +50,7 @@ class BoolTest {
     fun `Compare two different integers with != operator`() {
         val exp = evalExpr("1 != 2")
 
-        assertEquals(exp.type(), BoolType)
+        assertEquals(exp.type(), ObjectType("Bool"))
         assertEquals(exp, DrBool(true))
     }
 }
