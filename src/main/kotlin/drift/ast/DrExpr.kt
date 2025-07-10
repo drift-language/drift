@@ -70,10 +70,11 @@ data class Binary(val left: DrExpr, val operator: String, val right: DrExpr) : D
 
 
 /**
- * A conditional structure contains a condition,
+ * A ternary conditional structure contains a condition,
  * a then and else branches.
  *
- * This does not represent a [Ternary] expression.
+ * It is the recommended syntax for conditional evaluation,
+ * instead of [If].
  *
  * @property condition Condition
  * @property thenBranch Branch to execute if the
@@ -82,22 +83,6 @@ data class Binary(val left: DrExpr, val operator: String, val right: DrExpr) : D
  * condition is unsuccessful
  */
 data class Conditional(val condition: DrExpr, val thenBranch: DrStmt, val elseBranch: DrStmt?) : DrExpr
-
-
-
-/**
- * A ternary structure contains a condition,
- * a then and else branches.
- *
- * This does not represent a general [Conditional] expression.
- *
- * @property condition Condition
- * @property thenBranch Branch to execute if the
- * condition is successful
- * @property elseBranch Branch to execute if the
- * condition is unsuccessful
- */
-data class Ternary(val condition: DrExpr, val thenBranch: DrExpr, val elseBranch: DrExpr?) : DrExpr
 
 
 

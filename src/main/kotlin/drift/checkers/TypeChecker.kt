@@ -89,11 +89,6 @@ class TypeChecker (private val env: DrEnv) {
                 checkExpr(expr.value)
             }
             is Get -> checkExpr(expr.receiver)
-            is Ternary -> {
-                checkExpr(expr.condition)
-                checkExpr(expr.thenBranch)
-                expr.elseBranch?.let { checkExpr(it) }
-            }
             else -> {}
         }
     }

@@ -113,7 +113,7 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
                     else -> throw DriftParserException("Invalid assignment target")
                 }
             } else if (op == "?") {
-                left = parseDriftIfOrTernary(left)
+                left = parseDriftIf(left)
 
                 continue
             }
@@ -321,26 +321,23 @@ internal fun Parser.parseArgument() : Argument {
  * @throws DriftParserException If a Drift-style conditional
  * expression branch is invalid
  */
-internal fun Parser.parseDriftIfOrTernary(condition: DrExpr) : DrExpr {
-    val thenBlock: Any = parseDriftIfOrTernaryBranch()
-    var elseBlock: Any? = null
+internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
+    val thenBlock: DrStmt = parseDriftIfBranch()
+    var elseBlock: DrStmt? = null
+
+    skip(Token.NewLine)
 
     if (matchSymbol(":")) {
-        elseBlock = parseDriftIfOrTernaryBranch()
+        elseBlock = parseDriftIfBranch()
     }
 
-    return when {
-        thenBlock is Block && (elseBlock == null || elseBlock is Block) ->
-            Conditional(condition, thenBlock, elseBlock as? DrStmt)
-        thenBlock is ExprStmt && (elseBlock == null || elseBlock is ExprStmt) ->
-            Ternary(
-                condition,
-                (thenBlock).expr,
-                (elseBlock as? ExprStmt)?.expr)
-//        thenBlock is ExprStmt && elseBlock == null ->
-//            Ternary(condition, thenBlock.expr, null)
-        else -> throw DriftParserException("Invalid Drift IF/ELSE branches")
+    if (thenBlock !is Block && thenBlock !is ExprStmt) {
+        throw DriftParserException("Invalid Drift IF branch")
+    } else if (elseBlock != null && elseBlock !is Block && elseBlock !is ExprStmt) {
+        throw DriftParserException("Invalid Drift ELSE branch")
     }
+
+    return Conditional(condition, thenBlock, elseBlock)
 }
 
 

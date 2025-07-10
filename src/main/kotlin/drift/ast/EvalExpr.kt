@@ -257,15 +257,6 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             }
         }
 
-        // Ternary computing
-        is Ternary -> {
-            return if (evalCondition(condition, env)) {
-                thenBranch.eval(env)
-            } else {
-                elseBranch?.eval(env) ?: DrNull
-            }
-        }
-
         // Lambda computing
         is Lambda -> {
             val f = Function("", this.parameters, this.body, this.returnType)
