@@ -16,6 +16,7 @@ import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
 import drift.runtime.values.callables.*
+import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
@@ -336,6 +337,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             instance.set(name, v)
             v
+        }
+
+        // List
+        is ListLiteral -> {
+            return DrList(values
+                .map { unwrap(it.eval(env)) }
+                .toMutableList())
         }
     }
 }

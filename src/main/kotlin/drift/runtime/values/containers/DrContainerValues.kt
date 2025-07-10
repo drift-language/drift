@@ -22,11 +22,11 @@ import drift.runtime.values.primaries.DrInt
 
 
 /**
- * AST representation of a list.
+ * Runtime list structure
  */
 data class DrList(
     /** List values */
-    val items: List<DrValue>) : DrValue {
+    val items: MutableList<DrValue>) : DrValue {
 
 
     /** @return A prepared string version of the type */
@@ -51,7 +51,7 @@ data class DrList(
 
 
 /**
- * AST representation of a range.
+ * Runtime range structure.
  *
  * A range is a simplified structure representing
  * each integer between [from] and [to] values.

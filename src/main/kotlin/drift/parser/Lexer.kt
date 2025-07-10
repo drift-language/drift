@@ -33,6 +33,7 @@ private val multiCharsSymbols = setOf(
 private val singleCharSymbols = setOf(
     '(', ')',
     '{', '}',
+    '[', ']',
     '+', '-',
     '*', '/',
     '=', ':',

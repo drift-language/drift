@@ -148,7 +148,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                     }
                 } else {
                     throw DriftRuntimeException(
-                        "Cannot destructure ${item.type()} into " +
+                        "Cannot destructure ${item.type().asString()} into " +
                         "${variables.size} variables")
                 }
 

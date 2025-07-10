@@ -58,6 +58,7 @@ class Parser(
      * From less to most high priority.
      */
     internal val operatorPrecedence: Map<String, Int> = mapOf(
+        ".."    to 1,
         "="     to 1,
 
         "?"     to 2,

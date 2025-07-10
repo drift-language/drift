@@ -15,6 +15,7 @@ import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.callables.parseLambda
+import drift.parser.containers.parseList
 import drift.parser.statements.parseBlock
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
@@ -173,6 +174,7 @@ internal fun Parser.parsePrimary() : DrExpr {
 
                 expression
             }
+            "[" -> parseList()
             else -> throw DriftParserException("Unexpected token ${token.value}")
         }
         else -> throw DriftParserException("Unexpected token $token")
@@ -348,7 +350,7 @@ internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
  *
  * @return Constructed [Block] or [ExprStmt] AST object
  */
-internal fun Parser.parseDriftIfOrTernaryBranch(): Any {
+internal fun Parser.parseDriftIfBranch() : DrStmt {
     return when (current()) {
         is Token.Symbol -> if (checkSymbol("{")) {
             parseBlock()

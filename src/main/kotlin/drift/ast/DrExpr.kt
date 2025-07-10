@@ -149,6 +149,15 @@ data class Set(val receiver: DrExpr, val name: String, val value: DrExpr) : DrEx
 
 
 /**
+ * A list structure
+ *
+ * @property values List values
+ */
+data class ListLiteral(val values: MutableList<DrExpr>) : DrExpr
+
+
+
+/**
  * An argument structure represent a call argument
  *
  * @property name Argument name
