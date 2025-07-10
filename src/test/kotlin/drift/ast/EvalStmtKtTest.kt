@@ -1,6 +1,11 @@
 package drift.ast
 
 import drift.runtime.*
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrNull
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
@@ -46,7 +51,8 @@ class EvalStmtKtTest {
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
-        ))
+        )
+        )
 
         val stmt = If(
             condition = Literal(DrBool(true)),

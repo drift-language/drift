@@ -3,6 +3,8 @@ package drift.ast
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.specials.DrNull
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
