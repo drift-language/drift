@@ -46,7 +46,7 @@ data class DrClass(
 
 
     /** @return A prepared string version of the type */
-    override fun asString() = "<[class@${hashCode()}] $name>"
+    override fun asString() = "<[class#${hashCode()}] $name>"
 
     /** @return The object representation of the type */
     override fun type(): DrType = ObjectType(name)
