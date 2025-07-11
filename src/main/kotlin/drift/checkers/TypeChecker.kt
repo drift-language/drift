@@ -104,14 +104,8 @@ class TypeChecker (private val env: DrEnv) {
      */
     private fun checkType(type: DrType) {
         when (type) {
-            is ClassType -> if (env.resolveClass(type.name) == null)
-                throw DriftSemanticException("Unknown class type '${type.name}'")
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
-            is FunctionType -> {
-                type.paramTypes.forEach { checkType(it) }
-                checkType(type.returnType)
-            }
             else -> {}
         }
     }

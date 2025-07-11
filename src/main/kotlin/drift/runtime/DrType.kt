@@ -175,17 +175,6 @@ data class ObjectType(val className: String, val args: Map<String, TypeArgument>
 }
 
 
-@Deprecated("Refactor: use ObjectType to represent all types.")
-data class FunctionType(val paramTypes: List<DrType>, val returnType: DrType) : DrType {
-    override fun asString() = "(${paramTypes.joinToString(", ") { it.asString() }}) -> ${returnType.asString()}"
-}
-
-@Deprecated("Refactor: use ObjectType to represent all types.")
-data class ClassType(val name: String) : DrType {
-    override fun asString(): String = name
-}
-
-
 
 /**
  * Verify if the provided value type could be used
@@ -207,7 +196,6 @@ fun isAssignable(valueType: DrType, expected: DrType): Boolean {
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)
         is UnionType -> expected.options.any { isAssignable(valueType, it) }
-        is ClassType -> valueType is ObjectType && expected.name == valueType.className
         else -> false
     }
 }
