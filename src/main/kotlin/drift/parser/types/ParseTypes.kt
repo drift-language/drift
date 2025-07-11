@@ -40,43 +40,47 @@ import drift.runtime.*
  * to another type
  */
 internal fun Parser.parseType() : DrType {
-    val token = expect<Token.Identifier>("Expected type name")
-    val type: DrType = when (token.value) {
-        "Int"       -> ObjectType("Int")
-        "String"    -> ObjectType("String")
-        "Bool"      -> ObjectType("Bool")
-        "Null"      -> NullType
-        "Void"      -> VoidType
-        "Any"       -> AnyType
-        "Last"      -> LastType
-        else        -> ClassType(token.value)
-    }
+    val types = mutableListOf<DrType>()
+    var foundOptional = false
 
-    advance(ignoreNewLines = false, ignoreWhitespaces = !peekSymbol("?"))
+        val token = expect<Token.Identifier>("Expected type name")
+        var type: DrType = when (token.value) {
+            "Null"      -> NullType
+            "Void"      -> VoidType
+            "Any"       -> AnyType
+            "Last"      -> LastType
+            else        -> ObjectType(token.value)
+        }
 
-    val isOptional = matchSymbol("?")
-    val left: DrType =
-        if (isOptional) OptionalType(type)
-        else type
+        advance(ignoreNewLines = false, ignoreWhitespaces = !peekSymbol("?"))
 
-    if (isOptional && checkSymbol("|")) {
-        throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
-    }
+        if (matchSymbol("?")) {
+            type = OptionalType(type)
+            foundOptional = true
+        }
 
-    val unionTypes: MutableList<DrType> = mutableListOf(left)
+        types.add(type)
 
-    while (matchSymbol("|")) {
-        val next = parseType()
+        while (matchSymbol("|")) {
+            if (foundOptional)
+                throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
 
-        if (next is LastType)
-            throw DriftTypeException("Cannot unite Last type")
+            when (val next = parseType()) {
+                is LastType ->
+                    throw DriftParserException("Cannot unite Last type with another")
+                is AnyType ->
+                    throw DriftParserException("Cannot unite Any type with another")
+                is VoidType ->
+                    throw DriftParserException("Cannot unite Void type with another")
+                is OptionalType ->
+                    throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+                else -> types.add(next)
+            }
+        }
 
-        unionTypes.add(next)
-    }
-
-    return if (unionTypes.size == 1) {
-        unionTypes[0]
+    return if (types.size == 1) {
+        types[0]
     } else {
-        UnionType(unionTypes)
+        UnionType(types)
     }
 }
