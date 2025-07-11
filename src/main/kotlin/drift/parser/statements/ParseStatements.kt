@@ -141,14 +141,14 @@ internal fun Parser.parseLet(isMutable: Boolean) : Let {
  */
 internal fun Parser.parseClassicIf() : If {
     val condition = parseExpression()
-    val thenBlock = parseBlock()
+    val thenBlock = parseStatement()
     var elseBlock: DrStmt? = null
 
     if (current() is Token.Identifier
         && (current() as Token.Identifier).isKeyword(Token.Keyword.ELSE)) {
 
         advance()
-        elseBlock = parseBlock()
+        elseBlock = parseStatement()
     }
 
     return If(condition, thenBlock, elseBlock)
