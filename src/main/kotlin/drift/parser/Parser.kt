@@ -75,8 +75,6 @@ class Parser(
 
         "*"     to 5,
         "/"     to 5,
-
-        ".."    to 6,
     )
 
 
