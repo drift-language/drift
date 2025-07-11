@@ -22,6 +22,7 @@ import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
+import drift.utils.castNumericIfNeeded
 
 
 /******************************************************************************
@@ -109,7 +110,11 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Variable definition
         is Let -> {
-            val v = validateValue(value.eval(env), ignoreNotAssigned = true)
+            var v = validateValue(value.eval(env), ignoreNotAssigned = true)
+
+            if (type != AnyType) {
+                v = castNumericIfNeeded(v, type)
+            }
 
             if (env.isTopLevel()) {
                 val variable = env.resolve(name) as? DrVariable

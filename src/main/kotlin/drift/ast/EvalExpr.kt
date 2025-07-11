@@ -20,13 +20,11 @@ import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrPrimary
-import drift.runtime.values.primaries.DrString
+import drift.runtime.values.primaries.*
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
+import drift.utils.castNumericIfNeeded
 
 
 /******************************************************************************
@@ -70,7 +68,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 instance: DrInstance? = null) {
 
                 for ((index, param) in fn.parameters.withIndex()) {
-                    val value = if (param.isPositional) {
+                    var value = if (param.isPositional) {
                         val arg = arguments.getOrNull(index)
                             ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
 
@@ -81,6 +79,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                         arg.second
                     }
+
+                    value = castNumericIfNeeded(value, param.type)
 
                     if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
                         throw DriftTypeException("Invalid argument for '${param.name}'")
@@ -163,12 +163,20 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             return when (operator) {
                 "+" -> {
-                    when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrInt(leftValue.value + rightValue.value)
-                        leftValue is DrString && rightValue is DrPrimary ->
-                            DrString(leftValue.value + rightValue.asString())
-                        else -> throw DriftRuntimeException(unsupportedOperator(
+                    if (leftValue is DrNumeric && rightValue is DrNumeric) {
+                        val (a, b, resultType) = promoteNumericPair(leftValue, rightValue)
+
+                        return when (resultType) {
+                            DrInt64::class -> DrInt64(a.asLong() + b.asLong())
+                            DrUInt::class -> DrUInt(a.asUInt() + b.asUInt())
+                            DrInt::class -> DrInt(a.asInt() + b.asInt())
+                            else -> throw DriftRuntimeException(unsupportedOperator(
+                                "+", leftValue.type(), rightValue.type()))
+                        }
+                    } else if (leftValue is DrString && rightValue is DrNumeric) {
+                        return DrString(leftValue.value + rightValue.asString())
+                    } else {
+                        throw DriftRuntimeException(unsupportedOperator(
                             "+", leftValue.type(), rightValue.type()))
                     }
                 }

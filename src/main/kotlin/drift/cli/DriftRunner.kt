@@ -10,6 +10,7 @@
 package drift.cli
 
 import drift.ast.Function
+import drift.ast.FunctionParameter
 import drift.ast.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
@@ -23,6 +24,7 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.variables.DrVariable
 import java.io.File
 
 
@@ -73,14 +75,14 @@ fun main(args: Array<String>) {
                 let = Function(
                     name = "length",
                     parameters = emptyList(),
-                    returnType = ClassType("Int"),
+                    returnType = ObjectType("Int"),
                     body = emptyList()
                 ),
                 closure = env,
                 nativeImpl = DrNativeFunction(
                     name = "length",
                     paramTypes = emptyList(),
-                    returnType = ClassType("Int"),
+                    returnType = ObjectType("Int"),
                     impl = { receiver, args ->
                         println("DEBUG: nativeImpl receiver = ${receiver?.asString()} type=${receiver?.type()}")
                         println("DEBUG receiver javaClass = ${receiver?.javaClass?.name}")
@@ -97,6 +99,8 @@ fun main(args: Array<String>) {
 
         defineClass("Int", DrClass("Int", emptyList(), emptyList()))
         defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
+        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
     }
 
     for (statement in ast) {
