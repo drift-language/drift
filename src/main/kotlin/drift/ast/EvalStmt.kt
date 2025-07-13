@@ -88,7 +88,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Callable return
         is Return -> {
-            val value = validateValue(value.eval(env))
+            val value = validateValue(value.eval(env), ignoreVoid = true)
 
             DrReturn(value)
         }

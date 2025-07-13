@@ -46,91 +46,80 @@ import drift.runtime.values.specials.DrNull
  *   - If target is neither a variable nor an object field
  */
 internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
+    var expr = parseBinary(minPrecedence)
+    var loop = true
+
+    while (loop) {
+        if (checkSymbol("(")) {
+            expr = parseCallArguments(expr)
+
+            continue
+        } else {
+            loop = false
+        }
+    }
+
+    return expr
+}
+
+
+
+internal fun Parser.parseBinary(minPrecedence: Int): DrExpr {
     var left = parseUnary()
 
     while (true) {
-        val opToken = current()
+        val opToken = current() as? Token.Symbol ?: break
+        val op = opToken.value
 
-        if (opToken !is Token.Symbol) break
-
-        // ----------------------
-        // Function Call: foo(...)
-        // ----------------------
-        if (opToken.value == "(") {
-            left = parseCallArguments(left)
-
-            continue
-        }
-
-        // ----------------------
-        // Access and Assign: obj.prop and obj.pro = x
-        // ----------------------
-        if (opToken.value == ".") {
-            advance()
-
-            val token = expect<Token.Identifier>("Expected property name after '.'")
-            val propName = token.value
+        if (matchSymbol(".")) {
+            val prop = expect<Token.Identifier>("Expected property name after '.'")
+                .value
 
             advance()
 
             if (matchSymbol("=")) {
-                val value = parseExpression(operatorPrecedence["="]!! + 1)
-
-                return Set(left, propName, value)
+                val v = parseExpression(operatorPrecedence["="]!! + 1)
+                left = Set(left, prop, v)
             } else {
-                left = Get(left, propName)
-
-                val c = current()
-
-                if (c is Token.Symbol
-                    && (c.value in operatorPrecedence
-                            || c.value in listOf(".", "(", "?"))) {
-
-                    continue
-                } else {
-                    break
-                }
+                println("from $left / get $prop")
+                left = Get(left, prop)
             }
-        }
-
-        // ----------------------
-        // Binary and Special Operators
-        // ----------------------
-        if (opToken.value in operatorPrecedence) {
-            val precedence = operatorPrecedence[opToken.value] ?: 0
-
-            if (precedence < minPrecedence) break
-
-            val op = opToken.value
-
-            advance()
-
-            if (op == "=") {
-                val value = parseExpression(precedence + 1)
-
-                return when (left) {
-                    is Variable -> Assign(left.name, value)
-                    is Get -> Set(left.receiver, left.name, value)
-                    else -> throw DriftParserException("Invalid assignment target")
-                }
-            } else if (op == "?") {
-                left = parseDriftIf(left)
-
-                continue
-            }
-
-            val right = parseExpression(precedence + 1)
-
-            left = Binary(left, op, right)
 
             continue
         }
 
-        break
+        val precedence = operatorPrecedence[op] ?: break
+
+        if (precedence < minPrecedence) break
+
+        advance()
+
+        left = when (op) {
+            // Handle special Drift conditional operator (right-associative)
+            "?" -> parseDriftIf(left)
+
+            "=" -> {
+                val right = parseBinary(precedence + 1)
+
+                when (left) {
+                    is Variable -> Assign(left.name, right)
+                    is Get -> Set(left.receiver, left.name, right)
+                    else -> throw DriftParserException("Invalid assignment target")
+                }
+            }
+
+            // Normal binary or assignment operator
+            else -> {
+                val right = parseBinary(precedence + 1)
+
+                Binary(left, op, right)
+            }
+        }
     }
 
     return left
 }
+
 
 
 
@@ -156,11 +145,23 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
  */
 internal fun Parser.parsePrimary() : DrExpr {
     return when (val token = current()) {
-        is Token.StringLiteral -> { advance(false); Literal(DrString(token.value)) }
-        is Token.IntLiteral -> { advance(false); Literal(DrInt(token.value)) }
-        is Token.BoolLiteral -> { advance(false); Literal(DrBool(token.value)) }
-        is Token.NullLiteral -> { advance(false); Literal(DrNull) }
-        is Token.Identifier -> parseCallOrVariable()
+        is Token.StringLiteral -> {
+            advance(false)
+            Literal(DrString(token.value))
+        }
+        is Token.IntLiteral -> {
+            advance(false)
+            Literal(DrInt(token.value))
+        }
+        is Token.BoolLiteral -> {
+            advance(false)
+            Literal(DrBool(token.value))
+        }
+        is Token.NullLiteral -> {
+            advance(false)
+            Literal(DrNull)
+        }
+        is Token.Identifier -> parseVariable()
         is Token.Symbol -> when (token.value) {
             "(" -> {
                 if (isLambda()) {
@@ -222,17 +223,12 @@ internal fun Parser.parseUnary() : DrExpr {
  * @return Constructed variable access or callable call
  * value AST object
  */
-internal fun Parser.parseCallOrVariable() : DrExpr {
-    val name = current() as Token.Identifier
-    var expression: DrExpr = Variable(name.value)
+internal fun Parser.parseVariable() : DrExpr {
+    val name = expect<Token.Identifier>("Expected variable name")
 
     advance()
 
-    while (checkSymbol("(")) {
-        expression = parseCallArguments(expression)
-    }
-
-    return expression
+    return Variable(name.value)
 }
 
 
@@ -250,7 +246,7 @@ internal fun Parser.parseCallOrVariable() : DrExpr {
  * is unterminated, without ')' symbol at end
  */
 internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
-    advance()
+    expectSymbol("(")
 
     val args = mutableListOf<Argument>()
 
@@ -327,8 +323,6 @@ internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
     val thenBlock: DrStmt = parseDriftIfBranch()
     var elseBlock: DrStmt? = null
 
-    skip(Token.NewLine)
-
     if (matchSymbol(":")) {
         elseBlock = parseDriftIfBranch()
     }
@@ -351,12 +345,8 @@ internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
  * @return Constructed [Block] or [ExprStmt] AST object
  */
 internal fun Parser.parseDriftIfBranch() : DrStmt {
-    return when (current()) {
-        is Token.Symbol -> if (checkSymbol("{")) {
-            parseBlock()
-        } else {
-            ExprStmt(parseExpression())
-        }
+    return when {
+        matchSymbol("{") -> parseBlock()
         else -> ExprStmt(parseExpression())
     }
 }

@@ -54,11 +54,9 @@ fun main(args: Array<String>) {
     val env = DrEnv()
 
     val tokens = lex(source)
+    println("tokens = $tokens")
     val ast = Parser(tokens).parse()
-
-
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+    println("ast = $ast")
 
     env.run {
         define("print", DrNativeFunction(
@@ -102,6 +100,9 @@ fun main(args: Array<String>) {
         defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
         defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
     }
+
+    SymbolCollector(env).collect(ast)
+    TypeChecker(env).check(ast)
 
     for (statement in ast) {
         statement.eval(env)

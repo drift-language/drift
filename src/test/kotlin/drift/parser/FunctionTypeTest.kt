@@ -115,7 +115,7 @@ class FunctionTypeTest {
 
     @Test
     fun `Function with union return type Int and Last must throw`() {
-        assertThrows<DriftTypeException> {
+        assertThrows<DriftParserException> {
             parseFunctionFromSource("""
                 fun test(): Int|Last { return 1 }
                 test()

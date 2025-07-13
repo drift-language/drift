@@ -20,6 +20,7 @@ import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
 import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.specials.DrVoid
 
 
 /******************************************************************************
@@ -41,36 +42,43 @@ import drift.runtime.values.specials.DrNotAssigned
 internal fun Parser.parseStatement() : DrStmt {
     return when (val token = current()) {
         is Token.Symbol -> when (token.value) {
-            "{" -> parseBlock()
+            "{" -> {
+                advance(false)
+                parseBlock()
+            }
             else -> ExprStmt(parseExpression())
         }
         is Token.Identifier -> when {
             token.isKeyword(Token.Keyword.IF) -> {
-                advance()
+                advance(false)
                 parseClassicIf()
             }
             token.isKeyword(Token.Keyword.FUNCTION) -> {
-                advance()
+                advance(false)
                 parseFunction()
             }
             token.isKeyword(Token.Keyword.RETURN) -> {
-                advance()
+                advance(false)
                 parseReturn()
             }
+            token.isKeyword(Token.Keyword.LEAVE) -> {
+                advance(false)
+                Return(Literal(DrVoid))
+            }
             token.isKeyword(Token.Keyword.FOR) -> {
-                advance()
+                advance(false)
                 parseFor()
             }
             token.isKeyword(Token.Keyword.CLASS) -> {
-                advance()
+                advance(false)
                 parseClass()
             }
             token.isKeyword(Token.Keyword.IMMUTLET) -> {
-                advance()
+                advance(false)
                 parseLet(false)
             }
             token.isKeyword(Token.Keyword.MUTLET) -> {
-                advance()
+                advance(false)
                 parseLet(true)
             }
             else -> ExprStmt(parseExpression())
@@ -97,7 +105,8 @@ internal fun Parser.parseLet(isMutable: Boolean) : Let {
     val nameToken = expect<Token.Identifier>("Expected variable name")
     val name = nameToken.value
 
-    advance(peekSymbol(":", true) || peekSymbol("=", true))
+    advance(peekSymbol(":", true)
+            || peekSymbol("=", true))
 
     // Type definition
     val type : DrType = if (matchSymbol(":")) {
@@ -106,8 +115,8 @@ internal fun Parser.parseLet(isMutable: Boolean) : Let {
         AnyType
     }
 
-    if (peekSymbol("="))
-        skip(Token.NewLine)
+    if (peekSymbol("=", ignoreNewLines = true))
+        advance()
 
     // Value initialization
     var expr = if (matchSymbol("=")) {
@@ -189,40 +198,28 @@ internal fun Parser.parseReturn() : Return =
  * or a '}' symbol
  */
 internal fun Parser.parseBlock() : Block {
-    val open = current()
-
-    if (open !is Token.Symbol || open.value != "{") {
-        throw DriftParserException("Expected '{' but found $open")
-    }
-
-    advance()
+    skip(Token.NewLine)
 
     val statements = mutableListOf<DrStmt>()
 
     while (true) {
-        val token = current()
-            ?: throw DriftParserException("Unterminated block, expected '}'")
-
-        if (token is Token.Symbol && token.value == "}") {
-            advance(false)
+        if (matchSymbol("}"))
             break
-        }
-
-        if (token is Token.NewLine) {
-            advance(false)
-            continue
-        }
 
         val statement = parseStatement()
         statements.add(statement)
 
-        val next = current()
+        if (current() == null)
+            throw DriftParserException("Unterminated block, expected '}'")
 
-        when (next) {
-            is Token.NewLine -> advance(false)
-            is Token.Symbol -> if (next.value != "}")
+        when (val next = current()) {
+            is Token.NewLine -> advance()
+            is Token.Symbol -> if (next.value != "}") {
                 throw DriftParserException("Expected newline or '}' after statement but found $next")
-            else -> throw DriftParserException("Expected newline or '}' after statement but found $next")
+            }
+            else -> {
+                throw DriftParserException("Expected newline or '}' after statement but found $next")
+            }
         }
     }
 
@@ -277,3 +274,5 @@ internal fun Parser.parseFor() : For {
 
     return For(iterable, variables, Block(statements))
 }
+
+

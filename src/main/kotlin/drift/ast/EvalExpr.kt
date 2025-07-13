@@ -173,7 +173,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             else -> throw DriftRuntimeException(unsupportedOperator(
                                 "+", leftValue.type(), rightValue.type()))
                         }
-                    } else if (leftValue is DrString && rightValue is DrNumeric) {
+                    } else if (leftValue is DrString) {
                         return DrString(leftValue.value + rightValue.asString())
                     } else {
                         throw DriftRuntimeException(unsupportedOperator(

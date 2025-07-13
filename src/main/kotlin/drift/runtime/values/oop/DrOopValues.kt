@@ -76,13 +76,17 @@ data class DrInstance(
 
             val local = DrEnv()
             local.define("this", this)
+
             var result: DrValue? = null
+
             for (statement in method.let.body) {
                 val evalResult = statement.eval(local)
+
                 if (evalResult is DrReturn) {
                     result = evalResult.value
                     break
                 }
+
                 result = evalResult
             }
             if (result !is DrString) {

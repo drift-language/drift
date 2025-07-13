@@ -158,6 +158,7 @@ sealed class Token {
         IMMUTLET("let"),
         MUTLET("var"),
         AS("as"),
+        LEAVE("leave"),
     }
 
 

@@ -8,6 +8,7 @@ import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
@@ -32,6 +33,10 @@ class LetTest {
                     returnType = NullType
                 )
             )
+
+            defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+            defineClass("String", DrClass("String", emptyList(), emptyList()))
+            defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
         }
 
         SymbolCollector(env).collect(ast)

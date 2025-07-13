@@ -9,6 +9,8 @@
 
 package drift.runtime
 
+import kotlin.math.exp
+
 
 /******************************************************************************
  * DRIFT TYPES
@@ -187,15 +189,21 @@ data class ObjectType(val className: String, val args: Map<String, TypeArgument>
  * @return If both types can cooperate on assign
  */
 fun isAssignable(valueType: DrType, expected: DrType): Boolean {
-    if (valueType == UnknownType || expected == AnyType)
+    if (valueType == UnknownType
+        || expected == AnyType
+        || expected == VoidType && valueType == VoidType) {
+
         return true
+    }
 
     if (expected is ObjectType && valueType is ObjectType)
         return expected.className == valueType.className
 
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)
-        is UnionType -> expected.options.any { isAssignable(valueType, it) }
+        is UnionType ->
+            expected.options.contains(NullType) && valueType == NullType
+            || expected.options.any { isAssignable(valueType, it) }
         else -> false
     }
 }

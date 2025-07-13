@@ -11,6 +11,7 @@ package drift.checkers
 
 import drift.ast.*
 import drift.exceptions.DriftSemanticException
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
 
 
@@ -106,6 +107,8 @@ class TypeChecker (private val env: DrEnv) {
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
+            is ObjectType -> env.resolveClass(type.className)
+                ?: throw DriftTypeException("${type.className} type is undefined")
             else -> {}
         }
     }

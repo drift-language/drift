@@ -110,7 +110,7 @@ class Parser(
         if (c is Token.Symbol) {
             if (c.value in listOf("(", "[", "{")) depth++
             else if (c.value in listOf(")", "]", "}")) depth--
-        } else if (c is Token.NewLine && depth > 0) {
+        } else if (ignoreNewLines && c is Token.NewLine && depth > 0) {
             advance()
         }
     }
@@ -134,19 +134,15 @@ class Parser(
         val statements = mutableListOf<DrStmt>()
 
         while (!isAtEnd()) {
-            val token = current()
-
-            if (token is Token.NewLine) {
-                advance()
-                continue
-            }
+            skip(Token.NewLine)
 
             val statement = parseStatement()
             statements.add(statement)
 
+
             val next = current()
 
-            if (next is Token.NewLine || next is Token.Symbol && next.value == "}") {
+            if (next is Token.NewLine) {
                 advance()
             } else if (!isAtEnd()) {
                 throw DriftParserException("Expected newline after top-level statement but found $next")
@@ -261,14 +257,15 @@ class Parser(
      * @throws DriftParserException If the expected symbol is
      * not found
      */
-    internal fun expectSymbol(expected: String) {
+    internal fun expectSymbol(expected: String, advanceOnSuccess: Boolean = true) {
         val token = current()
 
         if (token !is Token.Symbol || token.value != expected) {
             throw DriftParserException("Expected '$expected' but found $token")
         }
 
-        advance(false)
+        if (advanceOnSuccess)
+            advance(false)
     }
 
 
