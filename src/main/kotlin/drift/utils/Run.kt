@@ -16,6 +16,7 @@ import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNull
 
 
@@ -38,6 +39,12 @@ fun evalProgram(source: String) : DrValue {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
     val env = DrEnv()
+
+    env.apply {
+        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+        defineClass("String", DrClass("String", emptyList(), emptyList()))
+        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+    }
 
     SymbolCollector(env).collect(ast)
     TypeChecker(env).check(ast)
@@ -80,6 +87,10 @@ fun evalWithOutputs(source: String) : MutableList<String> {
             paramTypes = listOf(AnyType),
             returnType = NullType)
         )
+
+        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+        defineClass("String", DrClass("String", emptyList(), emptyList()))
+        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
     }
 
     SymbolCollector(env).collect(ast)

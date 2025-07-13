@@ -40,43 +40,43 @@ import drift.runtime.*
  * to another type
  */
 internal fun Parser.parseType() : DrType {
+    val types = mutableListOf<DrType>()
+    var foundOptional = false
     val token = expect<Token.Identifier>("Expected type name")
-    val type: DrType = when (token.value) {
-        "Int"       -> ObjectType("Int")
-        "String"    -> ObjectType("String")
-        "Bool"      -> ObjectType("Bool")
+    var type: DrType = when (token.value) {
         "Null"      -> NullType
         "Void"      -> VoidType
         "Any"       -> AnyType
         "Last"      -> LastType
-        else        -> ClassType(token.value)
+        else        -> ObjectType(token.value)
     }
 
-    advance(ignoreNewLines = false, ignoreWhitespaces = !peekSymbol("?"))
+    advance(false)
 
-    val isOptional = matchSymbol("?")
-    val left: DrType =
-        if (isOptional) OptionalType(type)
-        else type
-
-    if (isOptional && checkSymbol("|")) {
-        throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+    if (matchSymbol("?")) {
+        type = OptionalType(type)
+        foundOptional = true
     }
 
-    val unionTypes: MutableList<DrType> = mutableListOf(left)
+    types.add(type)
 
     while (matchSymbol("|")) {
+        if (foundOptional)
+            throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+
         val next = parseType()
-
-        if (next is LastType)
-            throw DriftTypeException("Cannot unite Last type")
-
-        unionTypes.add(next)
+        when (next) {
+            is LastType, is AnyType, is VoidType ->
+                throw DriftParserException("Cannot unite special type with another")
+            is OptionalType ->
+                throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+            else ->
+                types.add(next)
+        }
     }
 
-    return if (unionTypes.size == 1) {
-        unionTypes[0]
-    } else {
-        UnionType(unionTypes)
+    return when (types.size) {
+        0, 1 -> types.firstOrNull() ?: AnyType
+        else -> UnionType(types)
     }
 }

@@ -79,6 +79,8 @@ internal fun Parser.parseFunction() : Function {
         if (matchSymbol(":")) parseType()
         else AnyType
 
+    expectSymbol("{")
+
     val body = parseBlock().statements
 
     return Function(name, parameters, body, returnType)
@@ -130,13 +132,11 @@ internal fun Parser.parseLambda() : Lambda {
 
     expectSymbol(")")
 
-    var returnType: DrType = AnyType
+    val returnType: DrType =
+        if (matchSymbol(":")) parseType()
+        else AnyType
 
-    if (matchSymbol(":")) {
-        returnType = parseType()
-    }
-
-    expectSymbol("->")
+    expectSymbol("->"); expectSymbol("{")
 
     val body = parseBlock().statements
 

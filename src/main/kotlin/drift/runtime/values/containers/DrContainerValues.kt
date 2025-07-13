@@ -11,6 +11,7 @@ package drift.runtime.values.containers
 
 import drift.runtime.*
 import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInteger
 
 
 /******************************************************************************
@@ -22,7 +23,7 @@ import drift.runtime.values.primaries.DrInt
 
 
 /**
- * AST representation of a list.
+ * Runtime list structure
  */
 data class DrList(
     /** List values */
@@ -51,7 +52,7 @@ data class DrList(
 
 
 /**
- * AST representation of a range.
+ * Runtime range structure.
  *
  * A range is a simplified structure representing
  * each integer between [from] and [to] values.
@@ -63,10 +64,19 @@ data class DrList(
  */
 data class DrRange(
     /** From value, start of the range */
-    val from: DrInt,
+    val from: DrInteger<*>,
 
     /** To value, end of the range, included */
-    val to: DrInt) : DrValue {
+    val to: DrInteger<*>) : DrValue {
+
+
+    companion object {
+        fun factory(from: DrInteger<*>, to: DrInteger<*>) : DrRange {
+            require(from::class == to::class) { "Range requires both ends to be of the same type" }
+
+            return DrRange(from, to)
+        }
+    }
 
 
     /** @return A prepared string version of the type */

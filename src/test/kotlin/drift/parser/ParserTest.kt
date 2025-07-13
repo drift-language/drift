@@ -4,6 +4,8 @@ import drift.ast.DrStmt
 import drift.ast.eval
 import drift.exceptions.DriftParserException
 import drift.runtime.*
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.specials.DrNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows

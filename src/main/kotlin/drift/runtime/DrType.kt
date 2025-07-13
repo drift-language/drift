@@ -175,17 +175,6 @@ data class ObjectType(val className: String, val args: Map<String, TypeArgument>
 }
 
 
-@Deprecated("Refactor: use ObjectType to represent all types.")
-data class FunctionType(val paramTypes: List<DrType>, val returnType: DrType) : DrType {
-    override fun asString() = "(${paramTypes.joinToString(", ") { it.asString() }}) -> ${returnType.asString()}"
-}
-
-@Deprecated("Refactor: use ObjectType to represent all types.")
-data class ClassType(val name: String) : DrType {
-    override fun asString(): String = name
-}
-
-
 
 /**
  * Verify if the provided value type could be used
@@ -198,16 +187,21 @@ data class ClassType(val name: String) : DrType {
  * @return If both types can cooperate on assign
  */
 fun isAssignable(valueType: DrType, expected: DrType): Boolean {
-    if (valueType == UnknownType || expected == AnyType)
+    if (valueType == UnknownType
+        || expected == AnyType
+        || expected == VoidType && valueType == VoidType) {
+
         return true
+    }
 
     if (expected is ObjectType && valueType is ObjectType)
         return expected.className == valueType.className
 
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)
-        is UnionType -> expected.options.any { isAssignable(valueType, it) }
-        is ClassType -> valueType is ObjectType && expected.name == valueType.className
+        is UnionType ->
+            expected.options.contains(NullType) && valueType == NullType
+            || expected.options.any { isAssignable(valueType, it) }
         else -> false
     }
 }

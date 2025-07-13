@@ -11,6 +11,7 @@ package drift.checkers
 
 import drift.ast.*
 import drift.exceptions.DriftSemanticException
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
 
 
@@ -89,11 +90,6 @@ class TypeChecker (private val env: DrEnv) {
                 checkExpr(expr.value)
             }
             is Get -> checkExpr(expr.receiver)
-            is Ternary -> {
-                checkExpr(expr.condition)
-                checkExpr(expr.thenBranch)
-                expr.elseBranch?.let { checkExpr(it) }
-            }
             else -> {}
         }
     }
@@ -109,14 +105,10 @@ class TypeChecker (private val env: DrEnv) {
      */
     private fun checkType(type: DrType) {
         when (type) {
-            is ClassType -> if (env.resolveClass(type.name) == null)
-                throw DriftSemanticException("Unknown class type '${type.name}'")
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
-            is FunctionType -> {
-                type.paramTypes.forEach { checkType(it) }
-                checkType(type.returnType)
-            }
+            is ObjectType -> env.resolveClass(type.className)
+                ?: throw DriftTypeException("${type.className} type is undefined")
             else -> {}
         }
     }

@@ -2,9 +2,8 @@ package drift.parser
 
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrEnv
-import drift.runtime.DrInt
-import drift.runtime.DrNull
-import drift.runtime.DrVoid
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.specials.DrVoid
 import drift.utils.evalProgram
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test

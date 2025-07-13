@@ -71,6 +71,8 @@ internal fun Parser.parseClass() : Class {
 
     if (matchSymbol("{")) {
         while (!matchSymbol("}")) {
+            skip(Token.NewLine)
+
             val c = current()
 
             if (c !is Token.Identifier || !c.isKeyword(Token.Keyword.FUNCTION)) {

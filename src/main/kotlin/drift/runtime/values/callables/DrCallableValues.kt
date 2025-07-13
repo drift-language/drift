@@ -59,9 +59,10 @@ data class DrFunction(
         "<[function@${hashCode()}] ${let.name} ${type().asString()}>"
 
     /** @return The object representation of the type */
-    override fun type(): DrType = FunctionType(
-        let.parameters.map { it.type },
-        let.returnType)
+    override fun type(): DrType = ObjectType("Function", mapOf(
+        "paramTypes" to MultiTypes(let.parameters.map { it.type }),
+        "returnType" to SingleType(let.returnType)
+    ))
 }
 
 
@@ -105,9 +106,10 @@ data class DrLambda(
         "<[lambda#${hashCode()}] ${type().asString()}>"
 
     /** @return The object representation of the type */
-    override fun type(): DrType = FunctionType(
-        let.parameters.map { it.type },
-        let.returnType)
+    override fun type(): DrType = ObjectType("Function", mapOf(
+        "paramTypes" to MultiTypes(let.parameters.map { it.type }),
+        "returnType" to SingleType(let.returnType)
+    ))
 }
 
 
@@ -152,9 +154,10 @@ data class DrMethod(
     }
 
     /** @return The object representation of the type */
-    override fun type(): DrType = FunctionType(
-        let.parameters.map { it.type },
-        let.returnType)
+    override fun type(): DrType = ObjectType("Function", mapOf(
+        "paramTypes" to MultiTypes(let.parameters.map { it.type }),
+        "returnType" to SingleType(let.returnType)
+    ))
 }
 
 
@@ -185,11 +188,11 @@ data class DrNativeFunction(
     /** @return A prepared string version of the type */
     override fun asString(): String =
         "<[native#${hashCode()}] ${type().asString()}>"
-
     /** @return The object representation of the type */
-    override fun type(): DrType = FunctionType(
-        paramTypes,
-        returnType)
+    override fun type(): DrType = ObjectType("Function", mapOf(
+        "paramTypes" to MultiTypes(paramTypes),
+        "returnType" to SingleType(returnType)
+    ))
 }
 
 

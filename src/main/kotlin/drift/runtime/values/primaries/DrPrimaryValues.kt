@@ -9,8 +9,10 @@
 
 package drift.runtime.values.primaries
 
+import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
+import kotlin.reflect.KClass
 
 
 /******************************************************************************
@@ -24,7 +26,37 @@ import drift.runtime.ObjectType
 /**
  * This interface represents all primary value types.
  */
-sealed interface DrPrimary
+sealed interface DrPrimary<T> {
+    val value: T
+}
+
+
+
+/**
+ * This interface represents all numeric value types.
+ */
+sealed interface DrNumeric {
+    fun asInt() : Int
+    fun asLong() : Long
+    fun asUInt() : UInt
+}
+
+val DrNumeric.numericRank : Int
+    get() = when (this) {
+        is DrInt -> 1
+        is DrUInt -> 2
+        is DrInt64 -> 3
+        else -> 0
+    }
+
+
+
+/**
+ * This interface represents all integer value types.
+ */
+sealed interface DrInteger<T> : DrNumeric {
+    val value: T
+}
 
 
 
@@ -35,7 +67,7 @@ sealed interface DrPrimary
  */
 data class DrString(
     /** String value (unquoted) */
-    val value: String) : DrValue, DrPrimary {
+    override val value: String) : DrValue, DrPrimary<String> {
 
 
     /** @return A prepared string version of the type */
@@ -48,13 +80,13 @@ data class DrString(
 
 
 /**
- * AST representation of an integer.
+ * AST representation of a 32-bit integer.
  *
  * @see DrPrimary
  */
 data class DrInt(
     /** Integer value */
-    val value: Int) : DrValue, DrPrimary {
+    override val value: Int) : DrPrimary<Int>, DrValue, DrInteger<Int> {
 
 
 
@@ -63,6 +95,67 @@ data class DrInt(
 
     /** @return The object representation of the type */
     override fun type() = ObjectType("Int")
+
+
+    override fun asInt(): Int = value
+
+    override fun asLong(): Long = value.toLong()
+
+    override fun asUInt(): UInt = value.toUInt()
+}
+
+
+
+/**
+ * AST representation of a 64-bit integer.
+ *
+ * @see DrPrimary
+ */
+data class DrInt64(
+    /** Integer value */
+    override val value: Long) : DrPrimary<Long>, DrValue, DrInteger<Long> {
+
+
+
+    /** @return A prepared string version of the type */
+    override fun asString() = value.toString()
+
+    /** @return The object representation of the type */
+    override fun type() = ObjectType("Int64")
+
+
+    override fun asInt(): Int = value.toInt()
+
+    override fun asLong(): Long = value
+
+    override fun asUInt(): UInt = value.toUInt()
+}
+
+
+
+/**
+ * AST representation of an unsigned integer.
+ *
+ * @see DrPrimary
+ */
+data class DrUInt(
+    /** Integer value */
+    override val value: UInt) : DrPrimary<UInt>, DrValue, DrNumeric {
+
+
+
+    /** @return A prepared string version of the type */
+    override fun asString() = value.toString()
+
+    /** @return The object representation of the type */
+    override fun type() = ObjectType("UInt")
+
+
+    override fun asInt(): Int = value.toInt()
+
+    override fun asLong(): Long = value.toLong()
+
+    override fun asUInt(): UInt = value
 }
 
 
@@ -74,7 +167,7 @@ data class DrInt(
  */
 data class DrBool(
     /** Boolean value */
-    val value: Boolean) : DrValue, DrPrimary {
+    override val value: Boolean) : DrValue, DrPrimary<Boolean> {
 
 
 
@@ -83,4 +176,22 @@ data class DrBool(
 
     /** @return The object representation of the type */
     override fun type() = ObjectType("Bool")
+}
+
+
+
+/**********************************
+ * NUMERIC UTILITY FUNCTIONS
+ **********************************/
+
+
+fun promoteNumericPair(left: DrNumeric, right: DrNumeric) : Triple<DrNumeric, DrNumeric, KClass<out DrNumeric>> {
+    val rank = maxOf(left.numericRank, right.numericRank)
+
+    return when (rank) {
+        3 -> Triple(DrInt64(left.asLong()), DrInt64(right.asLong()), DrInt64::class)
+        2 -> Triple(DrUInt(left.asUInt()), DrUInt(right.asUInt()), DrUInt::class)
+        1 -> Triple(DrInt(left.asInt()), DrInt(right.asInt()), DrInt::class)
+        else -> throw DriftRuntimeException("Unsupported numeric promotion")
+    }
 }

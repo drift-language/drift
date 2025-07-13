@@ -19,9 +19,11 @@ import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
+import drift.utils.castNumericIfNeeded
 
 
 /******************************************************************************
@@ -87,7 +89,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Callable return
         is Return -> {
-            val value = validateValue(value.eval(env))
+            val value = validateValue(value.eval(env), ignoreVoid = true)
 
             DrReturn(value)
         }
@@ -109,7 +111,11 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Variable definition
         is Let -> {
-            val v = validateValue(value.eval(env), ignoreNotAssigned = true)
+            var v = validateValue(value.eval(env), ignoreNotAssigned = true)
+
+            if (type != AnyType) {
+                v = castNumericIfNeeded(v, type)
+            }
 
             if (env.isTopLevel()) {
                 val variable = env.resolve(name) as? DrVariable
@@ -129,7 +135,13 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
             val items = when (iterable) {
                 is DrList -> iterable.items
-                is DrRange -> (iterable.from.value..iterable.to.value).map { DrInt(it) }
+                is DrRange -> when {
+                    iterable.from.value is Int && iterable.to.value is Int ->
+                        (iterable.from.value as Int..iterable.to.value as Int).map { DrInt(it) }
+                    iterable.from.value is Long && iterable.to.value is Long ->
+                        (iterable.from.value as Long..iterable.to.value as Long).map { DrInt64(it) }
+                    else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
+                }
                 else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
             }
 
@@ -148,7 +160,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                     }
                 } else {
                     throw DriftRuntimeException(
-                        "Cannot destructure ${item.type()} into " +
+                        "Cannot destructure ${item.type().asString()} into " +
                         "${variables.size} variables")
                 }
 

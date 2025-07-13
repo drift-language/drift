@@ -4,16 +4,31 @@ import drift.ast.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
+import drift.exceptions.DriftTypeException
 import drift.runtime.*
+import drift.runtime.values.containers.DrRange
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrNull
 import drift.utils.evalProgram
+import drift.utils.evalWithOutput
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class BinaryExprTest {
 
     private fun evalExpr(input: String) : DrValue {
-        val env = DrEnv()
+        val env = DrEnv().apply {
+            defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+            defineClass("Int64", DrClass("Int", emptyList(), emptyList()))
+            defineClass("String", DrClass("String", emptyList(), emptyList()))
+            defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+        }
         val ast = Parser(lex(input)).parse()
 
         SymbolCollector(env).collect(ast)
@@ -68,6 +83,53 @@ class BinaryExprTest {
         assertThrows<DriftRuntimeException> {
             evalProgram("""
                 let x = 1 / 0
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Test range with both Int`() {
+        assertDoesNotThrow {
+            val range = evalExpr("1..3")
+
+            assertEquals(range, DrRange(DrInt(1), DrInt(3)))
+        }
+    }
+
+    @Test
+    fun `Test range with both Int64`() {
+        assertDoesNotThrow {
+            val range = evalExpr("""
+                let a: Int64 = 1
+                let b: Int64 = 3
+                
+                a..b
+            """.trimIndent())
+
+            assertEquals(range, DrRange(DrInt64(1), DrInt64(3)))
+        }
+    }
+
+    @Test
+    fun `Test range with unsigned integer must throw`() {
+        assertThrows<DriftTypeException> {
+            evalExpr("""
+                let a: UInt = 1
+                let b: Int64 = 3
+                
+                a..b
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Test range with both different integer types`() {
+        assertThrows<DriftRuntimeException> {
+            evalExpr("""
+                let a: Int = 1
+                let b: Int64 = 3
+                
+                a..b
             """.trimIndent())
         }
     }
