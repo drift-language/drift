@@ -246,6 +246,7 @@ internal fun Parser.parseFor() : For {
     val iterable = parseExpression()
 
     expectSymbol("{")
+    skip(Token.NewLine)
 
     val variables = mutableListOf<String>()
 
@@ -262,12 +263,22 @@ internal fun Parser.parseFor() : For {
 
             advance(false)
         } while (matchSymbol(","))
+
+        advance()
     }
 
     val statements = mutableListOf<DrStmt>()
 
     while (!checkSymbol("}")) {
         statements.add(parseStatement())
+
+        when (val c = current()) {
+            is Token.NewLine -> advance()
+            is Token.Symbol ->
+                if (c.value == "}") break
+                else throw DriftParserException("Expected newline or '}' after statement but found $c")
+            else -> throw DriftParserException("Expected newline or '}' after statement but found $c")
+        }
     }
 
     expectSymbol("}")
