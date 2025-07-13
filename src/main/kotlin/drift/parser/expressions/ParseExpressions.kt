@@ -81,7 +81,6 @@ internal fun Parser.parseBinary(minPrecedence: Int): DrExpr {
                 val v = parseExpression(operatorPrecedence["="]!! + 1)
                 left = Set(left, prop, v)
             } else {
-                println("from $left / get $prop")
                 left = Get(left, prop)
             }
 

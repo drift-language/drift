@@ -54,9 +54,7 @@ fun main(args: Array<String>) {
     val env = DrEnv()
 
     val tokens = lex(source)
-    println("tokens = $tokens")
     val ast = Parser(tokens).parse()
-    println("ast = $ast")
 
     env.run {
         define("print", DrNativeFunction(
@@ -82,10 +80,6 @@ fun main(args: Array<String>) {
                     paramTypes = emptyList(),
                     returnType = ObjectType("Int"),
                     impl = { receiver, args ->
-                        println("DEBUG: nativeImpl receiver = ${receiver?.asString()} type=${receiver?.type()}")
-                        println("DEBUG receiver javaClass = ${receiver?.javaClass?.name}")
-
-
                         val instance = receiver as? DrString
                             ?: throw DriftRuntimeException("length() called on non-String")
 
