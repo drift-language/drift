@@ -9,8 +9,6 @@
 
 package drift.runtime
 
-import kotlin.math.exp
-
 
 /******************************************************************************
  * DRIFT TYPES
