@@ -26,14 +26,16 @@ import kotlin.reflect.KClass
 /**
  * This interface represents all primary value types.
  */
-sealed interface DrPrimary
+sealed interface DrPrimary<T> {
+    val value: T
+}
 
 
 
 /**
  * This interface represents all numeric value types.
  */
-sealed interface DrNumeric : DrPrimary {
+sealed interface DrNumeric {
     fun asInt() : Int
     fun asLong() : Long
     fun asUInt() : UInt
@@ -50,13 +52,22 @@ val DrNumeric.numericRank : Int
 
 
 /**
+ * This interface represents all integer value types.
+ */
+sealed interface DrInteger<T> : DrNumeric {
+    val value: T
+}
+
+
+
+/**
  * AST representation of a string.
  *
  * @see DrPrimary
  */
 data class DrString(
     /** String value (unquoted) */
-    val value: String) : DrValue, DrPrimary {
+    override val value: String) : DrValue, DrPrimary<String> {
 
 
     /** @return A prepared string version of the type */
@@ -75,7 +86,7 @@ data class DrString(
  */
 data class DrInt(
     /** Integer value */
-    val value: Int) : DrValue, DrNumeric {
+    override val value: Int) : DrPrimary<Int>, DrValue, DrInteger<Int> {
 
 
 
@@ -102,7 +113,7 @@ data class DrInt(
  */
 data class DrInt64(
     /** Integer value */
-    val value: Long) : DrValue, DrNumeric {
+    override val value: Long) : DrPrimary<Long>, DrValue, DrInteger<Long> {
 
 
 
@@ -129,7 +140,7 @@ data class DrInt64(
  */
 data class DrUInt(
     /** Integer value */
-    val value: UInt) : DrValue, DrNumeric {
+    override val value: UInt) : DrPrimary<UInt>, DrValue, DrNumeric {
 
 
 
@@ -156,7 +167,7 @@ data class DrUInt(
  */
 data class DrBool(
     /** Boolean value */
-    val value: Boolean) : DrValue, DrPrimary {
+    override val value: Boolean) : DrValue, DrPrimary<Boolean> {
 
 
 
