@@ -58,23 +58,23 @@ class Parser(
      * From less to most high priority.
      */
     internal val operatorPrecedence: Map<String, Int> = mapOf(
-        ".."    to 1,
         "="     to 1,
+        ".."    to 2,
 
-        "?"     to 2,
+        "?"     to 3,
 
-        "=="    to 3,
-        "!="    to 3,
-        ">"     to 3,
-        "<"     to 3,
-        ">="    to 3,
-        "<="    to 3,
+        "=="    to 4,
+        "!="    to 4,
+        ">"     to 4,
+        "<"     to 4,
+        ">="    to 4,
+        "<="    to 4,
 
-        "+"     to 4,
-        "-"     to 4,
+        "+"     to 5,
+        "-"     to 5,
 
-        "*"     to 5,
-        "/"     to 5,
+        "*"     to 6,
+        "/"     to 6,
     )
 
 
