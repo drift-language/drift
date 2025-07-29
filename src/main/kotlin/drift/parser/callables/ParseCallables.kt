@@ -14,10 +14,13 @@ import drift.ast.Function
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
+import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
+import drift.runtime.DrValue
+import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************
@@ -54,21 +57,7 @@ internal fun Parser.parseFunction() : Function {
     if (matchSymbol("(")) {
         if (!checkSymbol(")")) {
             do {
-                val isPositional: Boolean = matchSymbol("*")
-                val paramToken = expect<Token.Identifier>("Expected parameter name")
-
-                if (parameters.firstOrNull { it.name == paramToken.value } != null)
-                    throw DriftParserException("Parameter ${paramToken.value} is already defined")
-
-                advance()
-
-                var paramType: DrType = AnyType
-
-                if (matchSymbol(":")) {
-                    paramType = parseType()
-                }
-
-                parameters.add(FunctionParameter(paramToken.value, isPositional, paramType))
+                parameters.add(parseFunctionParameter(parameters))
             } while (matchSymbol(","))
         }
 
@@ -141,4 +130,28 @@ internal fun Parser.parseLambda() : Lambda {
     val body = parseBlock().statements
 
     return Lambda(null, parameters, body, returnType)
+}
+
+
+internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParameter>) : FunctionParameter {
+    val isPositional: Boolean = matchSymbol("*")
+    val paramToken = expect<Token.Identifier>("Expected parameter name")
+    var value: DrExpr? = null
+
+    if (parameters.firstOrNull { it.name == paramToken.value } != null)
+        throw DriftParserException("Parameter ${paramToken.value} is already defined")
+
+    advance()
+
+    var paramType: DrType = AnyType
+
+    if (matchSymbol(":")) {
+        paramType = parseType()
+    }
+
+    if (matchSymbol("=")) {
+        value = parseExpression()
+    }
+
+    return FunctionParameter(paramToken.value, isPositional, paramType, value)
 }

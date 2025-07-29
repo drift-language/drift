@@ -10,6 +10,7 @@
 package drift.ast
 
 import drift.runtime.*
+import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************
@@ -46,8 +47,10 @@ data class Function(
  * @property isPositional If the argument name
  * must always be written on call
  * @property type Argument type
+ * @property defaultValue Default value assigned to parameter
  */
 data class FunctionParameter(
     val name: String,
     val isPositional: Boolean = false,
-    val type: DrType = AnyType)
+    val type: DrType = AnyType,
+    val defaultValue: DrExpr? = null)

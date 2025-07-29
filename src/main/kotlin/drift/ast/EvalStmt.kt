@@ -20,6 +20,7 @@ import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrInt64
+import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
@@ -96,9 +97,22 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Class definition
         is Class -> {
-            val klass = DrClass(name, fields, methods.map {
-                DrMethod(it, env)
-            })
+            val klass = DrClass(
+                name,
+                fields,
+                methods.map {
+                    DrMethod(it, env)
+                },
+                staticFields.associate {
+                    it.name to DrVariable(
+                        it.name,
+                        it.type,
+                        it.defaultValue?.eval(env) ?: DrNotAssigned,
+                        it.isPositional)
+                }.toMutableMap(),
+                staticMethods.associate {
+                    it.name to DrMethod(it, env)
+                }.toMutableMap())
 
             if (env.isTopLevel()) {
                 env.assignClass(name, klass)

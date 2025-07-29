@@ -67,17 +67,35 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 args: List<Pair<String?, DrValue>>,
                 instance: DrInstance? = null) {
 
+                /*
+                    TODO:
+                    - verify position for positional and named arguments
+                            NAMED… -> POS…
+                 */
+
                 for ((index, param) in fn.parameters.withIndex()) {
                     var value = if (param.isPositional) {
                         val arg = arguments.getOrNull(index)
-                            ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
 
-                        arg.second
+                        arg?.second
+                            ?: when (val v = param.defaultValue?.eval(env)) {
+                                is DrValue -> arguments.firstOrNull { it.first == param.name }?.second
+                                    ?: unwrap(v)
+                                else -> throw DriftRuntimeException(
+                                    "Missing positional argument for '${param.name}'")
+                            }
                     } else {
                         val arg = arguments.find { it.first == param.name }
-                            ?: throw DriftRuntimeException("Missing positional argument for '${param.name}'")
 
-                        arg.second
+                        arg?.second
+                            ?: when (val v = param.defaultValue?.eval(env)) {
+                                is DrValue -> {
+                                    arguments.firstOrNull { it.first == param.name }?.second
+                                        ?: unwrap(v)
+                                }
+                                else -> throw DriftRuntimeException(
+                                    "Missing argument for '${param.name}'")
+                            }
                     }
 
                     value = castNumericIfNeeded(value, param.type)
