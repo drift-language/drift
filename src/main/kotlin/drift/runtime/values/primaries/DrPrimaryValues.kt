@@ -99,9 +99,17 @@ data class DrInt(
 
     override fun asInt(): Int = value
 
-    override fun asLong(): Long = value.toLong()
+    override fun asLong(): Long = try {
+        value.toLong()
+    } catch (_: NumberFormatException) {
+        0L
+    }
 
-    override fun asUInt(): UInt = value.toUInt()
+    override fun asUInt(): UInt = try {
+        value.toUInt()
+    } catch (_: NumberFormatException) {
+        0U
+    }
 }
 
 
@@ -124,11 +132,19 @@ data class DrInt64(
     override fun type() = ObjectType("Int64")
 
 
-    override fun asInt(): Int = value.toInt()
+    override fun asInt(): Int = try {
+        value.toInt()
+    } catch (e: NumberFormatException) {
+        0
+    }
 
     override fun asLong(): Long = value
 
-    override fun asUInt(): UInt = value.toUInt()
+    override fun asUInt(): UInt = try {
+        value.toUInt()
+    } catch (_: NumberFormatException) {
+        0U
+    }
 }
 
 
@@ -151,9 +167,17 @@ data class DrUInt(
     override fun type() = ObjectType("UInt")
 
 
-    override fun asInt(): Int = value.toInt()
+    override fun asInt(): Int = try {
+        value.toInt()
+    } catch (_: NumberFormatException) {
+        0
+    }
 
-    override fun asLong(): Long = value.toLong()
+    override fun asLong(): Long = try {
+        value.toLong()
+    } catch (_: NumberFormatException) {
+        0L
+    }
 
     override fun asUInt(): UInt = value
 }

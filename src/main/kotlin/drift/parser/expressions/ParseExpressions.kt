@@ -19,6 +19,7 @@ import drift.parser.containers.parseList
 import drift.parser.statements.parseBlock
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
 
@@ -151,6 +152,10 @@ internal fun Parser.parsePrimary() : DrExpr {
         is Token.IntLiteral -> {
             advance(false)
             Literal(DrInt(token.value))
+        }
+        is Token.LongLiteral -> {
+            advance(false)
+            Literal(DrInt64(token.value))
         }
         is Token.BoolLiteral -> {
             advance(false)

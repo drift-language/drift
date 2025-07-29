@@ -86,12 +86,17 @@ sealed class Token {
      * Integer literal token type.
      *
      * It represents an integer.
-     *
-     * ```
-     * 1
-     * ```
      */
     data class IntLiteral(val value: Int) : Token()
+
+
+
+    /**
+     * Long literal token type.
+     *
+     * It represents a 64-integer.
+     */
+    data class LongLiteral(val value: Long) : Token()
 
 
 
@@ -159,6 +164,7 @@ sealed class Token {
         MUTLET("var"),
         AS("as"),
         LEAVE("leave"),
+        STATIC("static"),
     }
 
 
@@ -222,7 +228,7 @@ fun lex(input: String): List<Token> {
             i = next
             continue
         } else if (c.isDigit()) {
-            val (token, next) = lexInt(input, i)
+            val (token, next) = lexNumeric(input, i)
             tokens.add(token)
 
             i = next
@@ -292,23 +298,29 @@ fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
 
 
 /**
- * This function tokenizes an integer expression
+ * This function tokenizes a numeric expression
  *
  * @param input Source code
  * @param startIndex Start index of the expression to tokenize
  * @return A pair composed by the [Token.IntLiteral] object and the next
  * character position index
  */
-fun lexInt(input: String, startIndex: Int): Pair<Token.IntLiteral, Int> {
+fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
     var i = startIndex
-    var final: Int = 0
 
     while (i < input.length && input[i].isDigit()) {
-        final = final concat input[i].digitToInt()
         i++
     }
 
-    return Token.IntLiteral(final) to i
+    val numberAsString = input.substring(startIndex, i)
+
+    val token = numberAsString.toIntOrNull()?.let {
+        Token.IntLiteral(it)
+    } ?: numberAsString.toLongOrNull()?.let {
+        Token.LongLiteral(it)
+    } ?: throw DriftLexerException("Numeric literal too large: $numberAsString")
+
+    return token to i
 }
 
 
