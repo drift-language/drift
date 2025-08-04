@@ -5,6 +5,7 @@ import drift.runtime.DrEnv
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrVoid
 import drift.utils.evalProgram
+import drift.utils.evalWithOutput
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -79,6 +80,36 @@ class FunctionTest {
                 fun test : Int { }
                 test()
             """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Function with TRUE take-if structure must return value`() {
+        assertDoesNotThrow {
+            val output = evalWithOutput("""
+                fun a : Int? {
+                    return true ? 123
+                }
+                
+                test(a())
+            """.trimIndent())
+
+            assertEquals(output, "123")
+        }
+    }
+
+    @Test
+    fun `Function with FALSE take-if structure must return NULL`() {
+        assertDoesNotThrow {
+            val output = evalWithOutput("""
+                fun a : Int? {
+                    return false ? 123
+                }
+                
+                test(a())
+            """.trimIndent())
+
+            assertEquals(output, "null")
         }
     }
 
