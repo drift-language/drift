@@ -42,6 +42,8 @@ fun evalProgram(source: String) : DrValue {
 
     env.apply {
         defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
+        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
         defineClass("String", DrClass("String", emptyList(), emptyList()))
         defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
     }
@@ -89,6 +91,8 @@ fun evalWithOutputs(source: String) : MutableList<String> {
         )
 
         defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
+        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
         defineClass("String", DrClass("String", emptyList(), emptyList()))
         defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
     }
