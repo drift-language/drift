@@ -48,7 +48,7 @@ class SymbolsTest {
 
         assertTrue(tokens.any { it is Token.Identifier && it.value == "name" })
         assertTrue(tokens.any { it is Token.StringLiteral && it.value == "John" })
-        assertTrue(tokens.any { it is Token.IntLiteral && it.value == 42 })
+        assertTrue(tokens.any { it is Token.NumericLiteral && it.value == "42" })
     }
 
     @Test

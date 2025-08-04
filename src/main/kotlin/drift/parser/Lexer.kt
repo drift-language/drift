@@ -83,20 +83,11 @@ sealed class Token {
 
 
     /**
-     * Integer literal token type.
+     * Numeric literal token type.
      *
-     * It represents an integer.
+     * It represents a numeric: Int, Int64, UInt, etc.
      */
-    data class IntLiteral(val value: Int) : Token()
-
-
-
-    /**
-     * Long literal token type.
-     *
-     * It represents a 64-integer.
-     */
-    data class LongLiteral(val value: Long) : Token()
+    data class NumericLiteral(val value: String) : Token()
 
 
 
@@ -313,12 +304,7 @@ fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
     }
 
     val numberAsString = input.substring(startIndex, i)
-
-    val token = numberAsString.toIntOrNull()?.let {
-        Token.IntLiteral(it)
-    } ?: numberAsString.toLongOrNull()?.let {
-        Token.LongLiteral(it)
-    } ?: throw DriftLexerException("Numeric literal too large: $numberAsString")
+    val token = Token.NumericLiteral(numberAsString)
 
     return token to i
 }

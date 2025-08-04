@@ -265,8 +265,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 ".." -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt
-                        || leftValue is DrInt64 && rightValue is DrInt64 ->
+                        leftValue is DrInt && rightValue is DrInt ->
+                            DrRange(leftValue, rightValue)
+                        leftValue is DrInt64 && rightValue is DrInt64 ->
                             DrRange(leftValue, rightValue)
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "..", leftValue.type(), rightValue.type()))

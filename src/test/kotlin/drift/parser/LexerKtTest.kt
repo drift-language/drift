@@ -29,10 +29,10 @@ class LexerKtTest {
             listOf(
                 Token.Identifier("add"),
                 Token.Symbol("("),
-                Token.IntLiteral(1),
+                Token.NumericLiteral("1"),
                 Token.Symbol(","),
                 Token.Whitespace,
-                Token.IntLiteral(23),
+                Token.NumericLiteral("23"),
                 Token.Symbol(")"),
                 Token.EOF
             ),
@@ -66,11 +66,11 @@ class LexerKtTest {
                 Token.Whitespace,
                 Token.Symbol("="),
                 Token.Whitespace,
-                Token.IntLiteral(1),
+                Token.NumericLiteral("1"),
                 Token.Whitespace,
                 Token.Symbol("+"),
                 Token.Whitespace,
-                Token.IntLiteral(2),
+                Token.NumericLiteral("2"),
                 Token.Symbol("}"),
                 Token.EOF
             ),

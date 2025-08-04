@@ -149,13 +149,13 @@ internal fun Parser.parsePrimary() : DrExpr {
             advance(false)
             Literal(DrString(token.value))
         }
-        is Token.IntLiteral -> {
+        is Token.NumericLiteral -> {
             advance(false)
-            Literal(DrInt(token.value))
-        }
-        is Token.LongLiteral -> {
-            advance(false)
-            Literal(DrInt64(token.value))
+            Literal(token.value.run {
+                toIntOrNull()?.let { DrInt(it) }
+                ?: toLongOrNull()?.let { DrInt64(it) }
+                ?: throw DriftParserException("Too long numeric ${token.value}")
+            })
         }
         is Token.BoolLiteral -> {
             advance(false)
