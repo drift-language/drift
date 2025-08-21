@@ -150,6 +150,9 @@ internal fun Parser.parseLet(isMutable: Boolean) : Let {
  */
 internal fun Parser.parseClassicIf() : If {
     val condition = parseExpression()
+
+    skip(Token.NewLine)
+
     val thenBlock = parseStatement()
     var elseBlock: DrStmt? = null
 

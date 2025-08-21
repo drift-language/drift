@@ -47,28 +47,21 @@ import drift.runtime.values.specials.DrNull
  *   - If target is neither a variable nor an object field
  */
 internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
-    var expr = parseBinary(minPrecedence)
-    var loop = true
-
-    while (loop) {
-        if (checkSymbol("(")) {
-            expr = parseCallArguments(expr)
-
-            continue
-        } else {
-            loop = false
-        }
-    }
-
-    return expr
+    return parseBinary(minPrecedence)
 }
 
 
 
-internal fun Parser.parseBinary(minPrecedence: Int): DrExpr {
+internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
     var left = parseUnary()
 
     while (true) {
+        if (checkSymbol("(")) {
+            left = parseCallArguments(left)
+
+            continue
+        }
+
         val opToken = current() as? Token.Symbol ?: break
         val op = opToken.value
 
@@ -230,7 +223,7 @@ internal fun Parser.parseUnary() : DrExpr {
 internal fun Parser.parseVariable() : DrExpr {
     val name = expect<Token.Identifier>("Expected variable name")
 
-    advance()
+    advance(false)
 
     return Variable(name.value)
 }
