@@ -101,8 +101,8 @@ class ForTest {
     fun `For using list, with variable`() {
         assertDoesNotThrow {
             val outputs = evalWithOutputs("""
-                for [1, 2, 3] { as i 
-                    test(i)
+                for [1, 2, 3] { as value 
+                    test(value)
                 }
             """.trimIndent())
 
@@ -111,11 +111,28 @@ class ForTest {
     }
 
     @Test
-    fun `For using list, with many variables must throw`() {
+    fun `For using list, with 2 variables (index and value) must throw`() {
+        assertDoesNotThrow {
+            val outputs = evalWithOutputs("""
+                for [1, 2, 3] { as value, i
+                    test(i, value)
+                }
+            """.trimIndent())
+
+            assertEquals(outputs, listOf(
+                "0", "1",
+                "1", "2",
+                "2", "3",
+            ))
+        }
+    }
+
+    @Test
+    fun `For using list, with more than 2 variables must throw`() {
         assertThrows<DriftRuntimeException> {
             evalProgram("""
-                for [1, 2, 3] { as a, b
-                    print(a, b)
+                for [1, 2, 3] { as a, b, c
+                    test(a, b, c)
                 }
             """.trimIndent())
         }

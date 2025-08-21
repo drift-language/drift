@@ -159,7 +159,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                 else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
             }
 
-            for (item in items) {
+            for ((index, item) in items.withIndex()) {
                 val loopEnv = DrEnv(env)
 
                 if (variables.isEmpty()) {
@@ -168,6 +168,23 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                     val name = variables[0]
 
                     loopEnv.forceDefine(name, DrVariable(name, AnyType, item, isMutable = true))
+                } else if (iterable is DrList && variables.size == 2) {
+                    val valueVariable = variables[0]
+                    val indexVariable = variables[1]
+
+                    loopEnv.run {
+                        forceDefine(indexVariable, DrVariable(
+                            indexVariable,
+                            ObjectType("Int"),
+                            DrInt(index),
+                            isMutable = false))
+
+                        forceDefine(valueVariable, DrVariable(
+                            valueVariable,
+                            AnyType,
+                            item,
+                            isMutable = true))
+                    }
                 } else if (item is DrList && item.items.size == variables.size) {
                     variables.zip(item.items).forEach { (name, value) ->
                         loopEnv.assign(name, DrVariable(name, AnyType, value, isMutable = true))
