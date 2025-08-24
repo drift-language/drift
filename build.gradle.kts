@@ -24,6 +24,26 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.register("generateVersionFile") {
+    val outputDirectory = layout.buildDirectory.dir("generated/resources")
+    outputs.dir(outputDirectory)
+
+    doLast {
+        outputDirectory.get().file("version.txt").asFile.also {
+            it.parentFile.mkdirs()
+            it.writeText(project.version.toString())
+        }
+    }
+}
+
+tasks.named("processResources") {
+    dependsOn("generateVersionFile")
+}
+
+sourceSets.main {
+    resources.srcDir(layout.buildDirectory.dir("generated/resources"))
+}
+
 application {
     mainClass.set("drift.DriftReplKt")
 }

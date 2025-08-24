@@ -17,6 +17,8 @@ import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.parser.Parser
 import drift.parser.lex
+import drift.project.Project
+import drift.project.version
 import drift.runtime.*
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrNativeFunction
@@ -37,6 +39,8 @@ import java.io.File
 
 
 fun main(args: Array<String>) {
+    println("-- Drift CommandLine Feature — ${Project.version} --\n")
+
     if (args.isEmpty()) {
         println("Usage: drift <file.drift>")
         return
