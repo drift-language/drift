@@ -270,7 +270,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         leftValue is DrInt64 && rightValue is DrInt64 ->
                             DrRange(leftValue, rightValue)
                         else -> throw DriftRuntimeException(unsupportedOperator(
-                            "", leftValue.type(), rightValue.type()))
+                            "..", leftValue.type(), rightValue.type()))
                     }
                 }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
@@ -336,13 +336,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             when (obj) {
                 is DrInstance -> {
-                    // Champs d'instance
+                    // Instance Fields
                     obj.values[name]?.let { value ->
                         validateValue(value)
                         return value
                     }
 
-                    // Méthodes d'instance
+                    // Instance Methods
                     klass.methods.find { it.let.name == name }?.let { method ->
                         return DrMethod(
                             let = method.let,
@@ -353,13 +353,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     }
                 }
                 is DrClass -> {
-                    // Champs statiques
+                    // Static fields
                     klass.staticFields[name]?.let { staticField ->
                         validateValue(staticField.value)
                         return staticField.value
                     }
 
-                    // Méthodes statiques
+                    // Static methods
                     klass.staticMethods[name]?.let { staticMethod ->
                         return DrMethod(
                             let = staticMethod.let,

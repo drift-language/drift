@@ -306,4 +306,5 @@ internal fun Parser.parseImport() : Import {
     return Import(
         namespaceSteps.joinToString("."),
         "src/${namespaceSteps.joinToString("/")}.drift")
+    // TODO: use dynamic structure from drift.json
 }
