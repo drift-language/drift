@@ -6,18 +6,43 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.project
+package project
+
+import java.io.BufferedReader
+import java.io.File
 
 
 /******************************************************************************
- * DRIFT PROJECT HELPER CLASS
+ * DRIFT PROJECT VERSION HELPER
  ******************************************************************************/
 
 
 
 /**
- * Drift Project Main Data Object
- *
- * Provide all information about this Drift distribution.
+ * Drift Distribution Current Version
  */
-data object Project
+val Project.version: String
+    get() = ((object {}.javaClass
+            .getResource("/version.txt")
+            ?.readText()
+            ?.trim()
+            ?: "0.0")
+            + "."
+            + runGitCommand("rev-parse", "--short", "HEAD").uppercase())
+
+
+
+/**
+ * Runs a git command in the current directory.
+ */
+fun runGitCommand(vararg args: String): String {
+    val process = ProcessBuilder("git", *args)
+        .directory(File(".")) // répertoire de ton projet
+        .redirectErrorStream(true)
+        .start()
+
+    val result = process.inputStream.bufferedReader().use(BufferedReader::readText)
+    process.waitFor()
+
+    return result.trim()
+}

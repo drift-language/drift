@@ -18,6 +18,10 @@ import java.io.File
 import java.nio.file.Paths
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.fusesource.jansi.Ansi
+import org.fusesource.jansi.AnsiConsole
+import kotlin.system.exitProcess
+import drift.DriftVersion
 
 
 /******************************************************************************
@@ -41,10 +45,10 @@ data class ProjectStructure(
 
 
 fun loadConfig(dir: File) : ProjectConfig {
-    val configFile = File(dir, "config.json")
+    val configFile = File(dir, "drift.json")
 
     if (!configFile.exists()) {
-        error("Config file does not exist: ${configFile.absolutePath}")
+        cliError("Config file does not exist: ${configFile.absolutePath}")
     }
 
     val json = configFile.readText()
@@ -57,6 +61,8 @@ class Run : CliktCommand(name = "run") {
     private val path: String? by option("-p", "--path", help = "Project root directory")
 
     override fun run() {
+        AnsiConsole.systemInstall()
+
         val projectDir =
             if (path != null) File(path!!)
             else File(System.getProperty("user.dir"))
@@ -64,21 +70,38 @@ class Run : CliktCommand(name = "run") {
         val config = loadConfig(projectDir)
 
         val entryPath = Paths
-            .get("${config.structure.root}/${config.structure.entry}.drift")
+            .get("$projectDir/${config.structure.root}/${config.structure.entry}.drift")
             .normalize()
             .toAbsolutePath()
             .toString()
 
-        val entryFile = File(
-            projectDir,
-            entryPath)
+        val entryFile = File(entryPath)
 
         if (!entryFile.exists()) {
-            error("Entry file not found: $entryPath")
+            cliError("Entry file not found: $entryPath")
         }
 
-        println("**Running Drift project at $entryPath**")
-        println("Entry: $entryPath")
+        println(
+            Ansi.ansi()
+                .bgBrightDefault()
+                .bold()
+                .a("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --\n")
+                .reset())
+
+        println(
+            Ansi.ansi()
+                .fgBrightBlue()
+                .bold()
+                .a("Running Drift project ${config.name}")
+                .reset())
+
+        println(
+            Ansi.ansi()
+                .bold()
+                .a("Entry: $entryPath")
+                .reset())
+
+        AnsiConsole.systemUninstall()
     }
 
     override fun help(context: Context): String {
@@ -89,6 +112,18 @@ class Run : CliktCommand(name = "run") {
 
 class Drift : CliktCommand() {
     override fun run() = Unit
+}
+
+
+internal fun cliError(message: String): Nothing {
+    val styled = Ansi.ansi()
+        .fgRed()
+        .bold()
+        .a("[ERROR] $message")
+        .reset()
+
+    println(styled)
+    exitProcess(1)
 }
 
 
