@@ -116,7 +116,7 @@ class Run : CliktCommand(name = "run") {
         println(
             Ansi.ansi()
                 .bold()
-                .a("Entry: $entryPath")
+                .a("Entry: $entryPath\n")
                 .reset())
 
         AnsiConsole.systemUninstall()
@@ -125,6 +125,12 @@ class Run : CliktCommand(name = "run") {
         val source = entryFile.readText()
 
         DriftRuntime.run(source)
+
+        println(
+            Ansi.ansi()
+                .bold()
+                .a("\n-- End of Program --")
+                .reset())
     }
 
     override fun help(context: Context): String {
