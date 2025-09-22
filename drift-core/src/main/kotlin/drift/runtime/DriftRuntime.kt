@@ -36,7 +36,6 @@ object DriftRuntime {
 
         val tokens = lex(source)
         val ast = Parser(tokens).parse()
-        println(ast)
 
         env.run {
             define("print", DrNativeFunction(
