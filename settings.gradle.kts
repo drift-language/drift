@@ -3,3 +3,6 @@ plugins {
 }
 rootProject.name = "drift"
 
+
+include("drift-cli")
+include("drift-core")
