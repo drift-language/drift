@@ -22,6 +22,24 @@ import org.fusesource.jansi.Ansi
 import org.fusesource.jansi.AnsiConsole
 import kotlin.system.exitProcess
 import drift.DriftVersion
+import drift.parser.Parser
+import drift.parser.lex
+import drift.runtime.AnyType
+import drift.runtime.DrEnv
+import drift.runtime.NullType
+import drift.runtime.ObjectType
+import drift.runtime.values.callables.DrMethod
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.oop.DrClass
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.specials.DrVoid
+import drift.ast.Function
+import drift.ast.eval
+import drift.checkers.SymbolCollector
+import drift.checkers.TypeChecker
+import drift.exceptions.DriftRuntimeException
+import drift.runtime.DriftRuntime
+import drift.runtime.values.primaries.DrInt
 
 
 /******************************************************************************
@@ -102,6 +120,11 @@ class Run : CliktCommand(name = "run") {
                 .reset())
 
         AnsiConsole.systemUninstall()
+
+
+        val source = entryFile.readText()
+
+        DriftRuntime.run(source)
     }
 
     override fun help(context: Context): String {
