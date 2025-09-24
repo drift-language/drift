@@ -88,7 +88,7 @@ fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> 
 
         range.from is DrInt64 && range.to is DrInt64 ->
             if (!exclusive) (range.from.value as Long..range.to.value as Long).map { DrInt64(it) }
-            else (range.from.value as Long..range.to.value as Long).map { DrInt64(it) }
+            else (range.from.value as Long..<range.to.value as Long).map { DrInt64(it) }
 
         range.from::class != range.to::class ->
             throw DriftParserException("Both Range limits must have the same type")
