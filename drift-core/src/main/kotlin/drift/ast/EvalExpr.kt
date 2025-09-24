@@ -263,6 +263,16 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             "<=", leftValue.type(), rightValue.type()))
                     }
                 }
+                "><" -> when {
+                    leftValue is DrNumeric && rightValue is DrRange -> {
+                        val (l1, s1, _) = promoteNumericPair(leftValue, rightValue.from)
+                        val (l2, e2, _) = promoteNumericPair(leftValue, rightValue.to)
+
+                        DrBool(l1.asLong() >= s1.asLong() && l2.asLong() <= e2.asLong())
+                    }
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "><", leftValue.type(), rightValue.type()))
+                }
                 ".." -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->

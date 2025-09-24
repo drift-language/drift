@@ -112,9 +112,7 @@ class Run : CliktCommand(name = "run") {
 
         AnsiConsole.systemUninstall()
 
-
         val source = entryFile.readText()
-
         DriftRuntime.run(source)
 
         println()

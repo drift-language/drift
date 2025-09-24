@@ -26,6 +26,7 @@ private val multiCharsSymbols = setOf(
     "<=", ">=",
     "&&", "||",
     "->", "..",
+    "><",
 )
 
 
