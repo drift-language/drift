@@ -24,7 +24,6 @@ import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.runtime.DriftRuntime
 
-
 /******************************************************************************
  * DRIFT RUNNER
  *
@@ -91,9 +90,18 @@ class Run : CliktCommand(name = "run") {
 
         println(
             Ansi.ansi()
-                .fgBrightBlue()
+                .fgRgb(42, 131, 255)
                 .bold()
-                .a("Running Drift project ${config.name}")
+                .a("Running ")
+                .reset()
+                .bgRgb(42, 131, 255)
+                .fgRgb(255, 255, 255)
+                .bold()
+                .a(" Drift ")
+                .reset()
+                .fgRgb(42, 131, 255)
+                .bold()
+                .a(" project ${config.name}")
                 .reset())
 
         println(
@@ -109,10 +117,13 @@ class Run : CliktCommand(name = "run") {
 
         DriftRuntime.run(source)
 
+        println()
         println(
             Ansi.ansi()
+                .bgRgb(0)
+                .fgRgb(255, 255, 255)
                 .bold()
-                .a("\n-- End of Program --")
+                .a(" — End of Program — ")
                 .reset())
     }
 
@@ -142,78 +153,3 @@ internal fun cliError(message: String): Nothing {
 fun main(args: Array<String>) = Drift()
     .subcommands(Run())
     .main(args)
-
-
-/*
-@Deprecated("Use Drift CLI instead")
-fun __main(args: Array<String>) {
-    println("-- Drift CommandLine Feature — ${Project.version} --\n")
-
-    if (args.isEmpty()) {
-        println("Usage: drift <file.drift>")
-        return
-    }
-
-    val file = File(args[0])
-
-    if (!file.exists()) {
-        println("File not found: ${args[0]}")
-        return
-    }
-
-    val source = file.readText()
-
-    val env = DrEnv()
-
-    val tokens = lex(source)
-    val ast = Parser(tokens).parse()
-    println(ast)
-
-    env.run {
-        define("print", DrNativeFunction(
-            impl = { _, args ->
-                println(args.joinToString(" ") { it.second.asString() })
-                DrVoid
-            },
-            paramTypes = listOf(AnyType),
-            returnType = NullType
-        ))
-
-        defineClass("String", DrClass("String", emptyList(), listOf(
-            DrMethod(
-                let = Function(
-                    name = "length",
-                    parameters = emptyList(),
-                    returnType = ObjectType("Int"),
-                    body = emptyList()
-                ),
-                closure = env,
-                nativeImpl = DrNativeFunction(
-                    name = "length",
-                    paramTypes = emptyList(),
-                    returnType = ObjectType("Int"),
-                    impl = { receiver, args ->
-                        val instance = receiver as? DrString
-                            ?: throw DriftRuntimeException("length() called on non-String")
-
-                        DrInt(instance.value.length)
-                    }
-                )
-            )
-        )))
-
-        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
-        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
-        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
-    }
-
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
-
-    for (statement in ast) {
-        statement.eval(env)
-    }
-}
-
- */
