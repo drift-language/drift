@@ -273,6 +273,18 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             "..", leftValue.type(), rightValue.type()))
                     }
                 }
+                "&&" -> when {
+                    leftValue is DrBool && rightValue is DrBool ->
+                        DrBool(leftValue.value && rightValue.value)
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "&&", leftValue.type(), rightValue.type()))
+                }
+                "||" -> when {
+                    leftValue is DrBool && rightValue is DrBool ->
+                        DrBool(leftValue.value || rightValue.value)
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "||", leftValue.type(), rightValue.type()))
+                }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
             }
         }

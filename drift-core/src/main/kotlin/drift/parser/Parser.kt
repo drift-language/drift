@@ -75,6 +75,10 @@ class Parser(
 
         "*"     to 6,
         "/"     to 6,
+
+        "&&"    to 7,
+
+        "||"    to 8,
     )
 
 
