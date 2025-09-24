@@ -10,7 +10,6 @@
 package drift.parser
 
 import drift.exceptions.DriftLexerException
-import drift.utils.concat
 
 
 /******************************************************************************
@@ -20,8 +19,15 @@ import drift.utils.concat
  ******************************************************************************/
 
 
-/** Set of all symbols having 2+ characters */
-private val multiCharsSymbols = setOf(
+
+/** Set of all symbols having 3 characters */
+private val threeCharsSymbols = setOf(
+    "..<",
+)
+
+
+/** Set of all symbols having 2 characters */
+private val twoCharsSymbols = setOf(
     "==", "!=",
     "<=", ">=",
     "&&", "||",
@@ -232,7 +238,13 @@ fun lex(input: String): List<Token> {
 
             i = next
             continue
-        } else if (input.substring(i).take(2) in multiCharsSymbols) {
+        } else if (input.substring(i).take(3) in threeCharsSymbols) {
+            val (token, next) = lexSymbol(input, i, 3)
+            tokens.add(token)
+
+            i = next
+            continue
+        } else if (input.substring(i).take(2) in twoCharsSymbols) {
             val (token, next) = lexSymbol(input, i, 2)
             tokens.add(token)
 

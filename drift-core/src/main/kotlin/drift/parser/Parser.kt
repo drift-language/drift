@@ -63,6 +63,7 @@ class Parser(
         "><"    to 2,
 
         ".."    to 3,
+        "..<"   to 3,
 
         "?"     to 4,
 

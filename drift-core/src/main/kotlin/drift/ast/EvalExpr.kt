@@ -9,6 +9,7 @@
 
 package drift.ast
 
+import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
@@ -16,6 +17,8 @@ import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
 import drift.runtime.values.callables.*
+import drift.runtime.values.containers.DrExclusiveRange
+import drift.runtime.values.containers.DrInclusiveRange
 import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
@@ -276,11 +279,21 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 ".." -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
-                            DrRange(leftValue, rightValue)
+                            DrInclusiveRange(leftValue, rightValue)
                         leftValue is DrInt64 && rightValue is DrInt64 ->
-                            DrRange(leftValue, rightValue)
+                            DrInclusiveRange(leftValue, rightValue)
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "..", leftValue.type(), rightValue.type()))
+                    }
+                }
+                "..<" -> {
+                    when {
+                        leftValue is DrInt && rightValue is DrInt ->
+                            DrExclusiveRange(leftValue, rightValue)
+                        leftValue is DrInt64 && rightValue is DrInt64 ->
+                            DrExclusiveRange(leftValue, rightValue)
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "..<", leftValue.type(), rightValue.type()))
                     }
                 }
                 "&&" -> when {
