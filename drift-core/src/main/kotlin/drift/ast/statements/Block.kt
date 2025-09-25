@@ -25,4 +25,5 @@ package drift.ast.statements
  *
  * @property statements Block statements
  */
-data class Block(val statements: List<DrStmt>) : DrStmt
+data class Block(
+    val statements: List<DrStmt>) : DrStmt

@@ -36,5 +36,4 @@ data class Lambda(
     val name: String? = null,
     val parameters: List<FunctionParameter>,
     val body: List<DrStmt>,
-    val returnType: DrType
-) : Expression
+    val returnType: DrType) : Expression

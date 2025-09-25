@@ -25,4 +25,6 @@ package drift.ast.expressions
  * @property name Variable name
  * @property value Value to assign
  */
-data class Assign(val name: String, val value: Expression) : Expression
+data class Assign(
+    val name: String,
+    val value: Expression) : Expression

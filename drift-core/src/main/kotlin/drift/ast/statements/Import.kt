@@ -24,4 +24,6 @@ package drift.ast.statements
  * @property namespace Namespace to import
  * @property path Namespace path to import
  */
-data class Import(val namespace: String, val path: String) : DrStmt
+data class Import(
+    val namespace: String,
+    val path: String) : DrStmt

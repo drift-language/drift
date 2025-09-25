@@ -24,4 +24,6 @@ package drift.ast.expressions
  * @property callee Callable name
  * @property args Callable arguments list
  */
-data class Call(val callee: Expression, val args: List<Argument>) : Expression
+data class Call(
+    val callee: Expression,
+    val args: List<Argument>) : Expression

@@ -27,4 +27,7 @@ import drift.ast.expressions.Expression
  * @property variables List of loop variables
  * @property body Loop body block
  */
-data class For(val iterable: Expression, val variables: List<String>, val body: DrStmt) : DrStmt
+data class For(
+    val iterable: Expression,
+    val variables: List<String>,
+    val body: DrStmt) : DrStmt

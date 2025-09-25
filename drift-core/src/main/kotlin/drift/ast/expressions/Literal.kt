@@ -25,4 +25,5 @@ import drift.runtime.DrValue
  *
  * @property value Literal value
  */
-data class Literal(val value: DrValue) : Expression
+data class Literal(
+    val value: DrValue) : Expression

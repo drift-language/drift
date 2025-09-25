@@ -29,4 +29,8 @@ import drift.runtime.DrType
  * @property value Variable value
  * @property isMutable If the variable is mutable, can be reassigned
  */
-data class Let(val name: String, val type: DrType, val value: Expression, val isMutable: Boolean) : DrStmt
+data class Let(
+    val name: String,
+    val type: DrType,
+    val value: Expression,
+    val isMutable: Boolean) : DrStmt

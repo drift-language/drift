@@ -24,4 +24,6 @@ package drift.ast.expressions
  * @property name Argument name
  * @property expr Argument value expression
  */
-data class Argument(val name: String?, val expr: Expression)
+data class Argument(
+    val name: String?,
+    val expr: Expression)

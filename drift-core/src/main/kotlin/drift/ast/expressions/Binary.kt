@@ -26,4 +26,7 @@ package drift.ast.expressions
  * @property operator Operator
  * @property right Right operand
  */
-data class Binary(val left: Expression, val operator: String, val right: Expression) : Expression
+data class Binary(
+    val left: Expression,
+    val operator: String,
+    val right: Expression) : Expression

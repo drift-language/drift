@@ -30,4 +30,5 @@ import drift.ast.expressions.Expression
  *
  * @property expr Statement expression
  */
-data class ExprStmt(val expr: Expression) : DrStmt
+data class ExprStmt(
+    val expr: Expression) : DrStmt

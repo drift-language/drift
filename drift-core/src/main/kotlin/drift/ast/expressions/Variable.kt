@@ -23,4 +23,5 @@ package drift.ast.expressions
  *
  * @property name Variable name
  */
-data class Variable(val name: String) : Expression
+data class Variable(
+    val name: String) : Expression

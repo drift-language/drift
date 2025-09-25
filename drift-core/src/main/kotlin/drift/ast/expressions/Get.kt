@@ -19,9 +19,11 @@ package drift.ast.expressions
 
 
 /**
- * A get structure represents an object field access
+ * A get structure represents object field access
  *
  * @property receiver Object where the field is defined
  * @property name Field name to retrieve
  */
-data class Get(val receiver: Expression, val name: String) : Expression
+data class Get(
+    val receiver: Expression,
+    val name: String) : Expression

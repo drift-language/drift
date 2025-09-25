@@ -35,5 +35,4 @@ data class Function(
     val name: String,
     val parameters: List<FunctionParameter>,
     val body: List<DrStmt>,
-    val returnType: DrType = AnyType
-) : DrStmt
+    val returnType: DrType = AnyType) : DrStmt

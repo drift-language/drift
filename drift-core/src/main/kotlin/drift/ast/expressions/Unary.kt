@@ -26,4 +26,6 @@ package drift.ast.expressions
  * @property operator Unary operator
  * @property expr Expression
  */
-data class Unary(val operator: String, val expr: Expression) : Expression
+data class Unary(
+    val operator: String,
+    val expr: Expression) : Expression

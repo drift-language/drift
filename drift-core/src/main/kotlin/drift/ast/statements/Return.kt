@@ -25,4 +25,5 @@ import drift.ast.expressions.Expression
  *
  * @property value Value to return from the callable
  */
-data class Return(val value: Expression) : DrStmt
+data class Return(
+    val value: Expression) : DrStmt

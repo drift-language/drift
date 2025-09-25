@@ -25,4 +25,7 @@ package drift.ast.expressions
  * @property name Field name to assign
  * @property value Value to assign
  */
-data class Set(val receiver: Expression, val name: String, val value: Expression) : Expression
+data class Set(
+    val receiver: Expression,
+    val name: String,
+    val value: Expression) : Expression

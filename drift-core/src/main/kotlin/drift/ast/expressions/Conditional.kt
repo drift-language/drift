@@ -33,4 +33,7 @@ import drift.ast.statements.DrStmt
  * @property elseBranch Branch to execute if the
  * condition is unsuccessful
  */
-data class Conditional(val condition: Expression, val thenBranch: DrStmt, val elseBranch: DrStmt?) : Expression
+data class Conditional(
+    val condition: Expression,
+    val thenBranch: DrStmt,
+    val elseBranch: DrStmt?) : Expression
