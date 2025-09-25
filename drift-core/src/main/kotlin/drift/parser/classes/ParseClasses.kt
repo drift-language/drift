@@ -17,8 +17,6 @@ import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.callables.parseFunction
 import drift.parser.types.parseType
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.variables.DrVariable
 
 
 /******************************************************************************

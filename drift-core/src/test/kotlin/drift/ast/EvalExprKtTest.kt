@@ -1,12 +1,11 @@
 package drift.ast
 
-import drift.parser.Parser
-import drift.parser.lex
 import drift.runtime.*
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
+import drift.runtime.evaluators.eval
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*

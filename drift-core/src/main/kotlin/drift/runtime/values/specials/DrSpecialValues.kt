@@ -6,7 +6,6 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.specials
 
 import drift.runtime.*
@@ -55,7 +54,7 @@ data object DrVoid : DrValue {
  * AST representation of the NotAssigned type, which represents
  * a variable which does not have a value.
  *
- * It is linked to [drift.runtime.UnknownType].
+ * It is linked to [UnknownType].
  */
 data object DrNotAssigned : DrValue {
     override fun asString(): String = UnknownType.asString()

@@ -6,12 +6,9 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.callables
 
 import drift.ast.Function
-import drift.ast.eval
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.*
 import drift.runtime.values.oop.DrInstance
 

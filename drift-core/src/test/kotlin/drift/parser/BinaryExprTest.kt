@@ -9,7 +9,7 @@
 
 package drift.parser
 
-import drift.ast.eval
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
@@ -23,7 +23,6 @@ import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
 import drift.utils.evalProgram
-import drift.utils.evalWithOutput
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows

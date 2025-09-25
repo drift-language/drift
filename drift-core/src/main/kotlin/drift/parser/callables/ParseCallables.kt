@@ -19,8 +19,6 @@ import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
-import drift.runtime.DrValue
-import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************

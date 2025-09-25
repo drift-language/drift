@@ -6,9 +6,18 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.evaluators
 
-package drift.ast
-
+import drift.ast.Block
+import drift.ast.Class
+import drift.ast.DrStmt
+import drift.ast.ExprStmt
+import drift.ast.For
+import drift.ast.Function
+import drift.ast.If
+import drift.ast.Import
+import drift.ast.Let
+import drift.ast.Return
 import drift.exceptions.DriftRuntimeException
 import drift.helper.rangeToList
 import drift.helper.validateValue
@@ -18,15 +27,14 @@ import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrReturn
 import drift.runtime.values.containers.DrExclusiveRange
 import drift.runtime.values.containers.DrInclusiveRange
-import drift.runtime.values.containers.DrList
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.list.DrList
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
+import drift.helper.evalCondition
 import drift.utils.castNumericIfNeeded
 
 
@@ -43,7 +51,7 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed statement value
- * @see DrStmt
+ * @see drift.ast.DrStmt
  */
 fun DrStmt.eval(env: DrEnv): DrValue {
     return when (this) {
@@ -69,7 +77,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is If -> {
             var result: DrValue = DrNull
 
-            if (drift.helper.evalCondition(condition, env)) {
+            if (evalCondition(condition, env)) {
                 result = thenBranch.eval(env)
             } else if (elseBranch != null) {
                 result = elseBranch.eval(env)

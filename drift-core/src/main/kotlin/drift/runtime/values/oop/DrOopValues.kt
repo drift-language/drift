@@ -6,11 +6,10 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.oop
 
 import drift.ast.FunctionParameter
-import drift.ast.eval
+import drift.runtime.evaluators.eval
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.runtime.DrEnv

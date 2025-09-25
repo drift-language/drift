@@ -10,7 +10,6 @@
 package drift.ast
 
 import drift.runtime.*
-import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************

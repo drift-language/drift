@@ -6,7 +6,6 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.variables
 
 import drift.exceptions.DriftRuntimeException

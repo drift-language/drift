@@ -1,7 +1,6 @@
 package drift.parser
 
 import drift.exceptions.DriftRuntimeException
-import drift.runtime.DrEnv
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrVoid
 import drift.utils.evalProgram
