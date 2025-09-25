@@ -1,16 +1,14 @@
 package drift.parser
 
-import drift.ast.Function
-import drift.ast.eval
+import drift.ast.statements.Function
+import drift.runtime.evaluators.eval
 import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.runtime.*
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class FunctionTypeTest {
 

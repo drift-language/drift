@@ -1,12 +1,15 @@
 package drift.ast
 
-import drift.parser.Parser
-import drift.parser.lex
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Literal
+import drift.ast.statements.ExprStmt
 import drift.runtime.*
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
+import drift.runtime.evaluators.eval
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
@@ -18,7 +21,8 @@ class EvalExprKtTest {
         val expr = Binary(
             Literal(DrInt(2)),
             "+",
-            Literal(DrInt(3)))
+            Literal(DrInt(3))
+        )
 
         val result = expr.eval(DrEnv())
 
@@ -30,7 +34,8 @@ class EvalExprKtTest {
         val expr = Binary(
             Literal(DrString("ab")),
             "+",
-            Literal(DrString("c")))
+            Literal(DrString("c"))
+        )
 
         val result = expr.eval(DrEnv())
 

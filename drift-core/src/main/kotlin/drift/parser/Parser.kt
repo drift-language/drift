@@ -9,7 +9,7 @@
 
 package drift.parser
 
-import drift.ast.*
+import drift.ast.statements.DrStmt
 import drift.exceptions.DriftParserException
 import drift.parser.statements.parseStatement
 

@@ -8,8 +8,8 @@
  ******************************************************************************/
 package drift.cli
 
-import drift.ast.Function
-import drift.ast.eval
+import drift.ast.statements.Function
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException

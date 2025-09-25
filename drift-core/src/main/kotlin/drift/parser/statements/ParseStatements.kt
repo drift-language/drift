@@ -9,7 +9,16 @@
 
 package drift.parser.statements
 
-import drift.ast.*
+import drift.ast.expressions.Lambda
+import drift.ast.expressions.Literal
+import drift.ast.statements.Block
+import drift.ast.statements.DrStmt
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.For
+import drift.ast.statements.If
+import drift.ast.statements.Import
+import drift.ast.statements.Let
+import drift.ast.statements.Return
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
@@ -305,6 +314,7 @@ internal fun Parser.parseImport() : Import {
 
     return Import(
         namespaceSteps.joinToString("."),
-        "src/${namespaceSteps.joinToString("/")}.drift")
+        "src/${namespaceSteps.joinToString("/")}.drift"
+    )
     // TODO: use dynamic structure from drift.json
 }

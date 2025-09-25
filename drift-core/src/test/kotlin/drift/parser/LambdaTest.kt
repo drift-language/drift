@@ -1,10 +1,6 @@
 package drift.parser
 
-import drift.ast.Function
-import drift.ast.Lambda
-import drift.ast.eval
 import drift.exceptions.DriftParserException
-import drift.runtime.*
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

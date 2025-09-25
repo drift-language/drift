@@ -9,8 +9,20 @@
 
 package drift.parser.expressions
 
-import drift.ast.*
-import drift.ast.Set
+import drift.ast.expressions.Argument
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Expression
+import drift.ast.expressions.Get
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Set
+import drift.ast.expressions.Unary
+import drift.ast.expressions.Variable
+import drift.ast.statements.Block
+import drift.ast.statements.DrStmt
+import drift.ast.statements.ExprStmt
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
@@ -46,13 +58,13 @@ import drift.runtime.values.specials.DrNull
  * - On binary and special operator assignment:
  *   - If the target is neither a variable nor an object field
  */
-internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
+internal fun Parser.parseExpression(minPrecedence: Int = 0) : Expression {
     return parseBinary(minPrecedence)
 }
 
 
 
-internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
+internal fun Parser.parseBinary(minPrecedence: Int) : Expression {
     var left = parseUnary()
 
     while (true) {
@@ -136,7 +148,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
  * expression AST object
  * @throws DriftParserException If a token is unexpected
  */
-internal fun Parser.parsePrimary() : DrExpr {
+internal fun Parser.parsePrimary() : Expression {
     return when (val token = current()) {
         is Token.StringLiteral -> {
             advance(false)
@@ -146,8 +158,8 @@ internal fun Parser.parsePrimary() : DrExpr {
             advance(false)
             Literal(token.value.run {
                 toIntOrNull()?.let { DrInt(it) }
-                ?: toLongOrNull()?.let { DrInt64(it) }
-                ?: throw DriftParserException("Too long numeric ${token.value}")
+                    ?: toLongOrNull()?.let { DrInt64(it) }
+                    ?: throw DriftParserException("Too long numeric ${token.value}")
             })
         }
         is Token.BoolLiteral -> {
@@ -191,7 +203,7 @@ internal fun Parser.parsePrimary() : DrExpr {
  *
  * @return Constructed primary parsing result AST object
  */
-internal fun Parser.parseUnary() : DrExpr {
+internal fun Parser.parseUnary() : Expression {
     val token = current()
 
     if (token is Token.Symbol && token.value in listOf("!", "-")) {
@@ -220,7 +232,7 @@ internal fun Parser.parseUnary() : DrExpr {
  * @return Constructed variable access or callable call
  * value AST object
  */
-internal fun Parser.parseVariable() : DrExpr {
+internal fun Parser.parseVariable() : Expression {
     val name = expect<Token.Identifier>("Expected variable name")
 
     advance(false)
@@ -242,7 +254,7 @@ internal fun Parser.parseVariable() : DrExpr {
  * @throws DriftParserException If the parameters expression
  * is unterminated, without ')' symbol at end
  */
-internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
+internal fun Parser.parseCallArguments(target: Expression) : Expression {
     expectSymbol("(")
 
     val args = mutableListOf<Argument>()
@@ -316,7 +328,7 @@ internal fun Parser.parseArgument() : Argument {
  * @throws DriftParserException If a Drift-style conditional
  * expression branch is invalid
  */
-internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
+internal fun Parser.parseDriftIf(condition: Expression) : Expression {
     val thenBlock: DrStmt = parseDriftIfBranch()
     var elseBlock: DrStmt? = null
 

@@ -9,7 +9,7 @@
 
 package drift.utils
 
-import drift.ast.eval
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.parser.Parser

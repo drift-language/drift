@@ -6,24 +6,46 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.evaluators
 
-package drift.ast
-
-import drift.exceptions.DriftParserException
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Expression
+import drift.ast.statements.DrStmt
+import drift.ast.statements.Function
+import drift.ast.expressions.Get
+import drift.ast.expressions.Lambda
+import drift.ast.expressions.ListLiteral
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Set
+import drift.ast.expressions.Unary
+import drift.ast.expressions.Variable
+import drift.runtime.values.callables.DrFunction
+import drift.runtime.values.callables.DrLambda
+import drift.runtime.values.callables.DrMethod
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.callables.DrReturn
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
-import drift.runtime.values.callables.*
-import drift.runtime.values.containers.DrExclusiveRange
-import drift.runtime.values.containers.DrInclusiveRange
-import drift.runtime.values.containers.DrList
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.list.DrList
+import drift.runtime.values.containers.range.DrExclusiveRange
+import drift.runtime.values.containers.range.DrInclusiveRange
+import drift.runtime.values.containers.range.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
-import drift.runtime.values.primaries.*
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
+import drift.runtime.values.primaries.DrNumeric
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.primaries.DrUInt
+import drift.runtime.values.primaries.promoteNumericPair
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
@@ -43,9 +65,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed expression value
- * @see DrExpr
+ * @see Expression
  */
-fun DrExpr.eval(env: DrEnv): DrValue {
+fun Expression.eval(env: DrEnv): DrValue {
     return when (this) {
         // Literal
         is Literal -> value
@@ -440,7 +462,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 }
 
 
-private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
+private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
     var last: DrValue = DrNull
 
     for (stmt in statements) {

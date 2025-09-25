@@ -12,7 +12,7 @@ package drift.helper
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrValue
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.range.DrRange
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrInteger
