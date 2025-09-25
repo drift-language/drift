@@ -78,7 +78,7 @@ fun validateValue(value: DrValue, ignoreNotAssigned: Boolean = false, ignoreVoid
  * Convert a Range (Inclusive or Exclusive) to a List
  *
  * @param range Range to convert
- * @return Converted List
+ * @return Converted List of integers
  */
 fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> {
     return when {
