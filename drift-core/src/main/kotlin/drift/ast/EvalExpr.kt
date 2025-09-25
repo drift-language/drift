@@ -9,6 +9,7 @@
 
 package drift.ast
 
+import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
@@ -16,6 +17,8 @@ import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
 import drift.runtime.values.callables.*
+import drift.runtime.values.containers.DrExclusiveRange
+import drift.runtime.values.containers.DrInclusiveRange
 import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
@@ -263,15 +266,47 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             "<=", leftValue.type(), rightValue.type()))
                     }
                 }
+                "><" -> when {
+                    leftValue is DrNumeric && rightValue is DrRange -> {
+                        val (l1, s1, _) = promoteNumericPair(leftValue, rightValue.from)
+                        val (l2, e2, _) = promoteNumericPair(leftValue, rightValue.to)
+
+                        DrBool(l1.asLong() >= s1.asLong() && l2.asLong() <= e2.asLong())
+                    }
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "><", leftValue.type(), rightValue.type()))
+                }
                 ".." -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
-                            DrRange(leftValue, rightValue)
+                            DrInclusiveRange(leftValue, rightValue)
                         leftValue is DrInt64 && rightValue is DrInt64 ->
-                            DrRange(leftValue, rightValue)
+                            DrInclusiveRange(leftValue, rightValue)
                         else -> throw DriftRuntimeException(unsupportedOperator(
                             "..", leftValue.type(), rightValue.type()))
                     }
+                }
+                "..<" -> {
+                    when {
+                        leftValue is DrInt && rightValue is DrInt ->
+                            DrExclusiveRange(leftValue, rightValue)
+                        leftValue is DrInt64 && rightValue is DrInt64 ->
+                            DrExclusiveRange(leftValue, rightValue)
+                        else -> throw DriftRuntimeException(unsupportedOperator(
+                            "..<", leftValue.type(), rightValue.type()))
+                    }
+                }
+                "&&" -> when {
+                    leftValue is DrBool && rightValue is DrBool ->
+                        DrBool(leftValue.value && rightValue.value)
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "&&", leftValue.type(), rightValue.type()))
+                }
+                "||" -> when {
+                    leftValue is DrBool && rightValue is DrBool ->
+                        DrBool(leftValue.value || rightValue.value)
+                    else -> throw DriftRuntimeException(unsupportedOperator(
+                        "||", leftValue.type(), rightValue.type()))
                 }
                 else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
             }

@@ -5,6 +5,7 @@ import drift.runtime.*
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.specials.DrNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 
 class BoolTest {
@@ -54,5 +55,25 @@ class BoolTest {
 
         assertEquals(exp.type(), ObjectType("Bool"))
         assertEquals(exp, DrBool(true))
+    }
+
+    @Test
+    fun `Compare two booleans with AND operator`() {
+        assertDoesNotThrow {
+            val exp = evalExpr("true && true")
+
+            assertEquals(exp.type(), ObjectType("Bool"))
+            assertEquals(exp, DrBool(true))
+        }
+    }
+
+    @Test
+    fun `Compare two booleans with OR operator`() {
+        assertDoesNotThrow {
+            val exp = evalExpr("true || true")
+
+            assertEquals(exp.type(), ObjectType("Bool"))
+            assertEquals(exp, DrBool(true))
+        }
     }
 }

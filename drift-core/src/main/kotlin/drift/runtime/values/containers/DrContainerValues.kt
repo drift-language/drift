@@ -9,9 +9,13 @@
 
 package drift.runtime.values.containers
 
+import drift.exceptions.DriftParserException
 import drift.runtime.*
 import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrInteger
+import drift.runtime.values.primaries.DrNumeric
+import drift.runtime.values.primaries.DrUInt
 
 
 /******************************************************************************
@@ -51,30 +55,37 @@ data class DrList(
 
 
 
+sealed interface DrRange : DrValue {
+    /** From value, start of the range */
+    val from: DrInteger<*>
+
+    /** To value, end of the range, included */
+    val to: DrInteger<*>
+}
+
+
+
 /**
- * Runtime range structure.
+ * Runtime inclusive range structure.
  *
- * A range is a simplified structure representing
- * each integer between [from] and [to] values.
+ * An inclusive range is a simplified structure representing
+ * each integer between [from] and [to] (included) values.
  *
  * ```
  * // This represents the values: 1, 2, 3, 4 and 5.
  * let range = 1..5
  * ```
  */
-data class DrRange(
-    /** From value, start of the range */
-    val from: DrInteger<*>,
-
-    /** To value, end of the range, included */
-    val to: DrInteger<*>) : DrValue {
-
+data class DrInclusiveRange(
+    override val from: DrInteger<*>,
+    override val to: DrInteger<*>
+) : DrRange {
 
     companion object {
         fun factory(from: DrInteger<*>, to: DrInteger<*>) : DrRange {
             require(from::class == to::class) { "Range requires both ends to be of the same type" }
 
-            return DrRange(from, to)
+            return DrInclusiveRange(from, to)
         }
     }
 
@@ -86,5 +97,42 @@ data class DrRange(
 
     /** @return The object representation of the type */
     override fun type(): DrType =
-        ObjectType("Range")
+        ObjectType("InclusiveRange")
+}
+
+
+
+/**
+ * Runtime exclusive range structure.
+ *
+ * An exclusive range is a simplified structure representing
+ * each integer between [from] and [to] (excluded) values.
+ *
+ * ```
+ * // This represents the values: 1, 2, 3 and 4.
+ * let range = 1..<5
+ * ```
+ */
+data class DrExclusiveRange(
+    override val from: DrInteger<*>,
+    override val to: DrInteger<*>
+) : DrRange {
+
+    companion object {
+        fun factory(from: DrInteger<*>, to: DrInteger<*>) : DrRange {
+            require(from::class == to::class) { "Range requires both ends to be of the same type" }
+
+            return DrExclusiveRange(from, to)
+        }
+    }
+
+
+    /** @return A prepared string version of the type */
+    override fun asString(): String =
+        "[ ${from.value} -> <${to.value} ]"
+
+
+    /** @return The object representation of the type */
+    override fun type(): DrType =
+        ObjectType("ExclusiveRange")
 }

@@ -10,11 +10,14 @@
 package drift.ast
 
 import drift.exceptions.DriftRuntimeException
+import drift.helper.rangeToList
 import drift.helper.validateValue
 import drift.runtime.*
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrReturn
+import drift.runtime.values.containers.DrExclusiveRange
+import drift.runtime.values.containers.DrInclusiveRange
 import drift.runtime.values.containers.DrList
 import drift.runtime.values.containers.DrRange
 import drift.runtime.values.oop.DrClass
@@ -149,13 +152,8 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
             val items = when (iterable) {
                 is DrList -> iterable.items
-                is DrRange -> when {
-                    iterable.from.value is Int && iterable.to.value is Int ->
-                        (iterable.from.value as Int..iterable.to.value as Int).map { DrInt(it) }
-                    iterable.from.value is Long && iterable.to.value is Long ->
-                        (iterable.from.value as Long..iterable.to.value as Long).map { DrInt64(it) }
-                    else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
-                }
+                is DrInclusiveRange -> rangeToList(iterable).map { it as DrValue }
+                is DrExclusiveRange -> rangeToList(iterable, exclusive = true).map { it as DrValue }
                 else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
             }
 
