@@ -48,6 +48,7 @@ fun main(args: Array<String>) {
     val env = DrEnv()
 
     val tokens = lex(source)
+    println(tokens)
     val ast = Parser(tokens).parse()
     println(ast)
 
