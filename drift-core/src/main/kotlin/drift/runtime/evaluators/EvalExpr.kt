@@ -33,10 +33,10 @@ import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
-import drift.runtime.values.containers.DrExclusiveRange
-import drift.runtime.values.containers.DrInclusiveRange
 import drift.runtime.values.containers.list.DrList
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.range.DrExclusiveRange
+import drift.runtime.values.containers.range.DrInclusiveRange
+import drift.runtime.values.containers.range.DrRange
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
 import drift.runtime.values.primaries.DrBool
