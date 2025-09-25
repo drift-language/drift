@@ -6,45 +6,23 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser.containers
 
-import drift.ast.expressions.Expression
-import drift.ast.expressions.ListLiteral
-import drift.parser.Parser
-import drift.parser.Token
-import drift.parser.expressions.parseExpression
+package drift.ast.expressions
 
 
 /******************************************************************************
- * DRIFT CONTAINERS PARSER
+ * DRIFT ASSIGN AST NODE
  *
- * All methods permitting to parse containers are define in this file.
- * A container permits to contain many values.
+ * Data class representing an assignment statement in an AST.
  ******************************************************************************/
 
 
 
 /**
- * AST representation of a list
+ * An assign structure contains the variable name
+ * and value
  *
- * @return List AST node
+ * @property name Variable name
+ * @property value Value to assign
  */
-internal fun Parser.parseList() : ListLiteral {
-    expectSymbol("[")
-
-    val values = mutableListOf<Expression>()
-
-    if (!checkSymbol("]")) {
-        do {
-            skip(Token.NewLine)
-
-            values.add(parseExpression())
-
-            skip(Token.NewLine)
-        } while (matchSymbol(","))
-    }
-
-    expectSymbol("]")
-
-    return ListLiteral(values)
-}
+data class Assign(val name: String, val value: Expression) : Expression

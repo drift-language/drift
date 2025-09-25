@@ -1,6 +1,6 @@
 package drift.parser
 
-import drift.ast.Function
+import drift.ast.statements.Function
 import drift.runtime.evaluators.eval
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftTypeException

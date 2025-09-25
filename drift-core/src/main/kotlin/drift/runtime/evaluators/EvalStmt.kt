@@ -8,16 +8,16 @@
  ******************************************************************************/
 package drift.runtime.evaluators
 
-import drift.ast.Block
-import drift.ast.Class
-import drift.ast.DrStmt
-import drift.ast.ExprStmt
-import drift.ast.For
-import drift.ast.Function
-import drift.ast.If
-import drift.ast.Import
-import drift.ast.Let
-import drift.ast.Return
+import drift.ast.statements.Block
+import drift.ast.statements.Class
+import drift.ast.statements.DrStmt
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.For
+import drift.ast.statements.Function
+import drift.ast.statements.If
+import drift.ast.statements.Import
+import drift.ast.statements.Let
+import drift.ast.statements.Return
 import drift.exceptions.DriftRuntimeException
 import drift.helper.rangeToList
 import drift.helper.validateValue
@@ -51,7 +51,7 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed statement value
- * @see drift.ast.DrStmt
+ * @see DrStmt
  */
 fun DrStmt.eval(env: DrEnv): DrValue {
     return when (this) {

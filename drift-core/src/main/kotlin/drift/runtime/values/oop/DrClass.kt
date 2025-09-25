@@ -9,7 +9,7 @@
 
 package drift.runtime.values.oop
 
-import drift.ast.FunctionParameter
+import drift.ast.statements.FunctionParameter
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType

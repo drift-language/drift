@@ -9,7 +9,7 @@
 
 package drift.runtime.values.callables
 
-import drift.ast.Function
+import drift.ast.statements.Function
 import drift.runtime.DrEnv
 import drift.runtime.DrType
 import drift.runtime.DrValue

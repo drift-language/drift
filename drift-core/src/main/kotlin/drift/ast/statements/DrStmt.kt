@@ -6,9 +6,9 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.ast.statements
 
-package drift.ast
-
+import drift.ast.expressions.Expression
 import drift.runtime.*
 
 
@@ -38,7 +38,7 @@ sealed interface DrStmt
  *
  * @property expr Statement expression
  */
-data class ExprStmt(val expr: DrExpr) : DrStmt
+data class ExprStmt(val expr: Expression) : DrStmt
 
 
 
@@ -65,7 +65,7 @@ data class Block(val statements: List<DrStmt>) : DrStmt
  * @property elseBranch Branch to execute if the
  * condition is unsuccessful
  */
-data class If(val condition: DrExpr, val thenBranch: DrStmt, val elseBranch: DrStmt?) : DrStmt
+data class If(val condition: Expression, val thenBranch: DrStmt, val elseBranch: DrStmt?) : DrStmt
 
 
 
@@ -74,7 +74,7 @@ data class If(val condition: DrExpr, val thenBranch: DrStmt, val elseBranch: DrS
  *
  * @property value Value to return from the callable
  */
-data class Return(val value: DrExpr) : DrStmt
+data class Return(val value: Expression) : DrStmt
 
 
 
@@ -102,7 +102,7 @@ data class Class(
  * @property value Variable value
  * @property isMutable If the variable is mutable, can be reassigned
  */
-data class Let(val name: String, val type: DrType, val value: DrExpr, val isMutable: Boolean) : DrStmt
+data class Let(val name: String, val type: DrType, val value: Expression, val isMutable: Boolean) : DrStmt
 
 
 
@@ -113,7 +113,7 @@ data class Let(val name: String, val type: DrType, val value: DrExpr, val isMuta
  * @property variables List of loop variables
  * @property body Loop body block
  */
-data class For(val iterable: DrExpr, val variables: List<String>, val body: DrStmt) : DrStmt
+data class For(val iterable: Expression, val variables: List<String>, val body: DrStmt) : DrStmt
 
 
 

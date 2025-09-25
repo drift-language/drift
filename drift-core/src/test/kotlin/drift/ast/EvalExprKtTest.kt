@@ -1,5 +1,9 @@
 package drift.ast
 
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Literal
+import drift.ast.statements.ExprStmt
 import drift.runtime.*
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
@@ -17,7 +21,8 @@ class EvalExprKtTest {
         val expr = Binary(
             Literal(DrInt(2)),
             "+",
-            Literal(DrInt(3)))
+            Literal(DrInt(3))
+        )
 
         val result = expr.eval(DrEnv())
 
@@ -29,7 +34,8 @@ class EvalExprKtTest {
         val expr = Binary(
             Literal(DrString("ab")),
             "+",
-            Literal(DrString("c")))
+            Literal(DrString("c"))
+        )
 
         val result = expr.eval(DrEnv())
 

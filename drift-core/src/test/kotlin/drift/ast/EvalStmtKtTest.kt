@@ -1,5 +1,13 @@
 package drift.ast
 
+import drift.ast.expressions.Argument
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Variable
+import drift.ast.statements.Block
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.If
 import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.primaries.DrBool
@@ -114,10 +122,12 @@ class EvalStmtKtTest {
             returnType = NullType
         ))
 
-        val block = Block(listOf(
-            ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))),
-            ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("no"))))))
-        ))
+        val block = Block(
+            listOf(
+                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))),
+                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("no"))))))
+            )
+        )
 
         block.eval(env)
 

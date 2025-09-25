@@ -1,6 +1,6 @@
 package drift.parser
 
-import drift.ast.DrStmt
+import drift.ast.statements.DrStmt
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 

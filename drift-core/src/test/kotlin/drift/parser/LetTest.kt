@@ -1,6 +1,6 @@
 package drift.parser
 
-import drift.ast.DrStmt
+import drift.ast.statements.DrStmt
 import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker

@@ -9,7 +9,19 @@
 
 package drift.checkers
 
-import drift.ast.*
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Expression
+import drift.ast.expressions.Get
+import drift.ast.expressions.Set
+import drift.ast.expressions.Unary
+import drift.ast.statements.Block
+import drift.ast.statements.DrStmt
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.If
+import drift.ast.statements.Let
+import drift.ast.statements.Return
 import drift.exceptions.DriftSemanticException
 import drift.exceptions.DriftTypeException
 import drift.runtime.*
@@ -73,7 +85,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param expr Expression to check
      */
-    private fun checkExpr(expr: DrExpr) {
+    private fun checkExpr(expr: Expression) {
         when (expr) {
             is Binary -> {
                 checkExpr(expr.left)
@@ -85,7 +97,7 @@ class TypeChecker (private val env: DrEnv) {
                 expr.args.forEach { checkExpr(it.expr) }
             }
             is Assign -> checkExpr(expr.value)
-            is drift.ast.Set -> {
+            is Set -> {
                 checkExpr(expr.receiver)
                 checkExpr(expr.value)
             }

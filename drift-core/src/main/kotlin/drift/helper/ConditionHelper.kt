@@ -9,7 +9,7 @@
 
 package drift.helper
 
-import drift.ast.DrExpr
+import drift.ast.expressions.Expression
 import drift.runtime.evaluators.eval
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrEnv
@@ -35,7 +35,7 @@ import drift.runtime.values.primaries.DrBool
  * @throws DriftRuntimeException If the provided condition
  * expression is not boolean
  */
-fun evalCondition(condition: DrExpr, env: DrEnv) : Boolean {
+fun evalCondition(condition: Expression, env: DrEnv) : Boolean {
     val conditionValue = condition.eval(env)
 
     if (conditionValue !is DrBool) {

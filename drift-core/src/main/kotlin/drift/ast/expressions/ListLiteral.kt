@@ -6,45 +6,21 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser.containers
 
-import drift.ast.expressions.Expression
-import drift.ast.expressions.ListLiteral
-import drift.parser.Parser
-import drift.parser.Token
-import drift.parser.expressions.parseExpression
+package drift.ast.expressions
 
 
 /******************************************************************************
- * DRIFT CONTAINERS PARSER
+ * DRIFT LIST LITERAL AST NODE
  *
- * All methods permitting to parse containers are define in this file.
- * A container permits to contain many values.
+ * Data class representing a list and its values in an AST.
  ******************************************************************************/
 
 
 
 /**
- * AST representation of a list
+ * A list structure
  *
- * @return List AST node
+ * @property values List values
  */
-internal fun Parser.parseList() : ListLiteral {
-    expectSymbol("[")
-
-    val values = mutableListOf<Expression>()
-
-    if (!checkSymbol("]")) {
-        do {
-            skip(Token.NewLine)
-
-            values.add(parseExpression())
-
-            skip(Token.NewLine)
-        } while (matchSymbol(","))
-    }
-
-    expectSymbol("]")
-
-    return ListLiteral(values)
-}
+data class ListLiteral(val values: MutableList<Expression>) : Expression

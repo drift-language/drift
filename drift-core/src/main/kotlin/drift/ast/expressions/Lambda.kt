@@ -6,45 +6,35 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser.containers
 
-import drift.ast.expressions.Expression
-import drift.ast.expressions.ListLiteral
-import drift.parser.Parser
-import drift.parser.Token
-import drift.parser.expressions.parseExpression
+package drift.ast.expressions
+
+import drift.ast.statements.DrStmt
+import drift.ast.statements.FunctionParameter
+import drift.runtime.DrType
 
 
 /******************************************************************************
- * DRIFT CONTAINERS PARSER
+ * DRIFT LAMBDA AST NODE
  *
- * All methods permitting to parse containers are define in this file.
- * A container permits to contain many values.
+ * Data class representing a lambda in an AST.
  ******************************************************************************/
 
 
 
 /**
- * AST representation of a list
+ * A lambda is a callable expression that can be stored
+ * in a variable or returned by another function,
+ * for example
  *
- * @return List AST node
+ * @property name Lambda entity name if defined (like variable)
+ * @property parameters Lambda arguments structures
+ * @property body Lambda body AST
+ * @property returnType Lambda return type
  */
-internal fun Parser.parseList() : ListLiteral {
-    expectSymbol("[")
-
-    val values = mutableListOf<Expression>()
-
-    if (!checkSymbol("]")) {
-        do {
-            skip(Token.NewLine)
-
-            values.add(parseExpression())
-
-            skip(Token.NewLine)
-        } while (matchSymbol(","))
-    }
-
-    expectSymbol("]")
-
-    return ListLiteral(values)
-}
+data class Lambda(
+    val name: String? = null,
+    val parameters: List<FunctionParameter>,
+    val body: List<DrStmt>,
+    val returnType: DrType
+) : Expression

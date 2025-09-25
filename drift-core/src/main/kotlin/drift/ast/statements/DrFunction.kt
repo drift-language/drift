@@ -6,9 +6,9 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.ast.statements
 
-package drift.ast
-
+import drift.ast.expressions.Expression
 import drift.runtime.*
 
 
@@ -52,4 +52,4 @@ data class FunctionParameter(
     val name: String,
     val isPositional: Boolean = false,
     val type: DrType = AnyType,
-    val defaultValue: DrExpr? = null)
+    val defaultValue: Expression? = null)

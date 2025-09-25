@@ -6,45 +6,31 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser.containers
 
-import drift.ast.expressions.Expression
-import drift.ast.expressions.ListLiteral
-import drift.parser.Parser
-import drift.parser.Token
-import drift.parser.expressions.parseExpression
+package drift.ast.expressions
+
+import drift.ast.statements.DrStmt
 
 
 /******************************************************************************
- * DRIFT CONTAINERS PARSER
+ * DRIFT CONDITIONAL AST NODE
  *
- * All methods permitting to parse containers are define in this file.
- * A container permits to contain many values.
+ * Data class representing a conditional structure in an AST.
  ******************************************************************************/
 
 
 
 /**
- * AST representation of a list
+ * A ternary conditional structure contains a condition,
+ * a then and else branches.
  *
- * @return List AST node
+ * It is the recommended syntax for conditional evaluation,
+ * instead of [drift.ast.statements.If].
+ *
+ * @property condition Condition
+ * @property thenBranch Branch to execute if the
+ * condition is successful
+ * @property elseBranch Branch to execute if the
+ * condition is unsuccessful
  */
-internal fun Parser.parseList() : ListLiteral {
-    expectSymbol("[")
-
-    val values = mutableListOf<Expression>()
-
-    if (!checkSymbol("]")) {
-        do {
-            skip(Token.NewLine)
-
-            values.add(parseExpression())
-
-            skip(Token.NewLine)
-        } while (matchSymbol(","))
-    }
-
-    expectSymbol("]")
-
-    return ListLiteral(values)
-}
+data class Conditional(val condition: Expression, val thenBranch: DrStmt, val elseBranch: DrStmt?) : Expression

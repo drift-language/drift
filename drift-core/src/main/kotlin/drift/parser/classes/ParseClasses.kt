@@ -9,9 +9,9 @@
 
 package drift.parser.classes
 
-import drift.ast.Class
-import drift.ast.Function
-import drift.ast.FunctionParameter
+import drift.ast.statements.Class
+import drift.ast.statements.Function
+import drift.ast.statements.FunctionParameter
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token

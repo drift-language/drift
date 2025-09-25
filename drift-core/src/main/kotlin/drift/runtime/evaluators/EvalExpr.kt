@@ -8,20 +8,20 @@
  ******************************************************************************/
 package drift.runtime.evaluators
 
-import drift.ast.Assign
-import drift.ast.Binary
-import drift.ast.Call
-import drift.ast.Conditional
-import drift.ast.DrExpr
-import drift.ast.DrStmt
-import drift.ast.Function
-import drift.ast.Get
-import drift.ast.Lambda
-import drift.ast.ListLiteral
-import drift.ast.Literal
-import drift.ast.Set
-import drift.ast.Unary
-import drift.ast.Variable
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Expression
+import drift.ast.statements.DrStmt
+import drift.ast.statements.Function
+import drift.ast.expressions.Get
+import drift.ast.expressions.Lambda
+import drift.ast.expressions.ListLiteral
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Set
+import drift.ast.expressions.Unary
+import drift.ast.expressions.Variable
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrLambda
 import drift.runtime.values.callables.DrMethod
@@ -65,9 +65,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed expression value
- * @see drift.ast.DrExpr
+ * @see Expression
  */
-fun DrExpr.eval(env: DrEnv): DrValue {
+fun Expression.eval(env: DrEnv): DrValue {
     return when (this) {
         // Literal
         is Literal -> value
