@@ -16,9 +16,9 @@ import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************
- * DRIFT VARIABLES STRUCTURE
+ * DRIFT VARIABLE RUNTIME TYPE
  *
- * All variables are based on this file structures.
+ * Runtime class for variables.
  ******************************************************************************/
 
 
