@@ -8,18 +8,32 @@
  ******************************************************************************/
 package drift.ast.statements
 
+import drift.runtime.AnyType
+import drift.runtime.DrType
+
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT FUNCTION DECLARATION STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing a function declaration in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This class represents a callable structure
+ *
+ * @property name Callable name
+ * @property parameters Callable arguments structures
+ * @property body Callable body AST
+ * @property returnType Callable return type
+ * @see drift.runtime.values.callables.DrFunction
+ * @see drift.runtime.values.callables.DrMethod
+ * @see drift.runtime.values.callables.DrLambda
  */
-interface DrStmt
-
+data class Function(
+    val name: String,
+    val parameters: List<FunctionParameter>,
+    val body: List<DrStmt>,
+    val returnType: DrType = AnyType
+) : DrStmt

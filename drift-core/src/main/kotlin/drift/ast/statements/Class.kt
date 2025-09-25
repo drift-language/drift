@@ -6,20 +6,28 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT CLASS DECLARATION STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing a class declaration in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This represents a Drift class declaration
+ *
+ * @property name Class name
+ * @property fields Class fields
+ * @property methods Class methods
  */
-interface DrStmt
-
+data class Class(
+    val name: String,
+    val fields: MutableList<FunctionParameter> = mutableListOf(),
+    val methods: MutableList<Function> = mutableListOf(),
+    val staticFields: MutableList<FunctionParameter> = mutableListOf(),
+    val staticMethods: MutableList<Function> = mutableListOf()) : DrStmt

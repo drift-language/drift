@@ -6,20 +6,23 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
+
+import drift.ast.expressions.Expression
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT RETURN STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing a return statement in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This class represents a callable return statement
+ *
+ * @property value Value to return from the callable
  */
-interface DrStmt
-
+data class Return(val value: Expression) : DrStmt

@@ -6,20 +6,30 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
+
+import drift.ast.expressions.Expression
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT IF CONDITIONAL STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing an IF statement in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This class represents a classic conditional statement.
+ *
+ * The Drift-style structure is an expression,
+ * and is computed using [ExprStmt].
+ *
+ * @property condition Condition to compute
+ * @property thenBranch Branch to execute if the
+ * condition is successful
+ * @property elseBranch Branch to execute if the
+ * condition is unsuccessful
  */
-interface DrStmt
-
+data class If(val condition: Expression, val thenBranch: DrStmt, val elseBranch: DrStmt?) : DrStmt

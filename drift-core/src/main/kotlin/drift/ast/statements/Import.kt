@@ -6,20 +6,22 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT IMPORT STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing an import statement in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This class represents an import statement.
+ *
+ * @property namespace Namespace to import
+ * @property path Namespace path to import
  */
-interface DrStmt
-
+data class Import(val namespace: String, val path: String) : DrStmt

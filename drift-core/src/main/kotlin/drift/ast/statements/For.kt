@@ -6,20 +6,25 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
+
+import drift.ast.expressions.Expression
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT FOR-LOOP STATEMENT AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing a for-loop in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * This class represents a for loop statement structure
+ *
+ * @property iterable Source to iterate
+ * @property variables List of loop variables
+ * @property body Loop body block
  */
-interface DrStmt
-
+data class For(val iterable: Expression, val variables: List<String>, val body: DrStmt) : DrStmt

@@ -6,20 +6,23 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+
 package drift.ast.statements
 
 
 /******************************************************************************
- * DRIFT STATEMENT STRUCTURES
+ * DRIFT BLOCK AST NODE
  *
- * Interface for all statements in an AST.
+ * Data class representing a block (scope) in an AST.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all statement
- * structures.
+ * A block is a statement container allowing
+ * to compute statements into an isolated environment
+ * instance, inherited by parents.
+ *
+ * @property statements Block statements
  */
-interface DrStmt
-
+data class Block(val statements: List<DrStmt>) : DrStmt

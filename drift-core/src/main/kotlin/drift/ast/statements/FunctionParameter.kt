@@ -13,29 +13,10 @@ import drift.runtime.*
 
 
 /******************************************************************************
- * DRIFT FUNCTION STRUCTURES
+ * DRIFT FUNCTION PARAMETER AST NODE
  *
- * All Drift function structures are defined in this file.
+ * Data class representing a function parameter in an AST.
  ******************************************************************************/
-
-
-
-/**
- * This class represents a callable structure
- *
- * @property name Callable name
- * @property parameters Callable arguments structures
- * @property body Callable body AST
- * @property returnType Callable return type
- * @see drift.runtime.values.callables.DrFunction
- * @see drift.runtime.values.callables.DrMethod
- * @see drift.runtime.values.callables.DrLambda
- */
-data class Function(
-    val name: String,
-    val parameters: List<FunctionParameter>,
-    val body: List<DrStmt>,
-    val returnType: DrType = AnyType) : DrStmt
 
 
 
