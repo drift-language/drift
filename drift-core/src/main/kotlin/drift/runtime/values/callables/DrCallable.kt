@@ -6,23 +6,19 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.runtime.values.callables
 
-import drift.runtime.*
+package drift.runtime.values.callables
 
 
 /******************************************************************************
- * DRIFT CALLABLE VALUE TYPES
+ * DRIFT CALLABLE RUNTIME TYPES
  *
- * All callable value types are defined in this file.
+ * Interface for all Drift Callable types.
  ******************************************************************************/
-/**
- * AST representation of a callable return statement.
- */
-data class DrReturn(val value: DrValue) : DrValue {
-    /** @return A prepared string version of the type */
-    override fun asString(): String = value.asString()
 
-    /** @return The object representation of the type */
-    override fun type(): DrType = value.type()
-}
+
+
+/**
+ * This interface represents all callable value types.
+ */
+interface DrCallable
