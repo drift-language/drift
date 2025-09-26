@@ -25,6 +25,8 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
+import project.ProjectConfig
+import project.loadConfig
 import java.io.File
 
 @Deprecated("Use Drift CLI instead")
@@ -49,7 +51,7 @@ fun main(args: Array<String>) {
 
     val tokens = lex(source)
     println(tokens)
-    val ast = Parser(tokens).parse()
+    val ast = Parser(tokens, loadConfig(File("examples"))).parse()
     println(ast)
 
     env.run {

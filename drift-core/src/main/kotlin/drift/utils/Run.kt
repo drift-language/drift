@@ -18,6 +18,8 @@ import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNull
+import project.ProjectConfig
+import project.ProjectStructure
 
 
 /******************************************************************************
@@ -25,6 +27,16 @@ import drift.runtime.values.specials.DrNull
  *
  * Utility functions for testing purposes.
  ******************************************************************************/
+
+
+
+val testConfig: ProjectConfig = ProjectConfig(
+    name = "Test Project",
+    structure = ProjectStructure(
+        root = ".",
+        "test"
+    )
+)
 
 
 
@@ -37,7 +49,7 @@ import drift.runtime.values.specials.DrNull
  */
 fun evalProgram(source: String) : DrValue {
     val tokens = lex(source)
-    val ast = Parser(tokens).parse()
+    val ast = Parser(tokens, testConfig).parse()
     val env = DrEnv()
 
     env.apply {
@@ -79,7 +91,7 @@ fun evalWithOutputs(source: String) : MutableList<String> {
     val output = mutableListOf<String>()
 
     val tokens = lex(source)
-    val ast = Parser(tokens).parse()
+    val ast = Parser(tokens, testConfig).parse()
     val env = DrEnv().apply {
         define("test", DrNativeFunction(
             impl = { _, args ->

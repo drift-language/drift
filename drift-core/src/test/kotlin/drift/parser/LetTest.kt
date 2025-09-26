@@ -12,6 +12,7 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -20,7 +21,7 @@ import kotlin.test.assertEquals
 class LetTest {
 
     private fun parse(code: String): List<DrValue> {
-        val ast: List<DrStmt> = Parser(lex(code)).parse()
+        val ast: List<DrStmt> = Parser(lex(code), testConfig).parse()
         val outputs = mutableListOf<DrValue>()
         val env = DrEnv().apply {
             define(

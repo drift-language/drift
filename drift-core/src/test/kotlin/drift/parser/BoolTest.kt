@@ -4,6 +4,7 @@ import drift.runtime.evaluators.eval
 import drift.runtime.*
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.specials.DrNull
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
@@ -12,7 +13,7 @@ class BoolTest {
 
     private fun evalExpr(input: String) : DrValue {
         val tokens = lex(input)
-        val parser = Parser(tokens)
+        val parser = Parser(tokens, testConfig)
         val expression = parser.parse()
         val env = DrEnv()
 

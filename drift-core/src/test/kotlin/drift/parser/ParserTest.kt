@@ -6,6 +6,7 @@ import drift.exceptions.DriftParserException
 import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.specials.DrNull
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.assertThrows
 class ParserTest {
 
     private fun parse(code: String): DrValue {
-        val statements: List<DrStmt> = Parser(lex(code)).parse()
+        val statements: List<DrStmt> = Parser(lex(code), testConfig).parse()
         val env = DrEnv().apply {
             define(
                 "test", DrNativeFunction(

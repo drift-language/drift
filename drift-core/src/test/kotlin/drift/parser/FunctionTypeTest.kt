@@ -5,6 +5,8 @@ import drift.runtime.evaluators.eval
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftTypeException
 import drift.runtime.*
+import drift.utils.evalProgram
+import drift.utils.testConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -14,7 +16,7 @@ class FunctionTypeTest {
 
     private fun parseFunctionFromSource(src: String) : Function {
         val tokens = lex(src)
-        val statements = Parser(tokens).parse()
+        val statements = Parser(tokens, testConfig).parse()
         val function = statements.first() as? Function
 
         assertNotNull(function)
@@ -58,20 +60,12 @@ class FunctionTypeTest {
 
     @Test
     fun `Function with wrong return type and expression`() {
-        val code = """
-            fun test(): String { return 1 }
-            
-            test()
-        """.trimIndent()
-
-        val tokens = lex(code)
-        val statements = Parser(tokens).parse()
-        val env = DrEnv()
-
         assertThrows<DriftTypeException> {
-            for (statement in statements) {
-                statement.eval(env)
-            }
+            evalProgram("""
+                fun test(): String { return 1 }
+                
+                test()
+            """.trimIndent())
         }
     }
 

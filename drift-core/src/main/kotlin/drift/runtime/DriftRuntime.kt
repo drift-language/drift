@@ -21,6 +21,7 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
+import project.ProjectConfig
 
 /******************************************************************************
  * DRIFT RUNTIME
@@ -31,11 +32,11 @@ import drift.runtime.values.specials.DrVoid
 
 
 object DriftRuntime {
-    fun run(source: String) {
+    fun run(source: String, config: ProjectConfig) {
         val env = DrEnv()
 
         val tokens = lex(source)
-        val ast = Parser(tokens).parse()
+        val ast = Parser(tokens, config).parse()
 
         env.run {
             define("print", DrNativeFunction(

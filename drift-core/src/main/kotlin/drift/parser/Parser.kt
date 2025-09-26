@@ -34,7 +34,7 @@ class Parser(
     private val tokens: List<Token>,
 
     /** Project configuration from `drift.json` */
-    private val config: ProjectConfig) {
+    internal val config: ProjectConfig) {
 
 
 

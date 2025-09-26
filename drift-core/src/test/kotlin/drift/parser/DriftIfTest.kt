@@ -1,13 +1,14 @@
 package drift.parser
 
 import drift.ast.statements.DrStmt
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
 class DriftIfTest {
 
     private fun parse(code: String): List<DrStmt> {
-        return Parser(lex(code)).parse()
+        return Parser(lex(code), testConfig).parse()
     }
 
     @Test

@@ -7,7 +7,10 @@ import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.DrEnv
 import drift.runtime.values.oop.DrClass
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
+import project.ProjectConfig
+import project.ProjectStructure
 import kotlin.test.assertNotNull
 
 class DriftPipelineTest {
@@ -19,7 +22,7 @@ class DriftPipelineTest {
             defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
         }
         val tokens = lex(source)
-        val ast = Parser(tokens).parse()
+        val ast = Parser(tokens, testConfig).parse()
 
         SymbolCollector(env).collect(ast)
         TypeChecker(env).check(ast)
