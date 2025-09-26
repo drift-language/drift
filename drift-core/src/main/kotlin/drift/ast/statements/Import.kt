@@ -26,4 +26,6 @@ package drift.ast.statements
  */
 data class Import(
     val namespace: String,
-    val steps: List<String>) : DrStmt
+    val steps: List<String>,
+    val alias: String? = null,
+    val parts: List<ImportPart>? = null) : DrStmt
