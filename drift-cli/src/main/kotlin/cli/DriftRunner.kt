@@ -58,7 +58,10 @@ fun loadConfig(dir: File) : ProjectConfig {
 
 
 class Run : CliktCommand(name = "run") {
-    private val path: String? by option("-p", "--path", help = "Project root directory")
+    private val path: String? by option(
+        "-p",
+        "--path",
+        help = "Project root directory")
 
     override fun run() {
         AnsiConsole.systemInstall()
@@ -88,18 +91,20 @@ class Run : CliktCommand(name = "run") {
                 .a("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --\n")
                 .reset())
 
+        val driftBlue: Triple<Int, Int, Int> = Triple(42, 131, 255)
+
         println(
             Ansi.ansi()
-                .fgRgb(42, 131, 255)
+                .fgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
                 .bold()
                 .a("Running ")
                 .reset()
-                .bgRgb(42, 131, 255)
+                .bgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
                 .fgRgb(255, 255, 255)
                 .bold()
                 .a(" Drift ")
                 .reset()
-                .fgRgb(42, 131, 255)
+                .fgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
                 .bold()
                 .a(" project ${config.name}")
                 .reset())
