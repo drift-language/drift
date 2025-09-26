@@ -212,5 +212,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
             DrVoid
         }
+
+        else -> throw DriftRuntimeException("Invalid statement $this")
     }
 }

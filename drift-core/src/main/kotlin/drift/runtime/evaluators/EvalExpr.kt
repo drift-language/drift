@@ -458,6 +458,8 @@ fun Expression.eval(env: DrEnv): DrValue {
                 .map { unwrap(it.eval(env)) }
                 .toMutableList())
         }
+
+        else -> throw DriftRuntimeException("Invalid expression $this")
     }
 }
 
