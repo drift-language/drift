@@ -16,13 +16,14 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import java.nio.file.Paths
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import org.fusesource.jansi.Ansi
 import org.fusesource.jansi.AnsiConsole
 import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.runtime.DriftRuntime
+import project.DriftProjectLoadingException
+import project.ProjectConfig
+import project.loadConfig
 
 /******************************************************************************
  * DRIFT RUNNER
@@ -30,31 +31,6 @@ import drift.runtime.DriftRuntime
  * This runner file permits evaluating and executing a Drift file.
  ******************************************************************************/
 
-
-@Serializable
-data class ProjectConfig(
-    val name: String = "Unnamed Project",
-    val structure: ProjectStructure = ProjectStructure(
-        "./src",
-        "main"))
-
-@Serializable
-data class ProjectStructure(
-    val root: String,
-    val entry: String)
-
-
-fun loadConfig(dir: File) : ProjectConfig {
-    val configFile = File(dir, "drift.json")
-
-    if (!configFile.exists()) {
-        cliError("Config file does not exist: ${configFile.absolutePath}")
-    }
-
-    val json = configFile.readText()
-
-    return Json.decodeFromString(ProjectConfig.serializer(), json)
-}
 
 
 class Run : CliktCommand(name = "run") {
@@ -70,7 +46,13 @@ class Run : CliktCommand(name = "run") {
             if (path != null) File(path!!)
             else File(System.getProperty("user.dir"))
 
-        val config = loadConfig(projectDir)
+        var config: ProjectConfig
+
+        try {
+            config = loadConfig(projectDir)
+        } catch (e: DriftProjectLoadingException) {
+            cliError(e.message)
+        }
 
         val entryPath = Paths
             .get("$projectDir/${config.structure.root}/${config.structure.entry}.drift")

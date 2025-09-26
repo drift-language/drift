@@ -19,6 +19,8 @@ kotlin {
 
 dependencies {
     testImplementation(kotlin("test"))
+
+    implementation(project(":drift-common"))
 }
 
 tasks.test {

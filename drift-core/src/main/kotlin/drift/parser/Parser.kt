@@ -12,6 +12,7 @@ package drift.parser
 import drift.ast.statements.DrStmt
 import drift.exceptions.DriftParserException
 import drift.parser.statements.parseStatement
+import project.ProjectConfig
 
 
 /******************************************************************************
@@ -30,7 +31,10 @@ import drift.parser.statements.parseStatement
  */
 class Parser(
     /** Provided lexer tokens */
-    private val tokens: List<Token>) {
+    private val tokens: List<Token>,
+
+    /** Project configuration from `drift.json` */
+    private val config: ProjectConfig) {
 
 
 
