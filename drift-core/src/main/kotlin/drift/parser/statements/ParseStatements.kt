@@ -332,7 +332,7 @@ internal fun Parser.parseImport() : Import {
 
             if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
                 advance(false)
-                partAlias = c
+                partAlias = expect<Token.Identifier>("Expected variable name")
                 advance(false)
             }
 
