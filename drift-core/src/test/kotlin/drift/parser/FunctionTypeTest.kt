@@ -16,7 +16,7 @@ class FunctionTypeTest {
 
     private fun parseFunctionFromSource(src: String) : Function {
         val tokens = lex(src)
-        val statements = Parser(tokens, testConfig).parse()
+        val statements = Parser(tokens).parse()
         val function = statements.first() as? Function
 
         assertNotNull(function)

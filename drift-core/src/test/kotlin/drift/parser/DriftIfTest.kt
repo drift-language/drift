@@ -8,7 +8,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 class DriftIfTest {
 
     private fun parse(code: String): List<DrStmt> {
-        return Parser(lex(code), testConfig).parse()
+        return Parser(lex(code)).parse()
     }
 
     @Test

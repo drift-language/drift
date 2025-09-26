@@ -314,6 +314,5 @@ internal fun Parser.parseImport() : Import {
 
     return Import(
         namespaceSteps.joinToString("."),
-        "${config.structure.root}/${namespaceSteps.joinToString("/")}.drift"
-    )
+        namespaceSteps)
 }

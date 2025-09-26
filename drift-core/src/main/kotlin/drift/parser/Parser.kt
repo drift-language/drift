@@ -31,10 +31,7 @@ import project.ProjectConfig
  */
 class Parser(
     /** Provided lexer tokens */
-    private val tokens: List<Token>,
-
-    /** Project configuration from `drift.json` */
-    internal val config: ProjectConfig) {
+    private val tokens: List<Token>) {
 
 
 

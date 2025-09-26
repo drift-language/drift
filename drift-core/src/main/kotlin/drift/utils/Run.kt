@@ -49,7 +49,7 @@ val testConfig: ProjectConfig = ProjectConfig(
  */
 fun evalProgram(source: String) : DrValue {
     val tokens = lex(source)
-    val ast = Parser(tokens, testConfig).parse()
+    val ast = Parser(tokens).parse()
     val env = DrEnv()
 
     env.apply {
@@ -91,7 +91,7 @@ fun evalWithOutputs(source: String) : MutableList<String> {
     val output = mutableListOf<String>()
 
     val tokens = lex(source)
-    val ast = Parser(tokens, testConfig).parse()
+    val ast = Parser(tokens).parse()
     val env = DrEnv().apply {
         define("test", DrNativeFunction(
             impl = { _, args ->

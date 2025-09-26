@@ -13,7 +13,7 @@ class BoolTest {
 
     private fun evalExpr(input: String) : DrValue {
         val tokens = lex(input)
-        val parser = Parser(tokens, testConfig)
+        val parser = Parser(tokens)
         val expression = parser.parse()
         val env = DrEnv()
 

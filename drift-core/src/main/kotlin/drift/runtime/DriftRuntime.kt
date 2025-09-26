@@ -32,11 +32,11 @@ import project.ProjectConfig
 
 
 object DriftRuntime {
-    fun run(source: String, config: ProjectConfig) {
+    fun run(source: String) {
         val env = DrEnv()
 
         val tokens = lex(source)
-        val ast = Parser(tokens, config).parse()
+        val ast = Parser(tokens).parse()
 
         env.run {
             define("print", DrNativeFunction(

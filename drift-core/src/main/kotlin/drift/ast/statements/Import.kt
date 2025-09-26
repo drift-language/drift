@@ -26,4 +26,4 @@ package drift.ast.statements
  */
 data class Import(
     val namespace: String,
-    val path: String) : DrStmt
+    val steps: List<String>) : DrStmt
