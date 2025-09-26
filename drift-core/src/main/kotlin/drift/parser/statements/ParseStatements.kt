@@ -17,6 +17,7 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.For
 import drift.ast.statements.If
 import drift.ast.statements.Import
+import drift.ast.statements.ImportPart
 import drift.ast.statements.Let
 import drift.ast.statements.Return
 import drift.exceptions.DriftParserException
@@ -306,13 +307,48 @@ internal fun Parser.parseFor() : For {
 
 internal fun Parser.parseImport() : Import {
     val namespaceSteps = mutableListOf<String>()
+    var importParts: MutableList<ImportPart>? = null
+    var alias: String? = null
+
+    var c: Token?
 
     do {
         namespaceSteps.add(expect<Token.Identifier>("Invalid namespace").value)
         advance(false)
     } while (matchSymbol("."))
 
+    c = current()
+
+    if (matchSymbol("{")) {
+        importParts = mutableListOf()
+
+        do {
+            val partName = expect<Token.Identifier>("Expected variable name")
+
+            advance(false)
+
+            c = current()
+            var partAlias: Token.Identifier? = null
+
+            if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
+                advance(false)
+                partAlias = c
+                advance(false)
+            }
+
+            importParts.add(ImportPart(partName.value, partAlias?.value))
+        } while (matchSymbol(","))
+
+        expectSymbol("}", advanceOnSuccess = true)
+    } else if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
+        advance(false)
+        alias = expect<Token.Identifier>("Invalid alias").value
+        advance(false)
+    }
+
     return Import(
         namespaceSteps.joinToString("."),
-        namespaceSteps)
+        namespaceSteps,
+        alias,
+        importParts)
 }
