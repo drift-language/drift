@@ -9,6 +9,7 @@
 package drift.runtime
 
 import drift.ast.statements.Function
+import drift.ast.statements.Import
 import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
@@ -22,6 +23,7 @@ import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
 import project.ProjectConfig
+import java.io.File
 
 /******************************************************************************
  * DRIFT RUNTIME
@@ -32,7 +34,7 @@ import project.ProjectConfig
 
 
 object DriftRuntime {
-    fun run(source: String) {
+    fun run(source: String, config: ProjectConfig, projectDir: File) {
         val env = DrEnv()
 
         val tokens = lex(source)
@@ -78,7 +80,11 @@ object DriftRuntime {
         TypeChecker(env).check(ast)
 
         for (statement in ast) {
-            statement.eval(env)
+            if (statement is Import) statement.eval(ModuleLoader(
+                config,
+                projectDir,
+                env))
+            else statement.eval(env)
         }
     }
 }
