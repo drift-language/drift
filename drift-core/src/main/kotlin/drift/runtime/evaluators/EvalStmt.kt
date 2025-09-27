@@ -6,9 +6,18 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.evaluators
 
-package drift.ast
-
+import drift.ast.statements.Block
+import drift.ast.statements.Class
+import drift.ast.statements.DrStmt
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.For
+import drift.ast.statements.Function
+import drift.ast.statements.If
+import drift.ast.statements.Import
+import drift.ast.statements.Let
+import drift.ast.statements.Return
 import drift.exceptions.DriftRuntimeException
 import drift.helper.rangeToList
 import drift.helper.validateValue
@@ -16,17 +25,16 @@ import drift.runtime.*
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrReturn
-import drift.runtime.values.containers.DrExclusiveRange
-import drift.runtime.values.containers.DrInclusiveRange
-import drift.runtime.values.containers.DrList
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.list.DrList
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
+import drift.helper.evalCondition
+import drift.runtime.values.containers.range.DrExclusiveRange
+import drift.runtime.values.containers.range.DrInclusiveRange
 import drift.utils.castNumericIfNeeded
 
 
@@ -69,7 +77,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is If -> {
             var result: DrValue = DrNull
 
-            if (drift.helper.evalCondition(condition, env)) {
+            if (evalCondition(condition, env)) {
                 result = thenBranch.eval(env)
             } else if (elseBranch != null) {
                 result = elseBranch.eval(env)
@@ -199,10 +207,6 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             DrVoid
         }
 
-        is Import -> {
-            // TODO
-
-            DrVoid
-        }
+        else -> throw DriftRuntimeException("Invalid statement $this")
     }
 }

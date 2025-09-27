@@ -14,15 +14,20 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.terminal.Terminal
 import java.io.File
 import java.nio.file.Paths
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import org.fusesource.jansi.Ansi
-import org.fusesource.jansi.AnsiConsole
 import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.runtime.DriftRuntime
+import project.DriftProjectLoadingException
+import project.ProjectConfig
+import project.loadConfig
+import kotlin.run
 
 /******************************************************************************
  * DRIFT RUNNER
@@ -31,43 +36,27 @@ import drift.runtime.DriftRuntime
  ******************************************************************************/
 
 
-@Serializable
-data class ProjectConfig(
-    val name: String = "Unnamed Project",
-    val structure: ProjectStructure = ProjectStructure(
-        "./src",
-        "main"))
-
-@Serializable
-data class ProjectStructure(
-    val root: String,
-    val entry: String)
-
-
-fun loadConfig(dir: File) : ProjectConfig {
-    val configFile = File(dir, "drift.json")
-
-    if (!configFile.exists()) {
-        cliError("Config file does not exist: ${configFile.absolutePath}")
-    }
-
-    val json = configFile.readText()
-
-    return Json.decodeFromString(ProjectConfig.serializer(), json)
-}
-
 
 class Run : CliktCommand(name = "run") {
-    private val path: String? by option("-p", "--path", help = "Project root directory")
+    private val path: String? by option(
+        "-p",
+        "--path",
+        help = "Project root directory")
 
     override fun run() {
-        AnsiConsole.systemInstall()
+        val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
 
         val projectDir =
             if (path != null) File(path!!)
             else File(System.getProperty("user.dir"))
 
-        val config = loadConfig(projectDir)
+        var config: ProjectConfig
+
+        try {
+            config = loadConfig(projectDir)
+        } catch (e: DriftProjectLoadingException) {
+            cliError(e.message, t)
+        }
 
         val entryPath = Paths
             .get("$projectDir/${config.structure.root}/${config.structure.entry}.drift")
@@ -78,51 +67,31 @@ class Run : CliktCommand(name = "run") {
         val entryFile = File(entryPath)
 
         if (!entryFile.exists()) {
-            cliError("Entry file not found: $entryPath")
+            cliError("Entry file not found: $entryPath", t)
         }
 
-        println(
-            Ansi.ansi()
-                .bgBrightDefault()
-                .bold()
-                .a("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --\n")
-                .reset())
+        t.run {
+            println(bold("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --"))
+            println()
 
-        println(
-            Ansi.ansi()
-                .fgRgb(42, 131, 255)
-                .bold()
-                .a("Running ")
-                .reset()
-                .bgRgb(42, 131, 255)
-                .fgRgb(255, 255, 255)
-                .bold()
-                .a(" Drift ")
-                .reset()
-                .fgRgb(42, 131, 255)
-                .bold()
-                .a(" project ${config.name}")
-                .reset())
+            println(bold(
+                (driftBlue)("Running ")
+                + (rgb("#FFF") on driftBlue)(" Drift ")
+                + (driftBlue)(" project ${config.name}")
+            ))
 
-        println(
-            Ansi.ansi()
-                .bold()
-                .a("Entry: $entryPath\n")
-                .reset())
-
-        AnsiConsole.systemUninstall()
+            println(bold("Entry: $entryPath\n"))
+        }
 
         val source = entryFile.readText()
-        DriftRuntime.run(source)
+        DriftRuntime.run(source, config, projectDir)
 
-        println()
-        println(
-            Ansi.ansi()
-                .bgRgb(0)
-                .fgRgb(255, 255, 255)
-                .bold()
-                .a(" — End of Program — ")
-                .reset())
+        t.run {
+            println()
+            println(bold(
+                (white on black)(" — End of Program — ")
+            ))
+        }
     }
 
     override fun help(context: Context): String {
@@ -131,19 +100,21 @@ class Run : CliktCommand(name = "run") {
 }
 
 
+val driftBlue = rgb(0.1647058824, 0.5137254902, 1)
+
+
 class Drift : CliktCommand() {
     override fun run() = Unit
 }
 
 
-internal fun cliError(message: String): Nothing {
-    val styled = Ansi.ansi()
-        .fgRed()
-        .bold()
-        .a("[ERROR] $message")
-        .reset()
+internal fun cliError(message: String, t: Terminal): Nothing {
+    t.run {
+        println(bold(
+            (red)("[ERROR] $message")
+        ))
+    }
 
-    println(styled)
     exitProcess(1)
 }
 

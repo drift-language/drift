@@ -6,7 +6,6 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.variables
 
 import drift.exceptions.DriftRuntimeException
@@ -17,9 +16,9 @@ import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************
- * DRIFT VARIABLES STRUCTURE
+ * DRIFT VARIABLE RUNTIME TYPE
  *
- * All variables are based on this file structures.
+ * Runtime class for variables.
  ******************************************************************************/
 
 

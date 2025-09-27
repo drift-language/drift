@@ -8,8 +8,8 @@
  ******************************************************************************/
 package drift.cli
 
-import drift.ast.Function
-import drift.ast.eval
+import drift.ast.statements.Function
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
@@ -25,32 +25,61 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
+import project.ProjectConfig
+import project.loadConfig
 import java.io.File
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.core.terminal
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.terminal.Terminal
+import drift.DriftVersion
 
-@Deprecated("Use Drift CLI instead")
 fun main(args: Array<String>) {
-    println("-- Drift CommandLine Feature — DEBUG TOOL --\n")
+    val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
 
-    if (args.isEmpty()) {
-        println("Usage: drift <file.drift>")
-        return
+    t.run {
+        println(bold(
+            "-- Drift CommandLine Debugger Feature — ${DriftVersion.fullVersion} --"
+        ))
+
+        println()
+        println(bold(
+            (driftBlue)("Running ") +
+            (rgb("#FFF") on driftBlue)(" Drift ") +
+            (rgb("#FFF") on green)(" Debugger ")
+        ))
+    }
+
+    if (args.isNotEmpty()) {
+        t.run {
+            println(bold("Entry: ${args[0]}"))
+            println()
+        }
     }
 
     val file = File(args[0])
 
     if (!file.exists()) {
-        println("File not found: ${args[0]}")
-        return
+        cliError("File not found: ${args[0]}", t)
     }
 
     val source = file.readText()
-
     val env = DrEnv()
+    val config = loadConfig(File("examples"))
 
     val tokens = lex(source)
-    println(tokens)
+    t.println(bold(yellow("[TOKENS]\t")) + italic(tokens.toString()))
+
     val ast = Parser(tokens).parse()
-    println(ast)
+    t.println(bold(red("[AST]\t\t")) + italic(ast.toString()))
+    t.println("\n——————\n")
 
     env.run {
         define("print", DrNativeFunction(
@@ -96,5 +125,12 @@ fun main(args: Array<String>) {
 
     for (statement in ast) {
         statement.eval(env)
+    }
+
+    t.run {
+        println()
+        println(bold(
+            (white on black)(" — End of Program — ")
+        ))
     }
 }

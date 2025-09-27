@@ -6,24 +6,47 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.evaluators
 
-package drift.ast
-
-import drift.exceptions.DriftParserException
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Binary
+import drift.ast.expressions.Call
+import drift.ast.expressions.Conditional
+import drift.ast.expressions.Expression
+import drift.ast.statements.DrStmt
+import drift.ast.statements.Function
+import drift.ast.expressions.Get
+import drift.ast.expressions.Lambda
+import drift.ast.expressions.ListLiteral
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Set
+import drift.ast.expressions.Unary
+import drift.ast.expressions.Variable
+import drift.runtime.values.callables.DrFunction
+import drift.runtime.values.callables.DrLambda
+import drift.runtime.values.callables.DrMethod
+import drift.runtime.values.callables.DrNativeFunction
+import drift.runtime.values.callables.DrReturn
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
-import drift.runtime.values.callables.*
-import drift.runtime.values.containers.DrExclusiveRange
-import drift.runtime.values.containers.DrInclusiveRange
-import drift.runtime.values.containers.DrList
-import drift.runtime.values.containers.DrRange
+import drift.runtime.values.containers.list.DrList
+import drift.runtime.values.containers.range.DrExclusiveRange
+import drift.runtime.values.containers.range.DrInclusiveRange
+import drift.runtime.values.containers.range.DrRange
+import drift.runtime.values.imports.DrModule
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
-import drift.runtime.values.primaries.*
+import drift.runtime.values.primaries.DrBool
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrInt64
+import drift.runtime.values.primaries.DrNumeric
+import drift.runtime.values.primaries.DrString
+import drift.runtime.values.primaries.DrUInt
+import drift.runtime.values.primaries.promoteNumericPair
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
@@ -43,9 +66,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed expression value
- * @see DrExpr
+ * @see Expression
  */
-fun DrExpr.eval(env: DrEnv): DrValue {
+fun Expression.eval(env: DrEnv): DrValue {
     return when (this) {
         // Literal
         is Literal -> value
@@ -363,68 +386,77 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         }
 
         // Object field getter
-        is Get -> {
-            val obj = unwrap(receiver.eval(env))
+        is Get -> when (val obj = unwrap(receiver.eval(env))) {
+            is DrModule -> obj.get(name)
+                ?: throw DriftRuntimeException("Symbol $name not found in module '${obj.name}'")
 
-            val klass = env.resolveClass(obj.type().asString())
-                ?: throw DriftRuntimeException("No class found for ${obj.type().asString()}")
+            is DrInstance -> {
+                val klass = obj.klass
 
-            when (obj) {
-                is DrInstance -> {
-                    // Instance Fields
-                    obj.values[name]?.let { value ->
-                        validateValue(value)
-                        return value
-                    }
+                obj.values[name]?.let { value ->
+                    validateValue(value)
 
-                    // Instance Methods
-                    klass.methods.find { it.let.name == name }?.let { method ->
-                        return DrMethod(
-                            let = method.let,
-                            closure = env,
-                            instance = obj,
-                            nativeImpl = method.nativeImpl
-                        )
-                    }
+                    return value
                 }
-                is DrClass -> {
-                    // Static fields
-                    klass.staticFields[name]?.let { staticField ->
-                        validateValue(staticField.value)
-                        return staticField.value
-                    }
 
-                    // Static methods
-                    klass.staticMethods[name]?.let { staticMethod ->
-                        return DrMethod(
-                            let = staticMethod.let,
-                            closure = env,
-                            instance = null,
-                            nativeImpl = staticMethod.nativeImpl
-                        )
-                    }
+                // Instance Methods
+                klass.methods.find { it.let.name == name }?.let { method ->
+                    return DrMethod(
+                        let = method.let,
+                        closure = env,
+                        instance = obj,
+                        nativeImpl = method.nativeImpl
+                    )
                 }
-                else -> throw DriftRuntimeException("Cannot set an attribute to a non-object value")
+
+                throw DriftRuntimeException("Member '$name' not found on class ${klass.name}")
             }
 
-            throw DriftRuntimeException("Property or method '$name' not found on class ${klass.name}")
+            is DrClass -> {
+                val klass = obj
+
+                // Static fields
+                klass.staticFields[name]?.let { staticField ->
+                    validateValue(staticField.value)
+                    return staticField.value
+                }
+
+                // Static methods
+                klass.staticMethods[name]?.let { staticMethod ->
+                    return DrMethod(
+                        let = staticMethod.let,
+                        closure = env,
+                        instance = null,
+                        nativeImpl = staticMethod.nativeImpl
+                    )
+                }
+
+                throw DriftRuntimeException("Static member '$name' not found on class ${klass.name}")
+            }
+
+            else -> throw DriftRuntimeException("Cannot access attribute '$name' on non-object value")
         }
 
         // Object field setter
         is Set -> {
-            val obj = receiver.eval(env)
-
-            val v = value.eval(env)
+            val obj = unwrap(receiver.eval(env))
+            val v = validateValue(value.eval(env))
 
             when (obj) {
+                is DrModule -> throw DriftRuntimeException(
+                    "Cannot assign to symbol '$name' in module ${obj.name}")
+
                 is DrInstance -> obj.set(name, v)
+
                 is DrClass -> {
                     val field = obj.staticFields[name]
                         ?: throw DriftRuntimeException("No static '$name' in class ${obj.name}")
 
                     field.value = v
                 }
-                else -> throw DriftRuntimeException("Cannot set an attribute to a non-object value")
+
+                else -> throw DriftRuntimeException(
+                    "Cannot set an attribute to a non-object value")
             }
 
             v
@@ -436,11 +468,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 .map { unwrap(it.eval(env)) }
                 .toMutableList())
         }
+
+        else -> throw DriftRuntimeException("Invalid expression $this")
     }
 }
 
 
-private fun evalBlock(returnType: DrType,statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
+private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
     var last: DrValue = DrNull
 
     for (stmt in statements) {

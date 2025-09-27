@@ -8,8 +8,9 @@
  ******************************************************************************/
 package drift.runtime
 
-import drift.ast.Function
-import drift.ast.eval
+import drift.ast.statements.Function
+import drift.ast.statements.Import
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
@@ -21,6 +22,8 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
+import project.ProjectConfig
+import java.io.File
 
 /******************************************************************************
  * DRIFT RUNTIME
@@ -31,7 +34,7 @@ import drift.runtime.values.specials.DrVoid
 
 
 object DriftRuntime {
-    fun run(source: String) {
+    fun run(source: String, config: ProjectConfig, projectDir: File) {
         val env = DrEnv()
 
         val tokens = lex(source)
@@ -76,8 +79,14 @@ object DriftRuntime {
         SymbolCollector(env).collect(ast)
         TypeChecker(env).check(ast)
 
+        val loader = ModuleLoader(
+            config,
+            projectDir,
+            env)
+
         for (statement in ast) {
-            statement.eval(env)
+            if (statement is Import) statement.eval(loader)
+            else statement.eval(env)
         }
     }
 }

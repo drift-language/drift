@@ -9,7 +9,7 @@
 
 package drift.utils
 
-import drift.ast.eval
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.parser.Parser
@@ -18,6 +18,8 @@ import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNull
+import project.ProjectConfig
+import project.ProjectStructure
 
 
 /******************************************************************************
@@ -25,6 +27,16 @@ import drift.runtime.values.specials.DrNull
  *
  * Utility functions for testing purposes.
  ******************************************************************************/
+
+
+
+val testConfig: ProjectConfig = ProjectConfig(
+    name = "Test Project",
+    structure = ProjectStructure(
+        root = ".",
+        "test"
+    )
+)
 
 
 
@@ -124,4 +136,27 @@ fun evalWithOutputs(source: String) : MutableList<String> {
  */
 fun evalWithOutput(source: String) : String {
     return evalWithOutputs(source).last()
+}
+
+
+
+fun evalAndGetEnv(source: String) : DrEnv {
+    val tokens = lex(source)
+    val ast = Parser(tokens).parse()
+    val env = DrEnv().apply {
+        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
+        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
+        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
+        defineClass("String", DrClass("String", emptyList(), emptyList()))
+        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+    }
+
+    SymbolCollector(env).collect(ast)
+    TypeChecker(env).check(ast)
+
+    for (statement in ast) {
+        statement.eval(env)
+    }
+
+    return env
 }

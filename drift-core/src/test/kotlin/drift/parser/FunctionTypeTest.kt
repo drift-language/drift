@@ -1,16 +1,16 @@
 package drift.parser
 
-import drift.ast.Function
-import drift.ast.eval
+import drift.ast.statements.Function
+import drift.runtime.evaluators.eval
 import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.runtime.*
+import drift.utils.evalProgram
+import drift.utils.testConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class FunctionTypeTest {
 
@@ -60,20 +60,12 @@ class FunctionTypeTest {
 
     @Test
     fun `Function with wrong return type and expression`() {
-        val code = """
-            fun test(): String { return 1 }
-            
-            test()
-        """.trimIndent()
-
-        val tokens = lex(code)
-        val statements = Parser(tokens).parse()
-        val env = DrEnv()
-
         assertThrows<DriftTypeException> {
-            for (statement in statements) {
-                statement.eval(env)
-            }
+            evalProgram("""
+                fun test(): String { return 1 }
+                
+                test()
+            """.trimIndent())
         }
     }
 

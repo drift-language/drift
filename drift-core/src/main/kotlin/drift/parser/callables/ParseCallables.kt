@@ -9,8 +9,10 @@
 
 package drift.parser.callables
 
-import drift.ast.*
-import drift.ast.Function
+import drift.ast.expressions.Expression
+import drift.ast.statements.Function
+import drift.ast.statements.FunctionParameter
+import drift.ast.expressions.Lambda
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
@@ -19,8 +21,6 @@ import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
-import drift.runtime.DrValue
-import drift.runtime.values.specials.DrNotAssigned
 
 
 /******************************************************************************
@@ -136,7 +136,7 @@ internal fun Parser.parseLambda() : Lambda {
 internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParameter>) : FunctionParameter {
     val isPositional: Boolean = matchSymbol("*")
     val paramToken = expect<Token.Identifier>("Expected parameter name")
-    var value: DrExpr? = null
+    var value: Expression? = null
 
     if (parameters.firstOrNull { it.name == paramToken.value } != null)
         throw DriftParserException("Parameter ${paramToken.value} is already defined")

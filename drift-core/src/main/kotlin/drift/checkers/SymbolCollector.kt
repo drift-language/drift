@@ -9,8 +9,10 @@
 
 package drift.checkers
 
-import drift.ast.*
-import drift.ast.Function
+import drift.ast.statements.Function
+import drift.ast.statements.Class
+import drift.ast.statements.DrStmt
+import drift.ast.statements.Let
 import drift.runtime.*
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.oop.DrClass

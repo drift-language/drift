@@ -9,9 +9,11 @@
 
 package drift.parser
 
-import drift.ast.*
+import drift.ast.statements.DrStmt
+import drift.ast.statements.Import
 import drift.exceptions.DriftParserException
 import drift.parser.statements.parseStatement
+import project.ProjectConfig
 
 
 /******************************************************************************
@@ -140,11 +142,21 @@ class Parser(
      */
     fun parse(): List<DrStmt> {
         val statements = mutableListOf<DrStmt>()
+        var canImport = true
 
         while (!isAtEnd()) {
             skip(Token.NewLine)
 
             val statement = parseStatement()
+
+            if (statement is Import) {
+                if (!canImport) {
+                    throw DriftParserException("Imports must be declared at the top of the file")
+                }
+            } else {
+                canImport = false
+            }
+
             statements.add(statement)
 
             val next = current()

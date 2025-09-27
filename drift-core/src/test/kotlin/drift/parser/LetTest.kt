@@ -1,7 +1,7 @@
 package drift.parser
 
-import drift.ast.DrStmt
-import drift.ast.eval
+import drift.ast.statements.DrStmt
+import drift.runtime.evaluators.eval
 import drift.checkers.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftParserException
@@ -12,6 +12,7 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
+import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows

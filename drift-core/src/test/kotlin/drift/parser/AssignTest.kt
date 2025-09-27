@@ -1,15 +1,6 @@
 package drift.parser
 
-import drift.ast.DrStmt
-import drift.ast.eval
-import drift.checkers.SymbolCollector
-import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
-import drift.runtime.*
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.specials.DrNull
-import drift.runtime.values.variables.DrVariable
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
