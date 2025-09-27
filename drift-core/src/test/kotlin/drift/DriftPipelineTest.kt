@@ -22,7 +22,7 @@ class DriftPipelineTest {
             defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
         }
         val tokens = lex(source)
-        val ast = Parser(tokens, testConfig).parse()
+        val ast = Parser(tokens).parse()
 
         SymbolCollector(env).collect(ast)
         TypeChecker(env).check(ast)

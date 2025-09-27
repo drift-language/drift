@@ -207,12 +207,6 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             DrVoid
         }
 
-        is Import -> {
-            // TODO
-
-            DrVoid
-        }
-
         else -> throw DriftRuntimeException("Invalid statement $this")
     }
 }

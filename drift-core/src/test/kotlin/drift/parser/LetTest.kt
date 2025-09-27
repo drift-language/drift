@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 class LetTest {
 
     private fun parse(code: String): List<DrValue> {
-        val ast: List<DrStmt> = Parser(lex(code), testConfig).parse()
+        val ast: List<DrStmt> = Parser(lex(code)).parse()
         val outputs = mutableListOf<DrValue>()
         val env = DrEnv().apply {
             define(

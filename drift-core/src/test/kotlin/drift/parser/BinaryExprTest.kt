@@ -39,7 +39,7 @@ class BinaryExprTest {
             defineClass("String", DrClass("String", emptyList(), emptyList()))
             defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
         }
-        val ast = Parser(lex(input), testConfig).parse()
+        val ast = Parser(lex(input)).parse()
 
 
         SymbolCollector(env).collect(ast)

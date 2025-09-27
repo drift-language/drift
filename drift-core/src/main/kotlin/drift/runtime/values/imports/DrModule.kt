@@ -7,26 +7,35 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.statements
+package drift.runtime.values.imports
+
+import drift.runtime.DrType
+import drift.runtime.DrValue
+import drift.runtime.ObjectType
 
 
 /******************************************************************************
- * DRIFT IMPORT STATEMENT AST NODE
+ * DRIFT IMPORT MODULE TYPE
  *
- * Data class representing an import statement in an AST.
+ * Runtime class to represent an import module.
  ******************************************************************************/
 
 
 
 /**
- * This class represents an import statement.
- *
- * @property namespace Namespace to import
- * @property path Namespace path to import
+ * Import statement
  */
-data class Import(
+data class DrModule(
     val namespace: String,
-    val steps: List<String>,
-    val alias: String? = null,
-    val parts: List<ImportPart>? = null,
-    val wildcard: Boolean = false) : DrStmt
+    val name: String,
+    val symbols: Map<String, DrValue>) : DrValue {
+
+    fun get(symbol: String): DrValue? =
+        symbols[symbol]
+
+    override fun asString(): String =
+        "<module $namespace>"
+
+    override fun type(): DrType =
+        ObjectType("Module")
+}

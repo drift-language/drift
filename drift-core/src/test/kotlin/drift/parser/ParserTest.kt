@@ -14,7 +14,7 @@ import org.junit.jupiter.api.assertThrows
 class ParserTest {
 
     private fun parse(code: String): DrValue {
-        val statements: List<DrStmt> = Parser(lex(code), testConfig).parse()
+        val statements: List<DrStmt> = Parser(lex(code)).parse()
         val env = DrEnv().apply {
             define(
                 "test", DrNativeFunction(

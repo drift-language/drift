@@ -49,9 +49,11 @@ fun main(args: Array<String>) {
 
     val env = DrEnv()
 
+    val config = loadConfig(File("examples"))
+
     val tokens = lex(source)
     println(tokens)
-    val ast = Parser(tokens, loadConfig(File("examples"))).parse()
+    val ast = Parser(tokens).parse()
     println(ast)
 
     env.run {

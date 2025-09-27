@@ -6,27 +6,25 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.evaluators
 
-package drift.ast.statements
+import drift.ast.statements.Import
+import drift.runtime.DrEnv
+import drift.runtime.DrValue
+import drift.runtime.ModuleLoader
+import drift.runtime.values.specials.DrVoid
 
 
 /******************************************************************************
- * DRIFT IMPORT STATEMENT AST NODE
+ * DRIFT IMPORT STATEMENT EVALUATOR
  *
- * Data class representing an import statement in an AST.
+ * This evaluator computes all Drift import statements.
  ******************************************************************************/
 
 
 
-/**
- * This class represents an import statement.
- *
- * @property namespace Namespace to import
- * @property path Namespace path to import
- */
-data class Import(
-    val namespace: String,
-    val steps: List<String>,
-    val alias: String? = null,
-    val parts: List<ImportPart>? = null,
-    val wildcard: Boolean = false) : DrStmt
+fun Import.eval(loader: ModuleLoader) : DrValue {
+    loader.importModule(this)
+
+    return DrVoid
+}
