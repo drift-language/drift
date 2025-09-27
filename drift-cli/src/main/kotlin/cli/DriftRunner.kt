@@ -14,16 +14,20 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.terminal.Terminal
 import java.io.File
 import java.nio.file.Paths
-import org.fusesource.jansi.Ansi
-import org.fusesource.jansi.AnsiConsole
 import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.runtime.DriftRuntime
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
+import kotlin.run
 
 /******************************************************************************
  * DRIFT RUNNER
@@ -40,7 +44,7 @@ class Run : CliktCommand(name = "run") {
         help = "Project root directory")
 
     override fun run() {
-        AnsiConsole.systemInstall()
+        val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
 
         val projectDir =
             if (path != null) File(path!!)
@@ -51,7 +55,7 @@ class Run : CliktCommand(name = "run") {
         try {
             config = loadConfig(projectDir)
         } catch (e: DriftProjectLoadingException) {
-            cliError(e.message)
+            cliError(e.message, t)
         }
 
         val entryPath = Paths
@@ -63,53 +67,31 @@ class Run : CliktCommand(name = "run") {
         val entryFile = File(entryPath)
 
         if (!entryFile.exists()) {
-            cliError("Entry file not found: $entryPath")
+            cliError("Entry file not found: $entryPath", t)
         }
 
-        println(
-            Ansi.ansi()
-                .bgBrightDefault()
-                .bold()
-                .a("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --\n")
-                .reset())
+        t.run {
+            println(bold("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --"))
+            println()
 
-        val driftBlue: Triple<Int, Int, Int> = Triple(42, 131, 255)
+            println(bold(
+                (driftBlue)("Running ")
+                + (rgb("#FFF") on driftBlue)(" Drift ")
+                + (driftBlue)(" project ${config.name}")
+            ))
 
-        println(
-            Ansi.ansi()
-                .fgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
-                .bold()
-                .a("Running ")
-                .reset()
-                .bgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
-                .fgRgb(255, 255, 255)
-                .bold()
-                .a(" Drift ")
-                .reset()
-                .fgRgb(driftBlue.first, driftBlue.second, driftBlue.third)
-                .bold()
-                .a(" project ${config.name}")
-                .reset())
-
-        println(
-            Ansi.ansi()
-                .bold()
-                .a("Entry: $entryPath\n")
-                .reset())
-
-        AnsiConsole.systemUninstall()
+            println(bold("Entry: $entryPath\n"))
+        }
 
         val source = entryFile.readText()
         DriftRuntime.run(source, config, projectDir)
 
-        println()
-        println(
-            Ansi.ansi()
-                .bgRgb(0)
-                .fgRgb(255, 255, 255)
-                .bold()
-                .a(" — End of Program — ")
-                .reset())
+        t.run {
+            println()
+            println(bold(
+                (white on black)(" — End of Program — ")
+            ))
+        }
     }
 
     override fun help(context: Context): String {
@@ -118,19 +100,21 @@ class Run : CliktCommand(name = "run") {
 }
 
 
+val driftBlue = rgb(0.1647058824, 0.5137254902, 1)
+
+
 class Drift : CliktCommand() {
     override fun run() = Unit
 }
 
 
-internal fun cliError(message: String): Nothing {
-    val styled = Ansi.ansi()
-        .fgRed()
-        .bold()
-        .a("[ERROR] $message")
-        .reset()
+internal fun cliError(message: String, t: Terminal): Nothing {
+    t.run {
+        println(bold(
+            (red)("[ERROR] $message")
+        ))
+    }
 
-    println(styled)
     exitProcess(1)
 }
 
