@@ -68,7 +68,10 @@ class ModuleLoader(
         when {
             import.alias != null -> env.define(
                 import.alias,
-                DrModule(import.alias, moduleEnv.export()))
+                DrModule(
+                    import.namespace,
+                    import.alias,
+                    moduleEnv.export()))
 
             import.parts != null -> {
                 val recorded = mutableSetOf<String>()
@@ -97,7 +100,10 @@ class ModuleLoader(
 
             else -> env.define(
                 import.steps.last(),
-                DrModule(import.namespace, moduleEnv.export()))
+                DrModule(
+                    import.namespace,
+                    import.namespace,
+                    moduleEnv.export()))
         }
 
         imported.add(import.namespace)

@@ -26,6 +26,7 @@ import drift.runtime.ObjectType
  * Import statement
  */
 data class DrModule(
+    val namespace: String,
     val name: String,
     val symbols: Map<String, DrValue>) : DrValue {
 
@@ -33,7 +34,7 @@ data class DrModule(
         symbols[symbol]
 
     override fun asString(): String =
-        "<module $name>"
+        "<module $namespace>"
 
     override fun type(): DrType =
         ObjectType("Module")
