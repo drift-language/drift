@@ -70,20 +70,34 @@ class ModuleLoader(
                 import.alias,
                 DrModule(import.alias, moduleEnv.export()))
 
-            import.parts != null -> for (part in import.parts) {
-                val partName = part.alias ?: part.source
-                val sym = moduleEnv.resolve(part.source)
-                    ?: moduleEnv.resolveClass(part.source)
-                    ?: throw DriftRuntimeException("Symbol ${part.source} not found in '${import.namespace}'")
+            import.parts != null -> {
+                val recorded = mutableSetOf<String>()
 
-                env.define(partName, sym)
+                for (part in import.parts) {
+                    val partName = part.alias ?: part.source
+
+                    recorded += part.source
+
+                    val sym = moduleEnv.resolve(part.source)
+                        ?: moduleEnv.resolveClass(part.source)
+                        ?: throw DriftRuntimeException("Symbol ${part.source} not found in '${import.namespace}'")
+
+                    env.define(partName, sym)
+                }
+
+                if (import.wildcard) {
+                    for ((k, v) in moduleEnv.export().filter { it.key !in recorded }) {
+                        when (v) {
+                            is DrClass  -> env.defineClass(k, v)
+                            else        -> env.define(k, v)
+                        }
+                    }
+                }
             }
 
-            else -> for ((k, v) in moduleEnv.export())
-                when (v) {
-                    is DrClass  -> env.defineClass(k, v)
-                    else        -> env.define(k, v)
-                }
+            else -> env.define(
+                import.steps.last(),
+                DrModule(import.namespace, moduleEnv.export()))
         }
 
         imported.add(import.namespace)

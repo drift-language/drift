@@ -309,6 +309,7 @@ internal fun Parser.parseImport() : Import {
     val namespaceSteps = mutableListOf<String>()
     var importParts: MutableList<ImportPart>? = null
     var alias: String? = null
+    var wildcard = false
 
     var c: Token?
 
@@ -323,20 +324,24 @@ internal fun Parser.parseImport() : Import {
         importParts = mutableListOf()
 
         do {
-            val partName = expect<Token.Identifier>("Expected variable name")
+            if (matchSymbol("*")) {
+                wildcard = true
+            } else {
+                val partName = expect<Token.Identifier>("Expected variable name")
 
-            advance(false)
-
-            c = current()
-            var partAlias: Token.Identifier? = null
-
-            if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
                 advance(false)
-                partAlias = expect<Token.Identifier>("Expected variable name")
-                advance(false)
+
+                c = current()
+                var partAlias: Token.Identifier? = null
+
+                if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
+                    advance(false)
+                    partAlias = expect<Token.Identifier>("Expected variable name")
+                    advance(false)
+                }
+
+                importParts.add(ImportPart(partName.value, partAlias?.value))
             }
-
-            importParts.add(ImportPart(partName.value, partAlias?.value))
         } while (matchSymbol(","))
 
         expectSymbol("}", advanceOnSuccess = true)
@@ -350,5 +355,6 @@ internal fun Parser.parseImport() : Import {
         namespaceSteps.joinToString("."),
         namespaceSteps,
         alias,
-        importParts)
+        importParts,
+        wildcard)
 }
