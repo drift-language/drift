@@ -37,6 +37,7 @@ import drift.runtime.values.containers.list.DrList
 import drift.runtime.values.containers.range.DrExclusiveRange
 import drift.runtime.values.containers.range.DrInclusiveRange
 import drift.runtime.values.containers.range.DrRange
+import drift.runtime.values.imports.DrModule
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
 import drift.runtime.values.primaries.DrBool
@@ -385,68 +386,77 @@ fun Expression.eval(env: DrEnv): DrValue {
         }
 
         // Object field getter
-        is Get -> {
-            val obj = unwrap(receiver.eval(env))
+        is Get -> when (val obj = unwrap(receiver.eval(env))) {
+            is DrModule -> obj.get(name)
+                ?: throw DriftRuntimeException("Symbol $name not found in module '${obj.name}'")
 
-            val klass = env.resolveClass(obj.type().asString())
-                ?: throw DriftRuntimeException("No class found for ${obj.type().asString()}")
+            is DrInstance -> {
+                val klass = obj.klass
 
-            when (obj) {
-                is DrInstance -> {
-                    // Instance Fields
-                    obj.values[name]?.let { value ->
-                        validateValue(value)
-                        return value
-                    }
+                obj.values[name]?.let { value ->
+                    validateValue(value)
 
-                    // Instance Methods
-                    klass.methods.find { it.let.name == name }?.let { method ->
-                        return DrMethod(
-                            let = method.let,
-                            closure = env,
-                            instance = obj,
-                            nativeImpl = method.nativeImpl
-                        )
-                    }
+                    return value
                 }
-                is DrClass -> {
-                    // Static fields
-                    klass.staticFields[name]?.let { staticField ->
-                        validateValue(staticField.value)
-                        return staticField.value
-                    }
 
-                    // Static methods
-                    klass.staticMethods[name]?.let { staticMethod ->
-                        return DrMethod(
-                            let = staticMethod.let,
-                            closure = env,
-                            instance = null,
-                            nativeImpl = staticMethod.nativeImpl
-                        )
-                    }
+                // Instance Methods
+                klass.methods.find { it.let.name == name }?.let { method ->
+                    return DrMethod(
+                        let = method.let,
+                        closure = env,
+                        instance = obj,
+                        nativeImpl = method.nativeImpl
+                    )
                 }
-                else -> throw DriftRuntimeException("Cannot set an attribute to a non-object value")
+
+                throw DriftRuntimeException("Member '$name' not found on class ${klass.name}")
             }
 
-            throw DriftRuntimeException("Property or method '$name' not found on class ${klass.name}")
+            is DrClass -> {
+                val klass = obj
+
+                // Static fields
+                klass.staticFields[name]?.let { staticField ->
+                    validateValue(staticField.value)
+                    return staticField.value
+                }
+
+                // Static methods
+                klass.staticMethods[name]?.let { staticMethod ->
+                    return DrMethod(
+                        let = staticMethod.let,
+                        closure = env,
+                        instance = null,
+                        nativeImpl = staticMethod.nativeImpl
+                    )
+                }
+
+                throw DriftRuntimeException("Static member '$name' not found on class ${klass.name}")
+            }
+
+            else -> throw DriftRuntimeException("Cannot access attribute '$name' on non-object value")
         }
 
         // Object field setter
         is Set -> {
-            val obj = receiver.eval(env)
-
-            val v = value.eval(env)
+            val obj = unwrap(receiver.eval(env))
+            val v = validateValue(value.eval(env))
 
             when (obj) {
+                is DrModule -> throw DriftRuntimeException(
+                    "Cannot assign to symbol '$name' in module ${obj.name}")
+
                 is DrInstance -> obj.set(name, v)
+
                 is DrClass -> {
                     val field = obj.staticFields[name]
                         ?: throw DriftRuntimeException("No static '$name' in class ${obj.name}")
 
                     field.value = v
                 }
-                else -> throw DriftRuntimeException("Cannot set an attribute to a non-object value")
+
+                else -> throw DriftRuntimeException(
+                    "Cannot set an attribute to a non-object value")
             }
 
             v
