@@ -8,11 +8,13 @@
  ******************************************************************************/
 package drift.parser
 
+import drift.exceptions.DriftRuntimeException
 import drift.runtime.DriftRuntime
 import drift.utils.evalAndGetEnv
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import project.ProjectConfig
 import project.loadConfig
 import java.io.ByteArrayOutputStream
@@ -26,6 +28,28 @@ class ImportTest {
     private var tempDir: File? = null
     private var srcDir: File? = null
     private var projectConfig: ProjectConfig? = null
+
+    private fun mainCode(source: String) : String {
+        val mainFile = File(srcDir, "main.drift")
+        mainFile.writeText(source)
+
+        val outputStream = ByteArrayOutputStream()
+        val oldOut = System.out
+        System.setOut(PrintStream(outputStream))
+
+        try {
+            DriftRuntime.run(
+                mainFile.readText(),
+                projectConfig!!,
+                tempDir!!)
+        } finally {
+            System.setOut(oldOut)
+        }
+
+        return outputStream
+            .toString()
+            .trim()
+    }
 
     @BeforeEach
     fun setUp() {
@@ -55,33 +79,100 @@ class ImportTest {
     }
 
     @Test
-    fun `Global Import without alias`() {
-        val mainFile = File(srcDir, "main.drift")
-        mainFile.writeText("""
-            import hola
-            
-            print(hola.greeting)
-        """.trimIndent())
-
-        val outputStream = ByteArrayOutputStream()
-        val oldOut = System.out
-        System.setOut(PrintStream(outputStream))
-
-        try {
-            DriftRuntime.run(
-                mainFile.readText(),
-                projectConfig!!,
-                tempDir!!)
-        } finally {
-            System.setOut(oldOut)
-        }
-
+    fun `Global import without alias`() {
         assertDoesNotThrow {
-            val output = outputStream
-                .toString()
-                .trim()
+            val output = mainCode("""
+                import hola
+                
+                print(hola.greeting)
+            """.trimIndent())
 
             assertTrue { output.contains("Hello") }
+        }
+    }
+
+    @Test
+    fun `Global import with alias`() {
+        assertDoesNotThrow {
+            val output = mainCode("""
+                import hola as h
+                
+                print(h.greeting)
+            """.trimIndent())
+
+            assertTrue { output.contains("Hello") }
+        }
+    }
+
+    @Test
+    fun `Global import with alias called with source name must throw`() {
+        assertThrows<DriftRuntimeException> {
+            mainCode("""
+                import hola as h
+                
+                print(hola.greeting)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Composed import`() {
+        assertDoesNotThrow {
+            val output = mainCode("""
+                import hola { greeting }
+                
+                print(greeting)
+            """.trimIndent())
+
+            assertTrue { output.contains("Hello") }
+        }
+    }
+
+    @Test
+    fun `Composed import called with module name must throw`() {
+        assertThrows<DriftRuntimeException> {
+            mainCode("""
+                import hola { greeting }
+                
+                print(hola.greeting)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Composed import with wildcard only`() {
+        assertDoesNotThrow {
+            val output = mainCode("""
+                import hola { * }
+                
+                print(greeting)
+            """.trimIndent())
+
+            assertTrue { output.contains("Hello") }
+        }
+    }
+
+    @Test
+    fun `Composed import with wildcard and member renaming`() {
+        assertDoesNotThrow {
+            val output = mainCode("""
+                import hola { *, greeting as g }
+                
+                print(g)
+            """.trimIndent())
+
+            assertTrue { output.contains("Hello") }
+        }
+    }
+
+    @Test
+    fun `Composed import with wildcard and member renaming called with source name must throw`() {
+        assertThrows<DriftRuntimeException> {
+            mainCode("""
+                import hola { *, greeting as g }
+                
+                print(greeting)
+            """.trimIndent())
         }
     }
 }
