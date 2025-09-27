@@ -79,11 +79,13 @@ object DriftRuntime {
         SymbolCollector(env).collect(ast)
         TypeChecker(env).check(ast)
 
+        val loader = ModuleLoader(
+            config,
+            projectDir,
+            env)
+
         for (statement in ast) {
-            if (statement is Import) statement.eval(ModuleLoader(
-                config,
-                projectDir,
-                env))
+            if (statement is Import) statement.eval(loader)
             else statement.eval(env)
         }
     }
