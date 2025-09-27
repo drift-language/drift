@@ -191,7 +191,7 @@ class DrEnv(
     /**
      * Make a shallow copy of the environment.
      *
-     * Maps will be cloned, but not their entities
+     * Maps will be cloned, but not their entities,
      * which keep their references.
      */
     fun copy() : DrEnv = DrEnv(
@@ -206,4 +206,13 @@ class DrEnv(
      * or not
      */
     fun isTopLevel() : Boolean = parent == null
+
+
+
+    /**
+     * Export all environment recorded members and structures
+     */
+    fun export() : Map<String, DrValue> {
+        return values + classes
+    }
 }
