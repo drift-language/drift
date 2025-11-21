@@ -164,6 +164,7 @@ sealed class Token {
         LEAVE("leave"),
         STATIC("static"),
         IMPORT("import"),
+        INIT("init"),
     }
 
 

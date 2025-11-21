@@ -89,6 +89,12 @@ class Parser(
 
 
 
+    internal val authorizedHookNames = setOf(
+        "init", "operator",
+    )
+
+
+
     /** @return Current token */
     internal fun current() : Token? = tokens.getOrNull(i)
 

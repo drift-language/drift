@@ -15,7 +15,6 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.For
 import drift.ast.statements.Function
 import drift.ast.statements.If
-import drift.ast.statements.Import
 import drift.ast.statements.Let
 import drift.ast.statements.Return
 import drift.exceptions.DriftRuntimeException
