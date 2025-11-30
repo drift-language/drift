@@ -452,7 +452,7 @@ fun Expression.eval(env: DrEnv): DrValue {
                     val field = obj.staticFields[name]
                         ?: throw DriftRuntimeException("No static '$name' in class ${obj.name}")
 
-                    field.value = v
+                    field.set(v)
                 }
 
                 else -> throw DriftRuntimeException(
