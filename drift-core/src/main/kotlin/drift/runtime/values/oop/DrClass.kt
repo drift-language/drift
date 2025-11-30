@@ -9,7 +9,6 @@
 
 package drift.runtime.values.oop
 
-import drift.ast.statements.FunctionParameter
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
@@ -33,10 +32,10 @@ data class DrClass(
     val name: String,
 
     /** Class fields, attributes */
-    val fields: List<FunctionParameter>,
+    val fields: MutableMap<String, DrVariable> = mutableMapOf(),
 
     /** Class methods */
-    val methods: List<DrMethod>,
+    val methods: MutableMap<String, DrMethod> = mutableMapOf(),
 
     /** Class static fields, attributes */
     val staticFields: MutableMap<String, DrVariable> = mutableMapOf(),

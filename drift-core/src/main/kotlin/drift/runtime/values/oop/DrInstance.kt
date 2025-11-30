@@ -45,11 +45,11 @@ data class DrInstance(
         val default = "<[class#${klass.hashCode()}] ${klass.name} | instance ${this.hashCode()}>"
 
         try {
-            val method = klass.methods.firstOrNull { it.let.name == "asString" }
+            val method = klass.methods["asString"]
                 ?: throw DriftRuntimeException("Method 'asString' not found on class ${klass.name}")
 
             val local = DrEnv()
-            local.define("this", this)
+            local.define("\$this", this)
 
             var result: DrValue? = null
 
@@ -63,9 +63,11 @@ data class DrInstance(
 
                 result = evalResult
             }
+
             if (result !is DrString) {
                 throw DriftTypeException("asString must return String")
             }
+
             return result.asString()
         } catch (e: DriftRuntimeException) {
             return default
@@ -75,6 +77,12 @@ data class DrInstance(
     /** @return The object representation of the type */
     override fun type(): DrType = ObjectType(klass.name)
 
+
+    /**
+     * @return If provided name is a defined key in the values map
+     */
+    fun has(name: String) : Boolean =
+        values.containsKey(name)
 
 
     /**
@@ -87,14 +95,14 @@ data class DrInstance(
      */
     fun get(name: String) : DrValue {
         if (values.containsKey(name)) {
-            if (klass.methods.firstOrNull { it.let.name == name } != null) {
+            if (klass.methods[name] != null) {
                 throw DriftRuntimeException("$name already exists")
             }
 
             return values[name]!!
         }
 
-        val method = klass.methods.firstOrNull { it.let.name == name }
+        val method = klass.methods[name]
 
         if (method is DrMethod) {
             return method.copy(instance = this)
