@@ -25,15 +25,8 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
-import project.ProjectConfig
 import project.loadConfig
 import java.io.File
-import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.core.Context
-import com.github.ajalt.clikt.core.main
-import com.github.ajalt.clikt.core.subcommands
-import com.github.ajalt.clikt.core.terminal
-import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
@@ -57,11 +50,13 @@ fun main(args: Array<String>) {
         ))
     }
 
-    if (args.isNotEmpty()) {
-        t.run {
-            println(bold("Entry: ${args[0]}"))
-            println()
-        }
+    if (args.isEmpty()) {
+        return
+    }
+
+    t.run {
+        println(bold("Entry: ${args[0]}"))
+        println()
     }
 
     val file = File(args[0])
