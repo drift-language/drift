@@ -149,7 +149,7 @@ fun Expression.eval(env: DrEnv): DrValue {
 
                     val newEnv = DrEnv(parent = callee.closure.copy()).apply {
                         if (callee.instance is DrInstance) {
-                            define("this", callee.instance)
+                            define("\$this", callee.instance)
                         }
                     }
 
