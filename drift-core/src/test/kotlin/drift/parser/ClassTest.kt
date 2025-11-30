@@ -1,6 +1,5 @@
 package drift.parser
 
-import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.utils.evalProgram
@@ -16,7 +15,7 @@ class ClassTest {
     fun `Class with correct instance creation`() {
         val result = evalWithOutput("""
             class User(name: String)
-            let u1 = User("John")
+            let u1 = User(name = "John")
             test(u1.name)
         """.trimIndent())
 
@@ -47,7 +46,7 @@ class ClassTest {
     fun `Class with property access`() {
         val result = evalWithOutput("""
             class User(name: String)
-            let u = User("John")
+            let u = User(name = "John")
             test(u.name)
         """.trimIndent())
 
@@ -70,15 +69,15 @@ class ClassTest {
         val result = evalWithOutput("""
             class User(name: String) {
                 fun hello {
-                    return "Hello, " + this.name
+                    return "Hello, " + ${'$'}this.name
                 }
             }
             
-            let u = User("John")
+            let u = User(name = "John")
             test(u.hello())
         """.trimIndent())
 
-        assertEquals(result, "Hello, John")
+        assertEquals("Hello, John", result)
     }
 
     @Test
@@ -96,7 +95,7 @@ class ClassTest {
     fun `Assign class attribute`() {
         val result = evalWithOutput("""
             class User(name: String)
-            let u = User("John")
+            let u = User(name = "John")
             u.name = "Bob"
             test(u.name)
         """.trimIndent())
@@ -118,7 +117,7 @@ class ClassTest {
     fun `Class with empty block`() {
         val result = evalWithOutput("""
             class User(name: String) {}
-            let u = User("John")
+            let u = User(name = "John")
             test(u.name)
         """.trimIndent())
 
@@ -129,7 +128,7 @@ class ClassTest {
     fun `Class with no asString method fallback`() {
         val result = evalWithOutput("""
             class User(name: String)
-            let u = User("John")
+            let u = User(name = "John")
             test(u)
         """.trimIndent())
 
@@ -143,7 +142,7 @@ class ClassTest {
                 class User(name: String) {
                     fun asString : Int { return 42 }
                 }
-                let u = User("Jon")
+                let u = User(name = "Jon")
                 test(u)
             """.trimIndent())
         }
@@ -166,9 +165,9 @@ class ClassTest {
     fun `Call method with no parameters`() {
         val result = evalWithOutput("""
             class User(name: String) {
-                fun hello { return "hi " + this.name }
+                fun hello { return "hi " + ${'$'}this.name }
             }
-            let u = User("John")
+            let u = User(name = "John")
             test(u.hello())
         """.trimIndent())
 
@@ -179,10 +178,10 @@ class ClassTest {
     fun `Multiple methods in class`() {
         val result = evalWithOutputs("""
             class User(name: String) {
-                fun hello { return "hi " + this.name }
-                fun bye { return "bye " + this.name }
+                fun hello { return "hi " + ${'$'}this.name }
+                fun bye { return "bye " + ${'$'}this.name }
             }
-            let u = User("John")
+            let u = User(name = "John")
             test(u.hello())
             test(u.bye())
         """.trimIndent())
@@ -194,7 +193,7 @@ class ClassTest {
     fun `Class with optional field`() {
         val result = evalWithOutput("""
             class User(name: String, age: Int?)
-            let u = User("John", null)
+            let u = User(name = "John", age = null)
             test(u.age)
         """.trimIndent())
 
