@@ -38,7 +38,9 @@ internal fun Parser.parseClassStaticBlock(
         c.isKeyword(Token.Keyword.MUTLET) -> {
             advance(false)
 
-            staticFields += parseLet(c.isKeyword(Token.Keyword.MUTLET))
+            staticFields += parseLet(
+                isMutable = c.isKeyword(Token.Keyword.MUTLET),
+                acceptUnassigned = false)
         }
 
         c.isKeyword(Token.Keyword.FUNCTION) -> {
