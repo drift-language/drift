@@ -109,16 +109,22 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is Class -> {
             val klass = DrClass(
                 name,
-                fields,
-                methods.map {
-                    DrMethod(it, env)
-                },
-                staticFields.associate {
-                    it.name to DrVariable(
-                        it.name,
-                        it.type,
-                        it.defaultValue?.eval(env) ?: DrNotAssigned,
-                        it.isPositional)
+                fields.associate { field ->
+                    field.name to DrVariable(
+                        field.name,
+                        field.type,
+                        DrNotAssigned,
+                        field.isMutable)
+                }.toMutableMap(),
+                methods.associate { method ->
+                    method.name to DrMethod(method, env)
+                }.toMutableMap(),
+                staticFields.associate { field ->
+                    field.name to DrVariable(
+                        field.name,
+                        field.type,
+                        validateValue(field.value.eval(env)),
+                        field.isMutable)
                 }.toMutableMap(),
                 staticMethods.associate {
                     it.name to DrMethod(it, env)
