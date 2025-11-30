@@ -165,8 +165,14 @@ fun Expression.eval(env: DrEnv): DrValue {
 
                     val valueMap = mutableMapOf<String, DrValue>()
 
-                    for ((index, field) in callee.fields.withIndex()) {
-                        val value: DrValue = arguments[index].second
+                    for ((name, field) in callee.fields) {
+                        val value: DrValue? = arguments
+                            .firstOrNull { it.first == name }
+                            ?.second
+
+                        if (value == null) {
+                            throw DriftRuntimeException("Missing value for '${name}'")
+                        }
 
                         if (!isAssignable(value.type(), field.type)) {
                             throw DriftTypeException(
@@ -388,19 +394,21 @@ fun Expression.eval(env: DrEnv): DrValue {
         // Object field getter
         is Get -> when (val obj = unwrap(receiver.eval(env))) {
             is DrModule -> obj.get(name)
-                ?: throw DriftRuntimeException("Symbol $name not found in module '${obj.name}'")
+                ?: throw DriftRuntimeException("Symbol '$name' not found in module '${obj.name}'")
 
             is DrInstance -> {
                 val klass = obj.klass
 
-                obj.values[name]?.let { value ->
+                // Instance Fields
+                if (obj.has(name)) {
+                    val value: DrValue = obj.get(name)
                     validateValue(value)
 
                     return value
                 }
 
                 // Instance Methods
-                klass.methods.find { it.let.name == name }?.let { method ->
+                klass.methods[name]?.let { method ->
                     return DrMethod(
                         let = method.let,
                         closure = env,
