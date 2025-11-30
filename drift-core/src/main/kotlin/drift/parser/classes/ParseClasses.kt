@@ -115,7 +115,8 @@ internal fun Parser.parseClass() : Class {
                 when {
                     c.isKeyword(Token.Keyword.INIT) -> {
                         if (hasPrimaryConstructor)
-                            throw DriftParserException("A class cannot have multiple constructors")
+                            throw DriftParserException("A class cannot have both primary " +
+                                                       "and standard constructors")
 
                         methods.add(parseHook(
                             forceParameters = true,
