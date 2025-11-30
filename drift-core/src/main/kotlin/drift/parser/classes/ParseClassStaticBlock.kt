@@ -50,5 +50,7 @@ internal fun Parser.parseClassStaticBlock(
         }
 
         else -> throw DriftParserException("Unexpected '${c.value}' in static block")
+    } else if (c !is Token.Symbol || c.value != "}") {
+        throw DriftParserException("Unexpected expression $c in static block")
     }
 }
