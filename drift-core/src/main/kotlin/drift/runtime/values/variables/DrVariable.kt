@@ -47,7 +47,7 @@ data class DrVariable(
     override fun asString() = value.asString()
 
     /** @return The variable's type (implicit or explicit) */
-    override fun type() = value.type()
+    override fun type() = type
 
 
 
@@ -64,7 +64,7 @@ data class DrVariable(
             throw DriftRuntimeException("Cannot assign ${newValue.type()} to a $type variable")
 
         if (value != DrNotAssigned && !isMutable)
-            throw DriftRuntimeException("Cannot assign to immutable variable $name")
+            throw DriftRuntimeException("Cannot assign to immutable variable '$name'")
 
         value = newValue
     }
