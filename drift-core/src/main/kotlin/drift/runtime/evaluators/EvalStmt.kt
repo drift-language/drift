@@ -120,11 +120,15 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                     method.name to DrMethod(method, env)
                 }.toMutableMap(),
                 staticFields.associate { field ->
-                    field.name to DrVariable(
+                    val variable = DrVariable(
                         field.name,
                         field.type,
-                        validateValue(field.value.eval(env)),
+                        DrNotAssigned,
                         field.isMutable)
+
+                    variable.set(validateValue(field.value.eval(env)))
+
+                    field.name to variable
                 }.toMutableMap(),
                 staticMethods.associate {
                     it.name to DrMethod(it, env)
