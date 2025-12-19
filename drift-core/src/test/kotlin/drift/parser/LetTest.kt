@@ -2,7 +2,7 @@ package drift.parser
 
 import drift.ast.statements.DrStmt
 import drift.runtime.evaluators.eval
-import drift.checkers.SymbolCollector
+import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
@@ -12,7 +12,6 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
-import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -35,9 +34,9 @@ class LetTest {
                 )
             )
 
-            defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-            defineClass("String", DrClass("String", emptyList(), emptyList()))
-            defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
         }
 
         SymbolCollector(env).collect(ast)
@@ -235,7 +234,7 @@ class LetTest {
         assertDoesNotThrow {
             parse("""
                 class User(name: String)
-                let u: User|Int = User("Bob")
+                let u: User|Int = User(name = "Bob")
             """.trimIndent())
         }
     }

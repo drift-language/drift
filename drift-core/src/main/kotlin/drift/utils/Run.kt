@@ -10,7 +10,7 @@
 package drift.utils
 
 import drift.runtime.evaluators.eval
-import drift.checkers.SymbolCollector
+import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.parser.Parser
 import drift.parser.lex
@@ -53,13 +53,13 @@ fun evalProgram(source: String) : DrValue {
     val env = DrEnv()
 
     env.apply {
-        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
-        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
-        defineClass("String", DrClass("String", emptyList(), emptyList()))
-        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
+        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
     }
-
+        
     SymbolCollector(env).collect(ast)
     TypeChecker(env).check(ast)
 
@@ -102,11 +102,11 @@ fun evalWithOutputs(source: String) : MutableList<String> {
             returnType = NullType)
         )
 
-        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
-        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
-        defineClass("String", DrClass("String", emptyList(), emptyList()))
-        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
+        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
     }
 
     SymbolCollector(env).collect(ast)
@@ -144,11 +144,11 @@ fun evalAndGetEnv(source: String) : DrEnv {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
     val env = DrEnv().apply {
-        defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-        defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
-        defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
-        defineClass("String", DrClass("String", emptyList(), emptyList()))
-        defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
+        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
     }
 
     SymbolCollector(env).collect(ast)

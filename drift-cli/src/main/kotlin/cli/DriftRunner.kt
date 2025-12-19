@@ -66,9 +66,8 @@ class Run : CliktCommand(name = "run") {
 
         val entryFile = File(entryPath)
 
-        if (!entryFile.exists()) {
+        if (!entryFile.exists())
             cliError("Entry file not found: $entryPath", t)
-        }
 
         t.run {
             println(bold("-- Drift CommandLine Feature — ${DriftVersion.fullVersion} --"))

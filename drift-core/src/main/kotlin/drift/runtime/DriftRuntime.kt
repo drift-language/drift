@@ -11,7 +11,7 @@ package drift.runtime
 import drift.ast.statements.Function
 import drift.ast.statements.Import
 import drift.runtime.evaluators.eval
-import drift.checkers.SymbolCollector
+import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.parser.Parser
@@ -50,8 +50,8 @@ object DriftRuntime {
                 returnType = NullType))
 
             defineClass("String", DrClass(
-                "String", emptyList(), listOf(
-                    DrMethod(
+                "String", mutableMapOf(), mutableMapOf(
+                    "length" to DrMethod(
                         let = Function(
                             name = "length",
                             parameters = emptyList(),
@@ -70,10 +70,10 @@ object DriftRuntime {
                                 DrInt(instance.value.length)
                             })))))
 
-            defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-            defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
-            defineClass("Int64", DrClass("Int64", emptyList(), emptyList()))
-            defineClass("UInt", DrClass("UInt", emptyList(), emptyList()))
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+            defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
+            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
         }
 
         SymbolCollector(env).collect(ast)

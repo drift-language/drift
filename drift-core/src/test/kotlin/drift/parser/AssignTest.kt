@@ -69,7 +69,7 @@ class AssignTest {
             evalWithOutputs("""
                 class User(name: String)
                 var u: User? = null
-                u = User("John")
+                u = User(name = "John")
             """.trimIndent())
         }
     }

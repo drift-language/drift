@@ -9,20 +9,31 @@
 
 package drift.parser.classes
 
+import drift.ast.expressions.Assign
+import drift.ast.expressions.Literal
+import drift.ast.expressions.Variable
 import drift.ast.statements.Class
+import drift.ast.statements.ExprStmt
 import drift.ast.statements.Function
 import drift.ast.statements.FunctionParameter
+import drift.ast.statements.Let
 import drift.exceptions.DriftParserException
 import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.callables.parseFunction
+import drift.parser.callables.parseHook
 import drift.parser.types.parseType
+import drift.runtime.UnknownType
+import drift.runtime.VoidType
+import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.specials.DrVoid
+import sun.invoke.util.BytecodeDescriptor.parseMethod
 
 
 /******************************************************************************
  * DRIFT CLASSES PARSER METHODS
  *
- * All methods permitting to parse classes are defined in this file.
+ * All methods permitting parse classes are defined in this file.
  ******************************************************************************/
 
 
@@ -47,14 +58,18 @@ import drift.parser.types.parseType
 internal fun Parser.parseClass() : Class {
     val nameToken = expect<Token.Identifier>("Expected class name")
     val name = nameToken.value
-    val fields = mutableListOf<FunctionParameter>()
+    val fields = mutableListOf<Let>()
     val methods = mutableListOf<Function>()
-    val staticFields = mutableListOf<FunctionParameter>()
+    val staticFields = mutableListOf<Let>()
     val staticMethods = mutableListOf<Function>()
+    val constructorParameters = mutableListOf<FunctionParameter>()
+    var hasPrimaryConstructor = false
 
     advance(false)
 
     if (matchSymbol("(")) {
+        hasPrimaryConstructor = true
+
         if (!checkSymbol(")")) {
             do {
                 val paramToken = expect<Token.Identifier>("Expected field name")
@@ -64,12 +79,33 @@ internal fun Parser.parseClass() : Class {
                 expectSymbol(":")
                 val fieldType = parseType()
 
-                fields.add(FunctionParameter(paramToken.value, true, fieldType))
+                constructorParameters.add(FunctionParameter(
+                    paramToken.value,
+                    true,
+                    fieldType))
             } while (matchSymbol(","))
+
+            for (param in constructorParameters) {
+                fields.add(Let(
+                    param.name,
+                    param.type,
+                    Literal(DrNotAssigned),
+                    isMutable = false))
+            }
+
+            methods.add(Function(
+                Token.Keyword.INIT.value,
+                constructorParameters,
+                constructorParameters.map {
+                    ExprStmt(Assign(it.name, Variable(it.name)))
+                },
+                VoidType))
         }
 
         expectSymbol(")")
     }
+
+    var isStaticBlockAlreadyDefined = false
 
     if (matchSymbol("{")) {
         while (!matchSymbol("}")) {
@@ -79,30 +115,39 @@ internal fun Parser.parseClass() : Class {
 
             if (c is Token.Identifier) {
                 when {
+                    c.isKeyword(Token.Keyword.INIT) -> {
+                        if (hasPrimaryConstructor) {
+                            throw DriftParserException(
+                                "A class cannot have both primary " +
+                                "and standard constructors")
+                        }
+
+                        methods.add(parseHook(
+                            forceParameters = true,
+                            disableReturnStatement = true))
+                    }
                     c.isKeyword(Token.Keyword.FUNCTION) -> {
                         advance()
 
                         methods.add(parseFunction())
                     }
                     c.isKeyword(Token.Keyword.STATIC) -> {
+                        if (isStaticBlockAlreadyDefined) {
+                            throw DriftParserException(
+                                "A class cannot have more than " +
+                                "one static block")
+                        }
+
+                        isStaticBlockAlreadyDefined = true
+
                         advance()
 
-                        expectSymbol("{")
+                        expectSymbol("{", advanceOnSuccess = true)
 
                         while (!matchSymbol("}")) {
                             skip(Token.NewLine)
 
-                            val subCurrent = current()
-
-                            if (subCurrent is Token.Identifier && subCurrent.isKeyword(Token.Keyword.FUNCTION)) {
-                                when {
-                                    c.isKeyword(Token.Keyword.FUNCTION) -> {
-                                        advance()
-
-                                        staticMethods.add(parseFunction())
-                                    }
-                                }
-                            }
+                            parseClassStaticBlock(staticFields, staticMethods)
                         }
                     }
                     else -> throw DriftParserException("Only methods are allowed inside class body")
