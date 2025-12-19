@@ -27,7 +27,9 @@ package drift.ast.statements
  */
 data class Class(
     val name: String,
-    val fields: MutableList<FunctionParameter> = mutableListOf(),
+    val fields: MutableList<Let> = mutableListOf(),
     val methods: MutableList<Function> = mutableListOf(),
-    val staticFields: MutableList<FunctionParameter> = mutableListOf(),
-    val staticMethods: MutableList<Function> = mutableListOf()) : DrStmt
+    val staticFields: MutableList<Let> = mutableListOf(),
+    val staticMethods: MutableList<Function> = mutableListOf(),
+    val constructors: MutableList<Function> = mutableListOf(),
+    val hasPrimaryConstructor: Boolean = false) : DrStmt

@@ -10,7 +10,7 @@
 package drift.parser
 
 import drift.runtime.evaluators.eval
-import drift.checkers.SymbolCollector
+import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
@@ -24,7 +24,6 @@ import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
 import drift.utils.evalProgram
-import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -34,10 +33,10 @@ class BinaryExprTest {
 
     private fun evalExpr(input: String) : DrValue {
         val env = DrEnv().apply {
-            defineClass("Int", DrClass("Int", emptyList(), emptyList()))
-            defineClass("Int64", DrClass("Int", emptyList(), emptyList()))
-            defineClass("String", DrClass("String", emptyList(), emptyList()))
-            defineClass("Bool", DrClass("Bool", emptyList(), emptyList()))
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
+            defineClass("Int64", DrClass("Int", mutableMapOf(), mutableMapOf()))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
         }
         val ast = Parser(lex(input)).parse()
 

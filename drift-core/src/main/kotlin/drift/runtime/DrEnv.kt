@@ -50,6 +50,10 @@ class DrEnv(
      * into entities map.
      */
     fun define(name: String, value: DrValue) {
+        if (value is DrVariable && !isAssignable(value.value.type(), value.type())) {
+            throw DriftRuntimeException("Cannot assign ${value.value.type()} to a ${value.type} variable")
+        }
+
         if (values.containsKey(name))
             throw DriftRuntimeException("Entity '$name' is already defined")
 

@@ -115,7 +115,7 @@ internal fun Parser.parseStatement() : DrStmt {
  * @return Constructed variable declaration AST object
  * @throws DriftParserException If the variable name is not found
  */
-internal fun Parser.parseLet(isMutable: Boolean) : Let {
+internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = true) : Let {
     val nameToken = expect<Token.Identifier>("Expected variable name")
     val name = nameToken.value
 
@@ -135,6 +135,8 @@ internal fun Parser.parseLet(isMutable: Boolean) : Let {
     // Value initialization
     var expr = if (matchSymbol("=")) {
         parseExpression()
+    } else if (!acceptUnassigned) {
+        throw DriftParserException("Static field '$name' must be initialized")
     } else {
         Literal(DrNotAssigned)
     }

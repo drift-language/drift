@@ -164,6 +164,7 @@ sealed class Token {
         LEAVE("leave"),
         STATIC("static"),
         IMPORT("import"),
+        INIT("init"),
     }
 
 
@@ -232,7 +233,7 @@ fun lex(input: String): List<Token> {
 
             i = next
             continue
-        } else if (c.isLetter() || c == '_') {
+        } else if (c.isLetter() || c == '_' || c == '$') {
             val (token, next) = lexWord(input, i)
             tokens.add(token)
 
@@ -338,7 +339,7 @@ fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
 fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
     var i = startIndex
 
-    while (i < input.length && (input[i].isLetterOrDigit() || input[i] == '_')) {
+    while (i < input.length && (input[i].isLetterOrDigit() || input[i] == '_' || input[i] == '$')) {
         i++
     }
 

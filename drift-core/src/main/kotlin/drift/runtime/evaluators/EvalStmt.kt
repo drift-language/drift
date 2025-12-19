@@ -15,7 +15,6 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.For
 import drift.ast.statements.Function
 import drift.ast.statements.If
-import drift.ast.statements.Import
 import drift.ast.statements.Let
 import drift.ast.statements.Return
 import drift.exceptions.DriftRuntimeException
@@ -110,16 +109,31 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is Class -> {
             val klass = DrClass(
                 name,
-                fields,
-                methods.map {
-                    DrMethod(it, env)
-                },
-                staticFields.associate {
-                    it.name to DrVariable(
-                        it.name,
-                        it.type,
-                        it.defaultValue?.eval(env) ?: DrNotAssigned,
-                        it.isPositional)
+                fields.associate { field ->
+                    field.name to DrVariable(
+                        field.name,
+                        field.type,
+                        DrNotAssigned,
+                        field.isMutable)
+                }.toMutableMap(),
+                methods.associate { method ->
+                    method.name to DrMethod(method, env)
+                }.toMutableMap(),
+                staticFields.associate { field ->
+                    val variable = DrVariable(
+                        field.name,
+                        field.type,
+                        DrNotAssigned,
+                        field.isMutable)
+
+                    var value = validateValue(field.value.eval(env))
+
+                    if (field.type != AnyType)
+                        value = castNumericIfNeeded(value, field.type)
+
+                    variable.set(value)
+
+                    field.name to variable
                 }.toMutableMap(),
                 staticMethods.associate {
                     it.name to DrMethod(it, env)
