@@ -126,7 +126,12 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                         DrNotAssigned,
                         field.isMutable)
 
-                    variable.set(validateValue(field.value.eval(env)))
+                    var value = validateValue(field.value.eval(env))
+
+                    if (field.type != AnyType)
+                        value = castNumericIfNeeded(value, field.type)
+
+                    variable.set(value)
 
                     field.name to variable
                 }.toMutableMap(),

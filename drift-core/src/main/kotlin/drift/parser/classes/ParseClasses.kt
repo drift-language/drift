@@ -105,6 +105,8 @@ internal fun Parser.parseClass() : Class {
         expectSymbol(")")
     }
 
+    var isStaticBlockAlreadyDefined = false
+
     if (matchSymbol("{")) {
         while (!matchSymbol("}")) {
             skip(Token.NewLine)
@@ -114,9 +116,11 @@ internal fun Parser.parseClass() : Class {
             if (c is Token.Identifier) {
                 when {
                     c.isKeyword(Token.Keyword.INIT) -> {
-                        if (hasPrimaryConstructor)
-                            throw DriftParserException("A class cannot have both primary " +
-                                                       "and standard constructors")
+                        if (hasPrimaryConstructor) {
+                            throw DriftParserException(
+                                "A class cannot have both primary " +
+                                "and standard constructors")
+                        }
 
                         methods.add(parseHook(
                             forceParameters = true,
@@ -128,6 +132,14 @@ internal fun Parser.parseClass() : Class {
                         methods.add(parseFunction())
                     }
                     c.isKeyword(Token.Keyword.STATIC) -> {
+                        if (isStaticBlockAlreadyDefined) {
+                            throw DriftParserException(
+                                "A class cannot have more than " +
+                                "one static block")
+                        }
+
+                        isStaticBlockAlreadyDefined = true
+
                         advance()
 
                         expectSymbol("{", advanceOnSuccess = true)
