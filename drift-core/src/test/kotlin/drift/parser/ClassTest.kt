@@ -485,4 +485,15 @@ class ClassTest {
 
         assertEquals("5", result)
     }
+
+    @Test
+    fun `Use dynamic field assignment as value must throw (Void)`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A { var x = 1 }
+                let _ = A()
+                let y = (_.x = 2) + 1
+            """.trimIndent())
+        }
+    }
 }
