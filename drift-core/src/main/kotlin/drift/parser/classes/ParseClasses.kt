@@ -98,9 +98,6 @@ internal fun Parser.parseClass() : Class {
                 Token.Keyword.INIT.value,
                 constructorParameters,
                 listOf(),
-//                constructorParameters.map {
-//                    ExprStmt(Assign(it.name, Variable(it.name)))        // TODO: vider et gérer avec runtime??
-//                },
                 VoidType))
         }
 
