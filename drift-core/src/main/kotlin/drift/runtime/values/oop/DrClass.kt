@@ -15,7 +15,6 @@ import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
 import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.variables.DrVariable
 import drift.sslot.StaticSlot
 
 
@@ -53,7 +52,7 @@ data class DrClass(
     val closure: DrEnv,
 
     /** Class Constructor type (primary or standard) */
-    val constructorType: EConstructorType? = null) : DrValue {
+    val constructorType: ConstructorType? = null) : DrValue {
 
 
     /** Constructor if existing, else NULL */
@@ -68,8 +67,8 @@ data class DrClass(
     override fun type(): DrType = ObjectType(name)
 
 
-    enum class EConstructorType {
-        Primary,
-        Standard
+    enum class ConstructorType {
+        PRIMARY,
+        STANDARD
     }
 }

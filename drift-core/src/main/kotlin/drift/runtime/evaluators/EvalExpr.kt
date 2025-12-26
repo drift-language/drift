@@ -272,7 +272,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         instanceEnv.define(name, variable)
                     }
 
-                    if (callee.constructorType == DrClass.EConstructorType.Primary &&
+                    if (callee.constructorType == DrClass.ConstructorType.PRIMARY &&
                         constructor != null) {
 
                         val bindings = resolveArguments(
@@ -302,7 +302,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     val instance = DrInstance(callee, instanceEnv)
 
-                    if (callee.constructorType == DrClass.EConstructorType.Standard &&
+                    if (callee.constructorType == DrClass.ConstructorType.STANDARD &&
                         constructor != null) {
 
                         val bindings = resolveArguments(

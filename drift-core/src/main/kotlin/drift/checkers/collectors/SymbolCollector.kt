@@ -18,7 +18,6 @@ import drift.helper.validateValue
 import drift.runtime.AnyType
 import drift.runtime.DrEnv
 import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNotAssigned
@@ -131,9 +130,9 @@ class SymbolCollector(private val env: DrEnv) {
                     null)
             }
 
-            val constructorType: DrClass.EConstructorType =
-                if (stmt.hasPrimaryConstructor) DrClass.EConstructorType.Primary
-                else DrClass.EConstructorType.Standard
+            val constructorType: DrClass.ConstructorType =
+                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
+                else DrClass.ConstructorType.STANDARD
 
             env.defineClass(stmt.name, DrClass(
                 stmt.name,
