@@ -126,6 +126,11 @@ class DrEnv(
 
 
 
+    /**
+     * @param name Entity name
+     * @return If the provided entity name is already defined in the environment
+     *         or one of its parents.
+     */
     fun exists(name: String) : Boolean =
         values.containsKey(name) || parent?.exists(name)
             ?: false
