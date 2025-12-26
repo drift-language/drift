@@ -12,7 +12,7 @@ package drift.checkers
 import drift.ast.expressions.Assign
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.ast.expressions.Get
 import drift.ast.expressions.Set
 import drift.ast.expressions.Unary
@@ -85,7 +85,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param expr Expression to check
      */
-    private fun checkExpr(expr: Expression) {
+    private fun checkExpr(expr: DrExpr) {
         when (expr) {
             is Binary -> {
                 checkExpr(expr.left)

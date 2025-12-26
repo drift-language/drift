@@ -14,7 +14,7 @@ import drift.ast.expressions.Assign
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
 import drift.ast.expressions.Conditional
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.ast.expressions.Get
 import drift.ast.expressions.Literal
 import drift.ast.expressions.Set
@@ -58,13 +58,13 @@ import drift.runtime.values.specials.DrNull
  * - On binary and special operator assignment:
  *   - If the target is neither a variable nor an object field
  */
-internal fun Parser.parseExpression(minPrecedence: Int = 0) : Expression {
+internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
     return parseBinary(minPrecedence)
 }
 
 
 
-internal fun Parser.parseBinary(minPrecedence: Int) : Expression {
+internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
     var left = parseUnary()
 
     while (true) {
@@ -81,7 +81,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : Expression {
             val prop = expect<Token.Identifier>("Expected property name after '.'")
                 .value
 
-            advance()
+            advance(false)
 
             if (matchSymbol("=")) {
                 val v = parseExpression(operatorPrecedence["="]!! + 1)
@@ -148,7 +148,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : Expression {
  * expression AST object
  * @throws DriftParserException If a token is unexpected
  */
-internal fun Parser.parsePrimary() : Expression {
+internal fun Parser.parsePrimary() : DrExpr {
     return when (val token = current()) {
         is Token.StringLiteral -> {
             advance(false)
@@ -203,7 +203,7 @@ internal fun Parser.parsePrimary() : Expression {
  *
  * @return Constructed primary parsing result AST object
  */
-internal fun Parser.parseUnary() : Expression {
+internal fun Parser.parseUnary() : DrExpr {
     val token = current()
 
     if (token is Token.Symbol && token.value in listOf("!", "-")) {
@@ -232,7 +232,7 @@ internal fun Parser.parseUnary() : Expression {
  * @return Constructed variable access or callable call
  * value AST object
  */
-internal fun Parser.parseVariable() : Expression {
+internal fun Parser.parseVariable() : DrExpr {
     val name = expect<Token.Identifier>("Expected variable name")
 
     advance(false)
@@ -254,7 +254,7 @@ internal fun Parser.parseVariable() : Expression {
  * @throws DriftParserException If the parameters expression
  * is unterminated, without ')' symbol at end
  */
-internal fun Parser.parseCallArguments(target: Expression) : Expression {
+internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
     expectSymbol("(")
 
     val args = mutableListOf<Argument>()
@@ -328,7 +328,7 @@ internal fun Parser.parseArgument() : Argument {
  * @throws DriftParserException If a Drift-style conditional
  * expression branch is invalid
  */
-internal fun Parser.parseDriftIf(condition: Expression) : Expression {
+internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
     val thenBlock: DrStmt = parseDriftIfBranch()
     var elseBlock: DrStmt? = null
 

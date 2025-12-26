@@ -27,4 +27,4 @@ package drift.ast.expressions
  */
 data class Assign(
     val name: String,
-    val value: Expression) : Expression
+    val value: DrExpr) : DrExpr

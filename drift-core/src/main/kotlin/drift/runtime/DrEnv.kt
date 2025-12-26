@@ -10,6 +10,7 @@
 package drift.runtime
 
 import drift.exceptions.DriftRuntimeException
+import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.variables.DrVariable
 
@@ -100,7 +101,7 @@ class DrEnv(
      * by the values map of the current environment and its parents
      */
     fun assign(name: String, value: DrValue) {
-        val variable: DrVariable = resolve(name) as? DrVariable
+        val variable = resolve(name) as? DrVariable
             ?: throw DriftRuntimeException("Variable '$name' does not exist")
 
         variable.set(value)
@@ -123,6 +124,11 @@ class DrEnv(
         classes[name] = klass
     }
 
+
+
+    fun exists(name: String) : Boolean =
+        values.containsKey(name) || parent?.exists(name)
+            ?: false
 
 
     /**

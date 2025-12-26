@@ -13,10 +13,11 @@ import kotlin.test.assertNotNull
 class DriftPipelineTest {
 
     private fun evalSource(source: String) : DrEnv {
-        val env = DrEnv().apply {
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+        val env = DrEnv()
+        env.apply {
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
         }
         val tokens = lex(source)
         val ast = Parser(tokens).parse()

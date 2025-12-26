@@ -107,12 +107,12 @@ fun main(args: Array<String>) {
                     }
                 )
             )
-        )))
+        ), closure = env))
 
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
     SymbolCollector(env).collect(ast)

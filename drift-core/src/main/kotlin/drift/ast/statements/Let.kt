@@ -9,7 +9,7 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.runtime.DrType
 
 
@@ -32,5 +32,5 @@ import drift.runtime.DrType
 data class Let(
     val name: String,
     val type: DrType,
-    val value: Expression,
+    val value: DrExpr,
     val isMutable: Boolean) : DrStmt

@@ -10,7 +10,6 @@ package drift.parser
 
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.DriftRuntime
-import drift.utils.evalAndGetEnv
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -82,7 +81,7 @@ class ImportTest {
     fun `Global import without alias`() {
         assertDoesNotThrow {
             val output = mainCode("""
-                import hola
+                import hola 
                 
                 print(hola.greeting)
             """.trimIndent())

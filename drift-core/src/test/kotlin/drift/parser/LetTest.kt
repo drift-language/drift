@@ -12,6 +12,7 @@ import drift.runtime.values.oop.DrClass
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
+import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -22,7 +23,8 @@ class LetTest {
     private fun parse(code: String): List<DrValue> {
         val ast: List<DrStmt> = Parser(lex(code)).parse()
         val outputs = mutableListOf<DrValue>()
-        val env = DrEnv().apply {
+        val env = DrEnv()
+        env.apply {
             define(
                 "print", DrNativeFunction(
                     impl = { _, args ->
@@ -34,9 +36,9 @@ class LetTest {
                 )
             )
 
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
         }
 
         SymbolCollector(env).collect(ast)
@@ -257,6 +259,42 @@ class LetTest {
                 fun test {}
                 
                 var a = test()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Declare immutable variable with '$' prefix (reserved) must throw`() {
+        assertThrows<DriftParserException> {
+            evalProgram("""
+                let ${'$'}a = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Declare mutable variable with '$' prefix (reserved) must throw`() {
+        assertThrows<DriftParserException> {
+            evalProgram("""
+                var ${'$'}a = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Use immutable variable declaration as value must throw`() {
+        assertThrows<DriftParserException> {
+            evalProgram("""
+                let a = let b = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Use mutable variable declaration as value must throw`() {
+        assertThrows<DriftParserException> {
+            evalProgram("""
+                let a = var b = 1
             """.trimIndent())
         }
     }

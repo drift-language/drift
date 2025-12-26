@@ -9,7 +9,7 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 
 
 /******************************************************************************
@@ -31,4 +31,4 @@ import drift.ast.expressions.Expression
  * @property expr Statement expression
  */
 data class ExprStmt(
-    val expr: Expression) : DrStmt
+    val expr: DrExpr) : DrStmt

@@ -32,11 +32,12 @@ import kotlin.test.assertEquals
 class BinaryExprTest {
 
     private fun evalExpr(input: String) : DrValue {
-        val env = DrEnv().apply {
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("Int64", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+        val env = DrEnv()
+        env.apply {
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int64", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
         }
         val ast = Parser(lex(input)).parse()
 

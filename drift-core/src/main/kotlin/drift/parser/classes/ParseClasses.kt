@@ -22,6 +22,7 @@ import drift.parser.Parser
 import drift.parser.Token
 import drift.parser.callables.parseFunction
 import drift.parser.callables.parseHook
+import drift.parser.statements.parseLet
 import drift.parser.types.parseType
 import drift.runtime.UnknownType
 import drift.runtime.VoidType
@@ -53,7 +54,7 @@ import sun.invoke.util.BytecodeDescriptor.parseMethod
  * - If none class name is provided
  * - If none name is provided for a field, `class U(: Type)`
  * for example
- * - If non-method statement is defined into the class body
+ * - If a non-method statement is defined into the class body
  */
 internal fun Parser.parseClass() : Class {
     val nameToken = expect<Token.Identifier>("Expected class name")
@@ -96,9 +97,10 @@ internal fun Parser.parseClass() : Class {
             methods.add(Function(
                 Token.Keyword.INIT.value,
                 constructorParameters,
-                constructorParameters.map {
-                    ExprStmt(Assign(it.name, Variable(it.name)))
-                },
+                listOf(),
+//                constructorParameters.map {
+//                    ExprStmt(Assign(it.name, Variable(it.name)))        // TODO: vider et gérer avec runtime??
+//                },
                 VoidType))
         }
 
@@ -125,6 +127,15 @@ internal fun Parser.parseClass() : Class {
                         methods.add(parseHook(
                             forceParameters = true,
                             disableReturnStatement = true))
+                    }
+                    c.isKeyword(Token.Keyword.IMMUTLET) ||
+                    c.isKeyword(Token.Keyword.MUTLET) -> {
+
+                        advance(false)
+
+                        fields += parseLet(
+                            isMutable = c.isKeyword(Token.Keyword.MUTLET),
+                            acceptUnassigned = true)
                     }
                     c.isKeyword(Token.Keyword.FUNCTION) -> {
                         advance()
@@ -160,5 +171,5 @@ internal fun Parser.parseClass() : Class {
         }
     }
 
-    return Class(name, fields, methods, staticFields, staticMethods)
+    return Class(name, fields, methods, staticFields, staticMethods, hasPrimaryConstructor = hasPrimaryConstructor)
 }
