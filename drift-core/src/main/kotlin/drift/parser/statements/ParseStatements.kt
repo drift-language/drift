@@ -123,7 +123,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
 
     if (name.first() == injectedVariablePrefix)
         throw DriftParserException(
-            "A variable cannot begins with '$'. This character is reserved for injected variables.")
+            "A variable cannot begin with '$'. This character is reserved for injected variables.")
 
     advance(peekSymbol(":", true)
             || peekSymbol("=", true))
