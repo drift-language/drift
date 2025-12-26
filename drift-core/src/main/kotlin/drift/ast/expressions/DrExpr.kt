@@ -21,5 +21,5 @@ package drift.ast.expressions
  * This interface represents all expression
  * structures
  */
-interface Expression
+interface DrExpr
 

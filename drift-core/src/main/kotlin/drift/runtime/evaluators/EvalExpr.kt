@@ -12,7 +12,7 @@ import drift.ast.expressions.Assign
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
 import drift.ast.expressions.Conditional
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
 import drift.ast.expressions.Get
@@ -22,6 +22,7 @@ import drift.ast.expressions.Literal
 import drift.ast.expressions.Set
 import drift.ast.expressions.Unary
 import drift.ast.expressions.Variable
+import drift.ast.statements.FunctionParameter
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrLambda
 import drift.runtime.values.callables.DrMethod
@@ -47,6 +48,7 @@ import drift.runtime.values.primaries.DrNumeric
 import drift.runtime.values.primaries.DrString
 import drift.runtime.values.primaries.DrUInt
 import drift.runtime.values.primaries.promoteNumericPair
+import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
@@ -66,9 +68,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed expression value
- * @see Expression
+ * @see DrExpr
  */
-fun Expression.eval(env: DrEnv): DrValue {
+fun DrExpr.eval(env: DrEnv): DrValue {
     return when (this) {
         // Literal
         is Literal -> value
@@ -87,112 +89,254 @@ fun Expression.eval(env: DrEnv): DrValue {
             val callee = unwrap(callee.eval(env))
             val arguments = args.map { it.name to validateValue(it.expr.eval(env)) }
 
+
+            data class ArgumentRules(
+                val allowPositional: Boolean,
+                val allowNamed: Boolean)
+
+            /**
+             * Verify provided arguments following parameters'
+             * structure and rules.
+             *
+             * @param parameters Callable parameters structure
+             * @param arguments Provided arguments (values, optionally named)
+             * @param rules Verification parameters rules
+             */
+            fun resolveArguments(
+                parameters: List<FunctionParameter>,
+                arguments: List<Pair<String?, DrValue>>,
+                rules: ArgumentRules
+            ): Map<String, DrValue> {
+
+                if (arguments.size > parameters.size)
+                    throw DriftRuntimeException("Too many arguments.")
+
+                val result = mutableMapOf<String, DrValue>()
+                var positionalIndex = 0
+                var namedSeen = false
+
+                for ((name, value) in arguments) {
+                    if (name == null) {
+                        if (!rules.allowPositional)
+                            throw DriftRuntimeException("Positional arguments are not allowed.")
+
+                        if (namedSeen)
+                            throw DriftRuntimeException(
+                                "Positional arguments must appear before named arguments.")
+
+                        if (positionalIndex >= parameters.size)
+                            throw DriftRuntimeException("Too many positional arguments.")
+
+                        val param = parameters[positionalIndex++]
+
+                        if (param.name in result)
+                            throw DriftRuntimeException(
+                                "Parameter '${param.name}' is already bound.")
+
+                        result[param.name] = value
+                    } else {
+                        if (!rules.allowNamed)
+                            throw DriftRuntimeException("Named arguments are not allowed.")
+
+                        namedSeen = true
+
+                        val param = parameters.find { it.name == name }
+                            ?: throw DriftRuntimeException("Unknown argument '$name'.")
+
+                        if (param.name in result)
+                            throw DriftRuntimeException(
+                                "Parameter '$name' is already bound.")
+
+                        result[param.name] = value
+                    }
+                }
+
+                // Defaults & missing
+                for (param in parameters) {
+                    if (param.name !in result) {
+                        val default = param.defaultValue
+                            ?: throw DriftRuntimeException(
+                                "Missing argument '${param.name}'.")
+
+                        result[param.name] = validateValue(default.eval(DrEnv()))
+                    }
+                }
+
+                return result
+            }
+
+
             fun applyFunction(
                 fn: Function,
                 closure: DrEnv,
-                args: List<Pair<String?, DrValue>>,
-                instance: DrInstance? = null) {
+                boundArgs: Map<String, DrValue>,
+                instance: DrInstance? = null
+            ) {
+                for (param in fn.parameters) {
 
-                /*
-                    TODO:
-                    - verify position for positional and named arguments
-                            NAMED… -> POS…
-                 */
+                    val rawValue = boundArgs[param.name]
+                        ?: throw DriftRuntimeException(
+                            "Missing argument '${param.name}'")
 
-                for ((index, param) in fn.parameters.withIndex()) {
-                    var value = if (param.isPositional) {
-                        val arg = arguments.getOrNull(index)
-
-                        arg?.second
-                            ?: when (val v = param.defaultValue?.eval(env)) {
-                                is DrValue -> arguments.firstOrNull { it.first == param.name }?.second
-                                    ?: unwrap(v)
-                                else -> throw DriftRuntimeException(
-                                    "Missing positional argument for '${param.name}'")
-                            }
-                    } else {
-                        val arg = arguments.find { it.first == param.name }
-
-                        arg?.second
-                            ?: when (val v = param.defaultValue?.eval(env)) {
-                                is DrValue -> {
-                                    arguments.firstOrNull { it.first == param.name }?.second
-                                        ?: unwrap(v)
-                                }
-                                else -> throw DriftRuntimeException(
-                                    "Missing argument for '${param.name}'")
-                            }
-                    }
-
-                    value = castNumericIfNeeded(value, param.type)
+                    val value = castNumericIfNeeded(rawValue, param.type)
 
                     if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
-                        throw DriftTypeException("Invalid argument for '${param.name}'")
+                        throw DriftTypeException(
+                            "Invalid argument for '${param.name}'")
                     }
 
                     closure.define(param.name, value)
                 }
             }
 
+
+            fun evalFunction(
+                function: Function,
+                env: DrEnv,
+                boundArgs: Map<String, DrValue>,
+                instance: DrInstance? = null): DrValue {
+
+                val newEnv = DrEnv(parent = env.copy())
+
+                applyFunction(function, newEnv, boundArgs, instance)
+
+                return evalBlock(function.returnType, function.body, newEnv)
+            }
+
+
             when (callee) {
                 is DrFunction -> {
-                    val newEnv = DrEnv(parent = callee.closure.copy())
 
-                    applyFunction(callee.let, newEnv, arguments)
+                    val bindings = resolveArguments(
+                        callee.let.parameters,
+                        arguments,
+                        ArgumentRules(
+                            allowPositional = true,
+                            allowNamed = true))
 
-                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
+                    return evalFunction(
+                        callee.let,
+                        DrEnv(parent = callee.closure.copy()),
+                        bindings)
                 }
                 is DrMethod -> {
-                    if (callee.nativeImpl != null) {
+
+                    val bindings = resolveArguments(
+                        callee.let.parameters,
+                        arguments,
+                        ArgumentRules(
+                            allowPositional = true,
+                            allowNamed = true))
+
+                    if (callee.nativeImpl != null)
                         return callee.nativeImpl.impl(callee.instance, arguments)
-                    }
 
                     val newEnv = DrEnv(parent = callee.closure.copy()).apply {
-                        if (callee.instance is DrInstance) {
+                        if (callee.instance is DrInstance)
                             define("\$this", callee.instance)
-                        }
                     }
 
-                    applyFunction(callee.let, newEnv, arguments, callee.instance as? DrInstance)
-
-                    return evalBlock(callee.let.returnType, callee.let.body, newEnv)
+                    return evalFunction(
+                        callee.let,
+                        newEnv,
+                        bindings,
+                        callee.instance as? DrInstance)
                 }
-                is DrNativeFunction -> callee.impl(null, arguments)
+                is DrNativeFunction -> {
+                    return callee.impl(null, arguments)
+                }
                 is DrClass -> {
-                    if (arguments.size != callee.fields.size) {
-                        throw DriftRuntimeException("Wrong number of arguments for class '${callee.name}'")
+
+                    val constructor = callee.constructor
+                    val expectedParametersCount = constructor?.let?.parameters?.size ?: 0
+                    val actualParametersCount = arguments.size
+
+                    if (arguments.size != expectedParametersCount) {
+                        throw DriftRuntimeException(
+                            "Wrong number of arguments for class '${callee.name}'\n" +
+                            "Expected: $expectedParametersCount\n" +
+                            "Actual: $actualParametersCount")
                     }
 
-                    val valueMap = mutableMapOf<String, DrValue>()
+                    val initEnv = DrEnv(parent = callee.closure.copy())
+                    val instanceEnv = DrEnv()
 
                     for ((name, field) in callee.fields) {
-                        val value: DrValue? = arguments
-                            .firstOrNull { it.first == name }
-                            ?.second
+                        val variable = DrVariable(
+                            name = name,
+                            type = field.type,
+                            value = DrNotAssigned,
+                            isMutable = field.isMutable)
 
-                        if (value == null) {
-                            throw DriftRuntimeException("Missing value for '${name}'")
-                        }
-
-                        if (!isAssignable(value.type(), field.type)) {
-                            throw DriftTypeException(
-                                "Field '${field.name}' of '${callee.name}' " +
-                                "expects ${field.type}, got ${value.type()}")
-                        }
-
-                        valueMap[field.name] = value
+                        initEnv.define(name, variable)
+                        instanceEnv.define(name, variable)
                     }
 
-                    return DrInstance(callee, valueMap)
+                    if (callee.constructorType == DrClass.ConstructorType.PRIMARY &&
+                        constructor != null) {
+
+                        val bindings = resolveArguments(
+                            constructor.let.parameters,
+                            arguments,
+                            ArgumentRules(
+                                allowPositional = false,
+                                allowNamed = true))
+
+                        constructor.let.parameters.forEach { param ->
+                            val argValue = bindings[param.name]
+                                ?: throw DriftRuntimeException("Missing argument '${param.name}'")
+
+                            val variable = instanceEnv.resolve(param.name) as DrVariable
+                            variable.set(castNumericIfNeeded(argValue, param.type))
+                        }
+                    }
+
+                    for ((name, field) in callee.fields) {
+                        val variable = instanceEnv.resolve(name) as DrVariable
+
+                        if (variable.value == DrNotAssigned) {
+                            val value = validateValue(field.value.eval(initEnv))
+                            variable.set(value)
+                        }
+                    }
+
+                    val instance = DrInstance(callee, instanceEnv)
+
+                    if (callee.constructorType == DrClass.ConstructorType.STANDARD &&
+                        constructor != null) {
+
+                        val bindings = resolveArguments(
+                            constructor.let.parameters,
+                            arguments,
+                            ArgumentRules(
+                                allowPositional = true,
+                                allowNamed = true))
+
+                        val constructorEnv = DrEnv(parent = instanceEnv.copy()).apply {
+                            define("\$this", instance)
+                        }
+
+                        evalFunction(constructor.let, constructorEnv, bindings, instance)
+                    }
+
+                    return instance
                 }
                 is DrLambda -> {
+
+                    val bindings = resolveArguments(
+                        callee.let.parameters,
+                        arguments,
+                        ArgumentRules(
+                            allowPositional = true,
+                            allowNamed = true))
+
                     val newEnv = DrEnv(callee.closure).apply {
                         callee.captures.forEach { (name, value) ->
                             forceDefine(name, value)
                         }
                     }
 
-                    applyFunction(callee.let, newEnv, arguments)
+                    applyFunction(callee.let, newEnv, bindings)
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv, true)
                 }
@@ -388,61 +532,92 @@ fun Expression.eval(env: DrEnv): DrValue {
         is Assign -> {
             val v = validateValue(value.eval(env))
             env.assign(name, v)
-            v
+            DrVoid
         }
 
         // Object field getter
-        is Get -> when (val obj = unwrap(receiver.eval(env))) {
-            is DrModule -> obj.get(name)
-                ?: throw DriftRuntimeException("Symbol '$name' not found in module '${obj.name}'")
+        is Get -> {
 
-            is DrInstance -> {
-                val klass = obj.klass
+            val receiverValue = unwrap(receiver.eval(env))
 
-                // Instance Fields
-                if (obj.has(name)) {
-                    val value: DrValue = obj.get(name)
-                    validateValue(value)
+            when (receiverValue) {
+                is DrModule -> {
+                    val value = receiverValue.get(name)
+                        ?: throw DriftRuntimeException(
+                            "Module symbol '${receiverValue.name}.$name' does not exist")
+
+                    validateValue(unwrap(value))
 
                     return value
                 }
 
-                // Instance Methods
-                klass.methods[name]?.let { method ->
-                    return DrMethod(
-                        let = method.let,
-                        closure = env,
-                        instance = obj,
-                        nativeImpl = method.nativeImpl
-                    )
+                is DrInstance -> {
+                    val klass = receiverValue.klass
+
+                    // Instance Fields
+                    if (receiverValue.has(name)) {
+                        val value: DrValue = receiverValue.get(name)
+                        validateValue(unwrap(value))
+
+                        return value
+                    }
+
+                    // Instance Methods
+                    klass.methods[name]?.let { method ->
+                        return DrMethod(
+                            let = method.let,
+                            closure = env,
+                            instance = receiverValue,
+                            nativeImpl = method.nativeImpl
+                        )
+                    }
+
+                    throw DriftRuntimeException("Member '$name' not found on class ${klass.name}")
                 }
 
-                throw DriftRuntimeException("Member '$name' not found on class ${klass.name}")
+                is DrClass -> {
+                    val klass = receiverValue
+
+                    // Static fields
+                    klass.staticFields[name]?.let { staticField ->
+                        val variable = staticField.get(DrEnv(parent = receiverValue.closure))
+
+                        validateValue(variable.value)
+
+                        return variable.value
+                    }
+
+                    // Static methods
+                    klass.staticMethods[name]?.let { staticMethod ->
+                        return DrMethod(
+                            let = staticMethod.let,
+                            closure = env,
+                            instance = null,
+                            nativeImpl = staticMethod.nativeImpl
+                        )
+                    }
+
+                    throw DriftRuntimeException("Static member '$name' not found on class ${klass.name}")
+                }
             }
 
-            is DrClass -> {
-                val klass = obj
+            val type = receiverValue.type()
 
-                // Static fields
-                klass.staticFields[name]?.let { staticField ->
-                    validateValue(staticField.value)
-                    return staticField.value
-                }
+            if (type is ObjectType) {
+                val klass = env.resolveClass(type.className)
+                    ?: throw DriftRuntimeException("'${type.className}' is not an object.")
 
-                // Static methods
-                klass.staticMethods[name]?.let { staticMethod ->
-                    return DrMethod(
-                        let = staticMethod.let,
-                        closure = env,
-                        instance = null,
-                        nativeImpl = staticMethod.nativeImpl
-                    )
-                }
+                val method = klass.methods[name]
+                    ?: throw DriftRuntimeException("'${type.className}.$name' method not found.")
 
-                throw DriftRuntimeException("Static member '$name' not found on class ${klass.name}")
+                return DrMethod(
+                    let = method.let,
+                    closure = env,
+                    instance = receiverValue,
+                    nativeImpl = method.nativeImpl)
             }
 
-            else -> throw DriftRuntimeException("Cannot access attribute '$name' on non-object value")
+            throw DriftRuntimeException("Cannot access attribute '$name' on non-object value")
         }
 
         // Object field setter
@@ -460,14 +635,14 @@ fun Expression.eval(env: DrEnv): DrValue {
                     val field = obj.staticFields[name]
                         ?: throw DriftRuntimeException("No static '$name' in class ${obj.name}")
 
-                    field.set(v)
+                    field.set(env, v)
                 }
 
                 else -> throw DriftRuntimeException(
                     "Cannot set an attribute to a non-object value")
             }
 
-            v
+            DrVoid
         }
 
         // List

@@ -28,4 +28,4 @@ package drift.ast.expressions
  */
 data class Unary(
     val operator: String,
-    val expr: Expression) : Expression
+    val expr: DrExpr) : DrExpr

@@ -9,7 +9,7 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 
 
 /******************************************************************************
@@ -28,6 +28,6 @@ import drift.ast.expressions.Expression
  * @property body Loop body block
  */
 data class For(
-    val iterable: Expression,
+    val iterable: DrExpr,
     val variables: List<String>,
     val body: DrStmt) : DrStmt

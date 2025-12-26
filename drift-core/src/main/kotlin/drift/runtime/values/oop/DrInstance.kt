@@ -35,8 +35,8 @@ data class DrInstance(
     /** Class structure */
     val klass: DrClass,
 
-    /** Class attributes map */
-    val values: MutableMap<String, DrValue>) : DrValue {
+    /** Instance environment */
+    val env: DrEnv) : DrValue {
 
 
 
@@ -82,7 +82,7 @@ data class DrInstance(
      * @return If provided name is a defined key in the values map
      */
     fun has(name: String) : Boolean =
-        values.containsKey(name)
+        env.exists(name)
 
 
     /**
@@ -94,12 +94,11 @@ data class DrInstance(
      * is no longer recorded into instance's attributes map
      */
     fun get(name: String) : DrValue {
-        if (values.containsKey(name)) {
-            if (klass.methods[name] != null) {
+        if (has(name)) {
+            if (klass.methods[name] != null)
                 throw DriftRuntimeException("$name already exists")
-            }
 
-            return values[name]!!
+            return env.get(name)
         }
 
         val method = klass.methods[name]
@@ -122,9 +121,9 @@ data class DrInstance(
      * is no longer declared
      */
     fun set(name: String, value: DrValue) {
-        if (!values.containsKey(name))
+        if (!has(name))
             throw DriftRuntimeException("Cannot assign to undeclared property '${klass.name}.$name'")
 
-        values[name] = value
+        env.assign(name, value)
     }
 }

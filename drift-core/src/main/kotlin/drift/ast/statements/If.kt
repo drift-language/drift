@@ -9,7 +9,7 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 
 
 /******************************************************************************
@@ -33,6 +33,6 @@ import drift.ast.expressions.Expression
  * condition is unsuccessful
  */
 data class If(
-    val condition: Expression,
+    val condition: DrExpr,
     val thenBranch: DrStmt,
     val elseBranch: DrStmt?) : DrStmt

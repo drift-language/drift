@@ -199,15 +199,15 @@ class ClassStaticTest {
     fun `Static field initialization must be evaluated only on definition, not call`() {
         assertDoesNotThrow {
             val outputs = evalWithOutputs("""
+                fun compute() : Int {
+                    test("eval")
+                    return 1 
+                }
+                
                 class A {
                     static {
                         let a = compute()
                     }
-                }
-                
-                fun compute() : Int {
-                    test("eval")
-                    return 1 
                 }
                 
                 test(A.a)

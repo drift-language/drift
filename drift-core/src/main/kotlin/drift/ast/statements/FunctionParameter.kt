@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.runtime.*
 
 
@@ -33,4 +33,4 @@ data class FunctionParameter(
     val name: String,
     val isPositional: Boolean = false,
     val type: DrType = AnyType,
-    val defaultValue: Expression? = null)
+    val defaultValue: DrExpr? = null)

@@ -9,14 +9,19 @@
 
 package drift.utils
 
+import drift.ast.statements.Function
 import drift.runtime.evaluators.eval
 import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
+import drift.exceptions.DriftRuntimeException
 import drift.parser.Parser
 import drift.parser.lex
 import drift.runtime.*
+import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
+import drift.runtime.values.primaries.DrInt
+import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrNull
 import project.ProjectConfig
 import project.ProjectStructure
@@ -53,11 +58,11 @@ fun evalProgram(source: String) : DrValue {
     val env = DrEnv()
 
     env.apply {
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
         
     SymbolCollector(env).collect(ast)
@@ -92,7 +97,8 @@ fun evalWithOutputs(source: String) : MutableList<String> {
 
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
-    val env = DrEnv().apply {
+    val env = DrEnv()
+    env.apply {
         define("test", DrNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
@@ -102,11 +108,30 @@ fun evalWithOutputs(source: String) : MutableList<String> {
             returnType = NullType)
         )
 
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", DrClass(
+            "String", mutableMapOf(), mutableMapOf(
+                "length" to DrMethod(
+                    let = Function(
+                        name = "length",
+                        parameters = emptyList(),
+                        returnType = ObjectType("Int"),
+                        body = emptyList()
+                    ),
+                    closure = env,
+                    nativeImpl = DrNativeFunction(
+                        name = "length",
+                        paramTypes = emptyList(),
+                        returnType = ObjectType("Int"),
+                        impl = { receiver, args ->
+                            val instance = receiver as? DrString
+                                ?: throw DriftRuntimeException("length() called on non-String")
+
+                            DrInt(instance.value.length)
+                        }))), closure = env))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
     SymbolCollector(env).collect(ast)
@@ -143,12 +168,32 @@ fun evalWithOutput(source: String) : String {
 fun evalAndGetEnv(source: String) : DrEnv {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
-    val env = DrEnv().apply {
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+    val env = DrEnv()
+    env.apply {
+        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", DrClass(
+            "String", mutableMapOf(), mutableMapOf(
+                "length" to DrMethod(
+                    let = Function(
+                        name = "length",
+                        parameters = emptyList(),
+                        returnType = ObjectType("Int"),
+                        body = emptyList()
+                    ),
+                    closure = env,
+                    nativeImpl = DrNativeFunction(
+                        name = "length",
+                        paramTypes = emptyList(),
+                        returnType = ObjectType("Int"),
+                        impl = { receiver, args ->
+                            val instance = receiver as? DrString
+                                ?: throw DriftRuntimeException("length() called on non-String")
+
+                            DrInt(instance.value.length)
+                        }))), closure = env))
+        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
     SymbolCollector(env).collect(ast)

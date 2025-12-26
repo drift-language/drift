@@ -9,7 +9,7 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 
 
 /******************************************************************************
@@ -26,4 +26,4 @@ import drift.ast.expressions.Expression
  * @property value Value to return from the callable
  */
 data class Return(
-    val value: Expression) : DrStmt
+    val value: DrExpr) : DrStmt

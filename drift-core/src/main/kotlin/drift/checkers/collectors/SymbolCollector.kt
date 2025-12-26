@@ -14,12 +14,15 @@ import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
 import drift.ast.statements.Let
 import drift.exceptions.DriftParserException
+import drift.helper.validateValue
+import drift.runtime.AnyType
 import drift.runtime.DrEnv
-import drift.runtime.values.callables.DrFunction
+import drift.runtime.evaluators.eval
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.variables.DrVariable
+import drift.sslot.StaticSlot
 
 /******************************************************************************
  * DRIFT SYMBOL COLLECTOR CHECKER
@@ -59,10 +62,16 @@ class SymbolCollector(private val env: DrEnv) {
      */
     private fun collectStatement(stmt: DrStmt) {
         when (stmt) {
-            is Class -> ClassCollector().collectClass(stmt)
+            is Class ->
+                ClassCollector().collectClass(stmt)
             is Function -> {
-                val function = DrFunction(stmt, env.copy())
-                env.define(stmt.name, function)
+                val functionVar = DrVariable(
+                    name = stmt.name,
+                    type = AnyType,         // TODO: FunctionType ?
+                    value = DrNotAssigned,
+                    isMutable = false)
+
+                env.define(stmt.name, functionVar)
             }
             is Let ->
                 env.define(stmt.name, DrVariable(stmt.name, stmt.type, DrNotAssigned, stmt.isMutable))
@@ -77,8 +86,8 @@ class SymbolCollector(private val env: DrEnv) {
      */
     internal inner class ClassCollector {
 
-        val classFields = mutableMapOf<String, DrVariable>()
-        val classStaticFields = mutableMapOf<String, DrVariable>()
+        val classFields = mutableMapOf<String, Let>()
+        val classStaticFields = mutableMapOf<String, StaticSlot>()
         val classMethods = mutableMapOf<String, DrMethod>()
         val classStaticMethods = mutableMapOf<String, DrMethod>()
 
@@ -88,13 +97,17 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.fields.forEach { field ->
                 registerMember(field.name, MemberKind.FIELD)
 
-                classFields[field.name] = convertLetToVariable(field)
+                classFields[field.name] = field
             }
 
             stmt.staticFields.forEach { field ->
                 registerMember(field.name, MemberKind.STATIC_FIELD)
 
-                classStaticFields[field.name] = convertLetToVariable(field)
+                classStaticFields[field.name] = StaticSlot(
+                    name = field.name,
+                    type = field.type,
+                    isMutable = field.isMutable,
+                    initializer = { env -> validateValue(field.value.eval(env)) })
             }
 
             stmt.methods.forEach { method ->
@@ -117,12 +130,18 @@ class SymbolCollector(private val env: DrEnv) {
                     null)
             }
 
+            val constructorType: DrClass.ConstructorType =
+                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
+                else DrClass.ConstructorType.STANDARD
+
             env.defineClass(stmt.name, DrClass(
                 stmt.name,
                 classFields,
                 classMethods,
                 classStaticFields,
-                classStaticMethods))
+                classStaticMethods,
+                env.copy(),
+                constructorType))
         }
 
 
@@ -143,8 +162,7 @@ internal fun convertLetToVariable(let: Let) : DrVariable =
         let.name,
         let.type,
         DrNotAssigned,
-        let.isMutable
-    )
+        let.isMutable)
 
 
 internal enum class MemberKind {

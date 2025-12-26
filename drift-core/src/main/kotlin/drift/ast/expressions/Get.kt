@@ -25,5 +25,5 @@ package drift.ast.expressions
  * @property name Field name to retrieve
  */
 data class Get(
-    val receiver: Expression,
-    val name: String) : Expression
+    val receiver: DrExpr,
+    val name: String) : DrExpr

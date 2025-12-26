@@ -116,8 +116,14 @@ internal fun Parser.parseStatement() : DrStmt {
  * @throws DriftParserException If the variable name is not found
  */
 internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = true) : Let {
+    val injectedVariablePrefix = '$'
+
     val nameToken = expect<Token.Identifier>("Expected variable name")
     val name = nameToken.value
+
+    if (name.first() == injectedVariablePrefix)
+        throw DriftParserException(
+            "A variable cannot begin with '$'. This character is reserved for injected variables.")
 
     advance(peekSymbol(":", true)
             || peekSymbol("=", true))
@@ -142,7 +148,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
     }
 
     if (expr is Lambda) {
-        expr = expr.copy(name)
+        expr = expr.copy(name = name)
     }
 
     return Let(name, type, expr, isMutable)

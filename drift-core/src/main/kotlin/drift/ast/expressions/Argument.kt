@@ -26,4 +26,4 @@ package drift.ast.expressions
  */
 data class Argument(
     val name: String?,
-    val expr: Expression)
+    val expr: DrExpr)

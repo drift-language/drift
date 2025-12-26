@@ -10,7 +10,7 @@ package drift.parser
 
 import drift.exceptions.DriftRuntimeException
 import drift.runtime.DriftRuntime
-import drift.utils.evalAndGetEnv
+import drift.utils.evalProgram
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -82,7 +82,7 @@ class ImportTest {
     fun `Global import without alias`() {
         assertDoesNotThrow {
             val output = mainCode("""
-                import hola
+                import hola 
                 
                 print(hola.greeting)
             """.trimIndent())
@@ -172,6 +172,17 @@ class ImportTest {
                 import hola { *, greeting as g }
                 
                 print(greeting)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Name collision between wildcard and let must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                import hola { * }
+                
+                let greeting = "Hello"
             """.trimIndent())
         }
     }

@@ -52,6 +52,8 @@ data class DrNativeFunction(
     /** @return A prepared string version of the type */
     override fun asString(): String =
         "<[native#${hashCode()}] ${type().asString()}>"
+
+
     /** @return The object representation of the type */
     override fun type(): DrType = ObjectType(
         "Function", mapOf(

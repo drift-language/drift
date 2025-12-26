@@ -9,6 +9,7 @@
 package drift.runtime
 
 import drift.ast.statements.Import
+import drift.checkers.collectors.SymbolCollector
 import drift.exceptions.DriftRuntimeException
 import drift.parser.Parser
 import drift.parser.lex
@@ -59,7 +60,9 @@ class ModuleLoader(
         val tokens = lex(source)
         val ast = Parser(tokens).parse()
 
-        val moduleEnv = DrEnv(env)
+        val moduleEnv = DrEnv()
+
+        SymbolCollector(moduleEnv).collect(ast)
 
         for (stmt in ast) {
             stmt.eval(moduleEnv)

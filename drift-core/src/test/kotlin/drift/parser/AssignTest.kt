@@ -1,6 +1,7 @@
 package drift.parser
 
 import drift.exceptions.DriftRuntimeException
+import drift.utils.evalProgram
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -115,6 +116,16 @@ class AssignTest {
                 fun test {}
                 
                 var a = test()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Use assignment as value must throw (Void)`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                var b = 0
+                let a = b = 1
             """.trimIndent())
         }
     }

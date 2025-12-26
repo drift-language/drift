@@ -1,5 +1,6 @@
 package drift.parser
 
+import drift.exceptions.DriftParserException
 import drift.exceptions.DriftRuntimeException
 import drift.exceptions.DriftTypeException
 import drift.utils.evalProgram
@@ -92,15 +93,15 @@ class ClassTest {
     }
 
     @Test
-    fun `Assign class attribute`() {
-        val result = evalWithOutput("""
-            class User(name: String)
-            let u = User(name = "John")
-            u.name = "Bob"
-            test(u.name)
-        """.trimIndent())
-
-        assertEquals(result, "Bob")
+    fun `Assign class attribute from primary constructor must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class User(name: String)
+                let u = User(name = "John")
+                u.name = "Bob"
+                test(u.name)
+            """.trimIndent())
+        }
     }
 
     @Test
@@ -198,5 +199,301 @@ class ClassTest {
         """.trimIndent())
 
         assertEquals(result, "null")
+    }
+
+    @Test
+    fun `Constructor with mixed positional and named args`() {
+        assertThrows<DriftRuntimeException> {
+            val result = evalWithOutput("""
+                class User(name: String, age: Int)
+                let u = User("John", age = 20)
+                test(u.age)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Duplicate named constructor argument must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class User(name: String)
+                let u = User(name = "John", name = "Bob")
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Unassigned field access must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A {
+                    let x: Int
+                }
+                let a = A()
+                test(a.x)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign immutable field must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A {
+                    let x = 1
+                }
+                let a = A()
+                a.x = 2
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign mutable field must succeed`() {
+        val result = evalWithOutput("""
+            class A {
+                var x = 1
+            }
+            let a = A()
+            a.x = 2
+            test(a.x)
+        """.trimIndent())
+
+        assertEquals("2", result)
+    }
+
+    @Test
+    fun `Using this outside method must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A {
+                    let x = ${'$'}this
+                }
+                
+                A()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `this must reference current instance`() {
+        val result = evalWithOutputs("""
+            class A(name: String) {
+                fun id { return ${'$'}this.name }
+            }
+            let a = A(name = "x")
+            let b = A(name = "y")
+            test(a.id())
+            test(b.id())
+        """.trimIndent())
+
+        assertEquals(listOf("x", "y"), result)
+    }
+
+    @Test
+    fun `Method can mutate var field`() {
+        val result = evalWithOutput("""
+            class A {
+                var x = 1
+                fun inc { ${'$'}this.x = ${'$'}this.x + 1 }
+            }
+            let a = A()
+            a.inc()
+            test(a.x)
+        """.trimIndent())
+
+        assertEquals("2", result)
+    }
+
+    @Test
+    fun `Calling instance method on class must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A {
+                    fun hello { return "hi" }
+                }
+                A.hello()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Instances must not share fields`() {
+        val result = evalWithOutputs("""
+            class A {
+                var x = 0
+            }
+            let a = A()
+            let b = A()
+            a.x = 5
+            test(a.x)
+            test(b.x)
+        """.trimIndent())
+
+        assertEquals(listOf("5", "0"), result)
+    }
+
+    @Test
+    fun `Assign static let must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A {
+                    static {
+                        let x = 1
+                    }
+                }
+                A.x = 2
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign static var must succeed`() {
+        val result = evalWithOutput("""
+            class A {
+                static {
+                    var x = 1
+                }
+            }
+            A.x = 2
+            test(A.x)
+        """.trimIndent())
+
+        assertEquals("2", result)
+    }
+
+    @Test
+    fun `Field and method name collision must throw`() {
+        assertThrows<DriftParserException> {
+            evalProgram("""
+                class A {
+                    let x = 1
+                    fun x { return 2 }
+                }
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Primary constructor must reject positional arguments`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A(x: Int, y: Int)
+            let a = A(1, 2)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Primary constructor must reject mixed arguments`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A(x: Int, y: Int)
+            let a = A(y = 1, 2)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Standard constructor must reject positional after named`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A {
+                fun init(x: Int, y: Int) {}
+            }
+            let a = A(y = 1, 2)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Positional and named binding to same parameter must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            fun f(a: Int, b: Int) {}
+            f(1, a = 2)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Unknown named constructor argument must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A(x: Int)
+            let a = A(y = 2)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Unassigned field with default value must be initialized`() {
+        val result = evalWithOutput("""
+        class A {
+            let x: Int = 5
+        }
+        let a = A()
+        test(a.x)
+    """.trimIndent())
+
+        assertEquals("5", result)
+    }
+
+    @Test
+    fun `Accessing static field through instance must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A {
+                static {
+                    let x = 1
+                }
+            }
+            let a = A()
+            test(a.x)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Accessing instance field through class must throw`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+            class A {
+                let x = 1
+            }
+            test(A.x)
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Empty class without asString must fallback`() {
+        val result = evalWithOutput("""
+        class A {}
+        let a = A()
+        test(a)
+    """.trimIndent())
+
+        assertEquals("<[class#", result.substring(0, 8))
+    }
+
+    @Test
+    fun `Calling native method on instance must work`() {
+        val result = evalWithOutput("""
+        test("hello".length())
+    """.trimIndent())
+
+        assertEquals("5", result)
+    }
+
+    @Test
+    fun `Use dynamic field assignment as value must throw (Void)`() {
+        assertThrows<DriftRuntimeException> {
+            evalProgram("""
+                class A { var x = 1 }
+                let _ = A()
+                let y = (_.x = 2) + 1
+            """.trimIndent())
+        }
     }
 }
