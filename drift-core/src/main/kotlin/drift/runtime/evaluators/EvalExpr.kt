@@ -214,7 +214,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             allowPositional = true,
                             allowNamed = true))
 
-                    evalFunction(
+                    return evalFunction(
                         callee.let,
                         DrEnv(parent = callee.closure.copy()),
                         bindings)
@@ -243,7 +243,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         callee.instance as? DrInstance)
                 }
                 is DrNativeFunction -> {
-                    callee.impl(null, arguments)
+                    return callee.impl(null, arguments)
                 }
                 is DrClass -> {
 
