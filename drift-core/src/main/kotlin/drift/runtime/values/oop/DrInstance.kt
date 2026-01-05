@@ -13,7 +13,6 @@ import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
 import drift.runtime.evaluators.eval
-import drift.runtime.exceptions.DRAlreadyDefinedException
 import drift.runtime.exceptions.DRMissingReturnStatementException
 import drift.runtime.exceptions.DRUnknownClassMemberException
 import drift.runtime.exceptions.DRUnsuccessfulCastException

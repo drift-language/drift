@@ -1032,7 +1032,7 @@ class DRCannotAssignToImmutableException(
 
 /**
  * Drift Runtime exception thrown when attempting to
- * assign to an immutable variable.
+ * assign via module access.
  *
  * Example:
  * ```drift

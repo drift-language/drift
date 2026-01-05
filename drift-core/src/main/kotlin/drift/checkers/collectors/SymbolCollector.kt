@@ -66,6 +66,7 @@ class SymbolCollector(private val env: DrEnv) {
         when (stmt) {
             is Class ->
                 ClassCollector().collectClass(stmt)
+
             is Function -> {
                 val functionVar = DrVariable(
                     name = stmt.name,
@@ -75,8 +76,13 @@ class SymbolCollector(private val env: DrEnv) {
 
                 env.define(stmt.name, functionVar)
             }
-            is Let ->
-                env.define(stmt.name, DrVariable(stmt.name, stmt.type, DrNotAssigned, stmt.isMutable))
+
+            is Let -> env.define(stmt.name, DrVariable(
+                stmt.name,
+                stmt.type,
+                DrNotAssigned,
+                stmt.isMutable))
+
             else -> {}
         }
     }
