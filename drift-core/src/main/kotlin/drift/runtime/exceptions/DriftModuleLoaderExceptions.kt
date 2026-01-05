@@ -8,8 +8,6 @@
  ******************************************************************************/
 package drift.runtime.exceptions
 
-import jdk.internal.joptsimple.internal.Messages.message
-
 
 /******************************************************************************
  * DRIFT MODULE LOADER EXCEPTIONS
