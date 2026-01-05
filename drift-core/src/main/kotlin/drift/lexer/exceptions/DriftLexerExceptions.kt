@@ -62,6 +62,18 @@ class DLUnexpectedCharacterException(
 
 
 
+/**
+ * Drift Lexer exception thrown when a string literal is not terminated
+ * (closed by its final double-quote).
+ *
+ * ```drift
+ * "hello
+ * ```
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 class DLUnterminatedStringLiteralException(
     sourceName: String? = null,
     line: Int = 0,
