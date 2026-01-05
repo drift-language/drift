@@ -10,13 +10,12 @@
 package drift.utils
 
 import drift.ast.statements.Function
-import drift.runtime.evaluators.eval
-import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
-import drift.exceptions.DriftRuntimeException
+import drift.checkers.collectors.SymbolCollector
+import drift.lexer.lex
 import drift.parser.Parser
-import drift.parser.lex
 import drift.runtime.*
+import drift.runtime.evaluators.eval
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
@@ -98,6 +97,7 @@ fun evalWithOutputs(source: String) : MutableList<String> {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
     val env = DrEnv()
+
     env.apply {
         define("test", DrNativeFunction(
             impl = { _, args ->
@@ -125,9 +125,8 @@ fun evalWithOutputs(source: String) : MutableList<String> {
                         name = "length",
                         paramTypes = emptyList(),
                         returnType = ObjectType("Int"),
-                        impl = { receiver, args ->
-                            val instance = receiver as? DrString
-                                ?: throw DriftRuntimeException("length() called on non-String")
+                        impl = { receiver, _ ->
+                            val instance = receiver as DrString
 
                             DrInt(instance.value.length)
                         }))), closure = env))
@@ -188,8 +187,7 @@ fun evalAndGetEnv(source: String) : DrEnv {
                         paramTypes = emptyList(),
                         returnType = ObjectType("Int"),
                         impl = { receiver, args ->
-                            val instance = receiver as? DrString
-                                ?: throw DriftRuntimeException("length() called on non-String")
+                            val instance = receiver as DrString
 
                             DrInt(instance.value.length)
                         }))), closure = env))

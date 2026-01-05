@@ -8,17 +8,22 @@
  ******************************************************************************/
 package drift.cli
 
+import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.terminal.Terminal
+import drift.DriftVersion
 import drift.ast.statements.Function
-import drift.runtime.evaluators.eval
-import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
-import drift.exceptions.DriftRuntimeException
+import drift.checkers.collectors.SymbolCollector
+import drift.lexer.lex
 import drift.parser.Parser
-import drift.parser.lex
 import drift.runtime.AnyType
 import drift.runtime.DrEnv
 import drift.runtime.NullType
 import drift.runtime.ObjectType
+import drift.runtime.evaluators.eval
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
@@ -27,12 +32,6 @@ import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
 import project.loadConfig
 import java.io.File
-import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.TextColors.*
-import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
-import com.github.ajalt.mordant.rendering.TextStyles.*
-import com.github.ajalt.mordant.terminal.Terminal
-import drift.DriftVersion
 
 fun main(args: Array<String>) {
     val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
@@ -100,8 +99,7 @@ fun main(args: Array<String>) {
                     paramTypes = emptyList(),
                     returnType = ObjectType("Int"),
                     impl = { receiver, args ->
-                        val instance = receiver as? DrString
-                            ?: throw DriftRuntimeException("length() called on non-String")
+                        val instance = receiver as DrString
 
                         DrInt(instance.value.length)
                     }

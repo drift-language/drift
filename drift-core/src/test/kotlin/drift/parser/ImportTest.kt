@@ -8,8 +8,10 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.DriftRuntime
+import drift.runtime.exceptions.DRAlreadyDefinedException
+import drift.runtime.exceptions.DRVariableAlreadyDefinedException
+import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.utils.evalProgram
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -106,7 +108,7 @@ class ImportTest {
 
     @Test
     fun `Global import with alias called with source name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola as h
                 
@@ -130,7 +132,7 @@ class ImportTest {
 
     @Test
     fun `Composed import called with module name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola { greeting }
                 
@@ -167,7 +169,7 @@ class ImportTest {
 
     @Test
     fun `Composed import with wildcard and member renaming called with source name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola { *, greeting as g }
                 
@@ -178,8 +180,8 @@ class ImportTest {
 
     @Test
     fun `Name collision between wildcard and let must throw`() {
-        assertThrows<DriftRuntimeException> {
-            evalProgram("""
+        assertThrows<DRAlreadyDefinedException> {
+            mainCode("""
                 import hola { * }
                 
                 let greeting = "Hello"

@@ -2,11 +2,12 @@ package drift.parser
 
 import drift.ast.statements.DrStmt
 import drift.runtime.evaluators.eval
-import drift.exceptions.DriftParserException
+import drift.lexer.lex
+import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
+import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.runtime.*
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.specials.DrNull
-import drift.utils.testConfig
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -37,7 +38,7 @@ class ParserTest {
 
     @Test
     fun `Two top-level statements without newline`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPExpectedNewlineBetweenTopLevelStatementsException> {
             parse("""
                 test("hello") test("world")
             """.trimIndent())
@@ -56,7 +57,7 @@ class ParserTest {
 
     @Test
     fun `Two block statements without newline`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPMissingExpectedTokenException> {
             parse("""
                 {
                     test("hello") test("world")

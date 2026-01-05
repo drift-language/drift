@@ -10,12 +10,12 @@
 package drift.parser.callables
 
 import drift.ast.expressions.DrExpr
+import drift.ast.expressions.Lambda
 import drift.ast.statements.Function
 import drift.ast.statements.FunctionParameter
-import drift.ast.expressions.Lambda
-import drift.exceptions.DriftParserException
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
+import drift.parser.exceptions.*
 import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
@@ -48,7 +48,7 @@ import drift.runtime.DrType
  * for example
  */
 internal fun Parser.parseFunction() : Function {
-    val nameToken = expect<Token.Identifier>("Expected function name")
+    val nameToken = expect<Token.Identifier>("function name")
     val name = nameToken.value
     val parameters = mutableListOf<FunctionParameter>()
 
@@ -78,7 +78,7 @@ internal fun Parser.parseFunction() : Function {
 
 
 /**
- * Attempt to parse a lambda expression
+ * Attempt to parse a lambda expression.
  *
  * ```
  * let lambda = (arg) : Type -> {
@@ -92,8 +92,10 @@ internal fun Parser.parseFunction() : Function {
  * - If none name is provided for a parameter `(*) -> {}`
  * for example
  * - If a parameter is duplicated within lambda definition
- * - If the parameters part is unterminated, without ')' symbol
+ * - If a parameter's part is unterminated, without ')' symbol
  * - If the arrow is absent '->'
+ * @throws DPParameterAlreadyDefinedException One case may throw:
+ * - If the provided parameter's name is previously defined
  */
 internal fun Parser.parseLambda() : Lambda {
     expectSymbol("(")
@@ -102,20 +104,22 @@ internal fun Parser.parseLambda() : Lambda {
 
     if (!checkSymbol(")")) {
         do {
-            val paramToken = expect<Token.Identifier>("Expected parameter name")
+            val paramToken = expect<Token.Identifier>("parameter name")
 
             if (parameters.firstOrNull { it.name == paramToken.value } != null)
-                throw DriftParserException("Parameter ${paramToken.value} is already defined")
+                throw DPParameterAlreadyDefinedException(
+                    parameterName = paramToken.value)
 
             advance()
 
-            val paramType = if (matchSymbol(":")) {
-                parseType()
-            } else {
-                AnyType
-            }
+            val paramType =
+                if (matchSymbol(":")) parseType()
+                else AnyType
 
-            parameters.add(FunctionParameter(paramToken.value, isPositional = true, paramType))
+            parameters.add(FunctionParameter(
+                paramToken.value,
+                isPositional = true,
+                paramType))
         } while (matchSymbol(","))
     }
 
@@ -133,25 +137,31 @@ internal fun Parser.parseLambda() : Lambda {
 }
 
 
+
+/**
+ * Attempt to parse a function parameter expression.
+ *
+ * @throws DPParameterAlreadyDefinedException One case may throw:
+ * - If the provided parameter's name is previously defined
+ */
 internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParameter>) : FunctionParameter {
     val isPositional: Boolean = matchSymbol("*")
-    val paramToken = expect<Token.Identifier>("Expected parameter name")
+    val paramToken = expect<Token.Identifier>("parameter name")
     var value: DrExpr? = null
 
     if (parameters.firstOrNull { it.name == paramToken.value } != null)
-        throw DriftParserException("Parameter ${paramToken.value} is already defined")
+        throw DPParameterAlreadyDefinedException(
+            parameterName = paramToken.value)
 
     advance()
 
     var paramType: DrType = AnyType
 
-    if (matchSymbol(":")) {
+    if (matchSymbol(":"))
         paramType = parseType()
-    }
 
-    if (matchSymbol("=")) {
+    if (matchSymbol("="))
         value = parseExpression()
-    }
 
     return FunctionParameter(paramToken.value, isPositional, paramType, value)
 }

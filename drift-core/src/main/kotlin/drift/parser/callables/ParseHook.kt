@@ -10,12 +10,13 @@ package drift.parser.callables
 
 import drift.ast.statements.Function
 import drift.ast.statements.FunctionParameter
-import drift.exceptions.DriftParserException
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
+import drift.parser.exceptions.DPHookCannotReturnValueException
+import drift.parser.exceptions.DPMissingHookParameterException
+import drift.parser.exceptions.DPUnallowedHookNameException
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
-import drift.runtime.AnyType
 import drift.runtime.DrType
 import drift.runtime.VoidType
 
@@ -49,22 +50,22 @@ internal fun Parser.parseHook(
     forceParameters: Boolean = false,
     disableReturnStatement: Boolean = false) : Function {
 
-    val name = expect<Token.Identifier>("Expected hook name").value
+    val name = expect<Token.Identifier>("hook name").value
 
     if (name !in authorizedHookNames)
-        throw DriftParserException("Hook name '$name' is not allowed")
+        throw DPUnallowedHookNameException(unallowedName = name)
 
     advance(false)
 
     if (forceParameters && !checkSymbol("("))
-        throw DriftParserException("Hook '$name' requires parameters")
+        throw DPMissingHookParameterException(hookName = name)
 
     val parameters = mutableListOf<FunctionParameter>()
 
     if (matchSymbol("(")) {
         if (!checkSymbol(")")) {
             do {
-                val paramName = expect<Token.Identifier>("Expected hook parameter name").value
+                val paramName = expect<Token.Identifier>("hook parameter name").value
 
                 advance(false)
 
@@ -86,7 +87,7 @@ internal fun Parser.parseHook(
 
     if (matchSymbol(":")) {
         if (disableReturnStatement)
-            throw DriftParserException("Hook '$name' cannot return a value")
+            throw DPHookCannotReturnValueException(hookName = name)
 
         hookReturnType = parseType()
     }

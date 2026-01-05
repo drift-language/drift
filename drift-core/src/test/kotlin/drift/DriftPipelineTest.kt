@@ -4,7 +4,7 @@ import drift.runtime.evaluators.eval
 import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.parser.Parser
-import drift.parser.lex
+import drift.lexer.lex
 import drift.runtime.DrEnv
 import drift.runtime.values.oop.DrClass
 import org.junit.jupiter.api.Test

@@ -13,7 +13,7 @@ import drift.ast.statements.Class
 import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
 import drift.ast.statements.Let
-import drift.exceptions.DriftParserException
+import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
 import drift.helper.validateValue
 import drift.runtime.AnyType
 import drift.runtime.DrEnv
@@ -24,12 +24,14 @@ import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.variables.DrVariable
 import drift.sslot.StaticSlot
 
+
 /******************************************************************************
  * DRIFT SYMBOL COLLECTOR CHECKER
  *
  * The symbol collector is a middleware that pre-defines each
  * entity before run the code
  ******************************************************************************/
+
 
 
 /**
@@ -149,25 +151,17 @@ class SymbolCollector(private val env: DrEnv) {
             val memberKind = members[name]
 
             if (memberKind != null)
-                throw DriftParserException("Ambiguous member name: $name is already defined as $memberKind")
+                throw DCAmbiguousMemberNameException(name, memberKind)
 
             members[name] = kind
         }
     }
-}
 
 
-internal fun convertLetToVariable(let: Let) : DrVariable =
-    DrVariable(
-        let.name,
-        let.type,
-        DrNotAssigned,
-        let.isMutable)
-
-
-internal enum class MemberKind {
-    FIELD,
-    STATIC_FIELD,
-    METHOD,
-    STATIC_METHOD
+    enum class MemberKind {
+        FIELD,
+        STATIC_FIELD,
+        METHOD,
+        STATIC_METHOD
+    }
 }

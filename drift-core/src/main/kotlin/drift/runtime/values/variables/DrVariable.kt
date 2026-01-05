@@ -8,9 +8,10 @@
  ******************************************************************************/
 package drift.runtime.values.variables
 
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrType
 import drift.runtime.DrValue
+import drift.runtime.exceptions.DRCannotAssignToImmutableException
+import drift.runtime.exceptions.DRUnassignableException
 import drift.runtime.isAssignable
 import drift.runtime.values.specials.DrNotAssigned
 
@@ -55,16 +56,15 @@ data class DrVariable(
      * Attempt to change the variable's value.
      *
      * @param newValue New value to apply
-     * @throws DriftRuntimeException Two cases may throw:
-     * - If the new value does not respect the variable's type
-     * - If the variable is immutable and already assigned
      */
     fun set(newValue: DrValue) {
         if (!isAssignable(newValue.type(), type))
-            throw DriftRuntimeException("Cannot assign ${newValue.type()} to a $type variable")
+            throw DRUnassignableException(
+                newValueType = newValue.type(),
+                type = type)
 
         if (value != DrNotAssigned && !isMutable)
-            throw DriftRuntimeException("Cannot assign to immutable variable '$name'")
+            throw DRCannotAssignToImmutableException(name = name)
 
         value = newValue
     }

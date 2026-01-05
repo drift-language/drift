@@ -9,7 +9,6 @@
 
 package drift.runtime.values.primaries
 
-import drift.exceptions.DriftRuntimeException
 import kotlin.reflect.KClass
 
 
@@ -22,15 +21,27 @@ import kotlin.reflect.KClass
 
 
 /**
+ * Numeric values ranking is necessary for
+ * implicit numeric typing.
+ */
+enum class NumericRank(val rank: Int) {
+    Int(1),
+    UInt(2),
+    Int64(3)
+}
+
+
+/**
  * This interface represents all numeric value types.
  */
 sealed interface DrNumeric {
+
     /** Get the numeric type rank for the current instance */
-    val numericRank : Int
+    val numericRank : NumericRank
         get() = when (this) {
-            is DrInt -> 1
-            is DrUInt -> 2
-            is DrInt64 -> 3
+            is DrInt -> NumericRank.Int
+            is DrUInt -> NumericRank.UInt
+            is DrInt64 -> NumericRank.Int64
         }
 
     fun asInt() : Int
@@ -51,9 +62,8 @@ fun promoteNumericPair(left: DrNumeric, right: DrNumeric) : Triple<DrNumeric, Dr
     val rank = maxOf(left.numericRank, right.numericRank)
 
     return when (rank) {
-        3 -> Triple(DrInt64(left.asLong()), DrInt64(right.asLong()), DrInt64::class)
-        2 -> Triple(DrUInt(left.asUInt()), DrUInt(right.asUInt()), DrUInt::class)
-        1 -> Triple(DrInt(left.asInt()), DrInt(right.asInt()), DrInt::class)
-        else -> throw DriftRuntimeException("Unsupported numeric promotion")
+        NumericRank.Int64 -> Triple(DrInt64(left.asLong()), DrInt64(right.asLong()), DrInt64::class)
+        NumericRank.UInt -> Triple(DrUInt(left.asUInt()), DrUInt(right.asUInt()), DrUInt::class)
+        NumericRank.Int -> Triple(DrInt(left.asInt()), DrInt(right.asInt()), DrInt::class)
     }
 }
