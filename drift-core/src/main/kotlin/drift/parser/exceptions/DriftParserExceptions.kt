@@ -557,6 +557,14 @@ class DPUnterminatedBlockException(
 
 
 
+/**
+ * Drift's Parser exception thrown when a type is invalid.
+ *
+ * @property message
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 open class DPInvalidTypeException(
     message: String? = null,
     sourceName: String? = null,
@@ -571,6 +579,14 @@ open class DPInvalidTypeException(
 
 
 
+/**
+ * Drift's Parser exception thrown when a union type
+ * uses an '?' symbol.
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 class DPWrongOptionalUnionTypeException(
     sourceName: String? = null,
     line: Int = 0,
@@ -584,6 +600,14 @@ class DPWrongOptionalUnionTypeException(
 
 
 
+/**
+ * Drift's Parser exception thrown when a union type
+ * unites types with special ones (forbidden).
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 class DPSpecialInUnionTypeException(
     sourceName: String? = null,
     line: Int = 0,
