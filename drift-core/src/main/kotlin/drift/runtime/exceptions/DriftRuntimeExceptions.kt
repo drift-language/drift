@@ -1027,3 +1027,36 @@ class DRCannotAssignToImmutableException(
     line = line,
     pos = pos
 )
+
+
+
+/**
+ * Drift Runtime exception thrown when attempting to
+ * assign to an immutable variable.
+ *
+ * Example:
+ * ```drift
+ * import foo
+ *
+ * foo.a = 1        // FORBIDDEN (ambiguous)
+ * ```
+ * ```drift
+ * import foo { a }
+ *
+ * a = 1            // AUTHORIZED IF MUTABLE
+ * ```
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
+class DRCannotSetViaModuleAccessException(
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : DriftRuntimeException(
+    message = "Cannot set via module access",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)

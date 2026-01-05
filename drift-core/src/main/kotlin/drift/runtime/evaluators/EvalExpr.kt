@@ -21,6 +21,7 @@ import drift.runtime.exceptions.DMLNotFoundInModuleException
 import drift.runtime.exceptions.DRArgumentAlreadyBoundException
 import drift.runtime.exceptions.DRCannotNegateException
 import drift.runtime.exceptions.DRCannotSetObjectException
+import drift.runtime.exceptions.DRCannotSetViaModuleAccessException
 import drift.runtime.exceptions.DRDivisionByZeroException
 import drift.runtime.exceptions.DRInvalidExpressionException
 import drift.runtime.exceptions.DRMissingArgumentException
@@ -215,6 +216,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         DrEnv(parent = callee.closure.copy()),
                         bindings)
                 }
+
                 is DrMethod -> {
 
                     val bindings = resolveArguments(
@@ -237,6 +239,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         newEnv,
                         bindings)
                 }
+
                 is DrNativeFunction ->
                     callee.impl(null, arguments)
 
@@ -650,9 +653,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 throw DRNotAnObjectException(valueType = obj.type())
 
             when (obj) {
-                is DrModule -> TODO()/*throw DriftRuntimeException(
-                    "Cannot assign to symbol '$name' in module ${obj.name}")*/
-                // FIXME: module setter should be possible (module.var = value)
+                is DrModule -> throw DRCannotSetViaModuleAccessException()
 
                 is DrInstance -> obj.set(name, v)
 
