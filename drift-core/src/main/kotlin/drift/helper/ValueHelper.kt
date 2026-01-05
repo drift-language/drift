@@ -99,6 +99,6 @@ fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> 
             throw DRRangeLimitsMustHaveSameTypeException()
 
         else -> throw DRNotSupportedTypeInRangeException(
-            type = range.from as DrType)        // TODO: review cast??
+            type = (range.from as DrValue).type())
     }
 }
