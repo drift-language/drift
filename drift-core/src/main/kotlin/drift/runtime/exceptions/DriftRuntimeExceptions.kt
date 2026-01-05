@@ -865,6 +865,14 @@ class DRCannotSetObjectException(
 
 
 
+/**
+ * Drift Runtime exception thrown when an invalid
+ * statement has been found.
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
 class DRInvalidStatementException(
     sourceName: String? = null,
     line: Int = 0,
