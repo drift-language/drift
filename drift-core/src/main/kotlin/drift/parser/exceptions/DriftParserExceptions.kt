@@ -380,6 +380,9 @@ class DPOnlyOneStaticBlockPerClassException(
     pos: Int = 0
 ) : DriftParserException(
     message = "A class cannot have multiple static blocks",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
 )
 
 
@@ -398,6 +401,9 @@ class DPUnexpectedStatementInClassBodyException(
     pos: Int = 0
 ) : DriftParserException(
     message = "Unexpected statement in class body",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
 )
 
 
