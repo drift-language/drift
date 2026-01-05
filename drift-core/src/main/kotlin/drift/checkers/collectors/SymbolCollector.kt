@@ -168,6 +168,6 @@ class SymbolCollector(private val env: DrEnv) {
         FIELD("field"),
         STATIC_FIELD("static field"),
         METHOD("method"),
-        STATIC_METHOD("static method"),
+        STATIC_METHOD("static method")
     }
 }
