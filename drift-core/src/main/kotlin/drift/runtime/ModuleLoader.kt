@@ -10,13 +10,14 @@ package drift.runtime
 
 import drift.ast.statements.Import
 import drift.checkers.collectors.SymbolCollector
-import drift.exceptions.DriftRuntimeException
+import drift.lexer.lex
 import drift.parser.Parser
-import drift.parser.lex
 import drift.runtime.evaluators.eval
+import drift.runtime.exceptions.DMLAlreadyImportedModuleException
+import drift.runtime.exceptions.DMLNotFoundInModuleException
+import drift.runtime.exceptions.DMLUnexistingModuleException
 import drift.runtime.values.imports.DrModule
 import drift.runtime.values.oop.DrClass
-import drift.runtime.values.variables.DrVariable
 import project.ProjectConfig
 import java.io.File
 
@@ -43,18 +44,37 @@ class ModuleLoader(
     private val projectRootFile: File,
     private val env: DrEnv) {
 
+
     private val imported = mutableSetOf<String>()
 
+
+
+    /**
+     * Import a module using its AST node.
+     *
+     * A module is searchable using its namespace from the statement:
+     * ```drift
+     * import drift.module
+     * ```
+     *
+     * A namespace is a dot-represented relative path to the module's source
+     * file.
+     *
+     * @param import Import AST node
+     * @throws DMLAlreadyImportedModuleException
+     * @throws DMLUnexistingModuleException
+     * @throws DMLNotFoundInModuleException
+     */
     fun importModule(import: Import) {
         if (imported.contains(import.namespace))
-            throw DriftRuntimeException("Module '${import.namespace}' already imported")
+            throw DMLAlreadyImportedModuleException(moduleNamespace = import.namespace)
 
         val path = File(
             projectRootFile,
             "${config.structure.root}/${import.steps.joinToString("/")}.drift")
 
         if (!path.exists())
-            throw DriftRuntimeException("Module '${import.namespace}' does not exist")
+            throw DMLUnexistingModuleException(moduleNamespace = import.namespace)
 
         val source = path.readText()
         val tokens = lex(source)
@@ -86,7 +106,9 @@ class ModuleLoader(
 
                     val sym = moduleEnv.resolve(part.source)
                         ?: moduleEnv.resolveClass(part.source)
-                        ?: throw DriftRuntimeException("Symbol ${part.source} not found in '${import.namespace}'")
+                        ?: throw DMLNotFoundInModuleException(
+                            element = part.source,
+                            moduleNamespace = import.namespace)
 
                     env.define(partName, sym)
                 }

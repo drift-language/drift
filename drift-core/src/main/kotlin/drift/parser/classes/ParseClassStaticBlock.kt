@@ -8,14 +8,13 @@
  ******************************************************************************/
 package drift.parser.classes
 
-import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
-import drift.ast.statements.FunctionParameter
 import drift.ast.statements.Let
-import drift.exceptions.DriftParserException
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
 import drift.parser.callables.parseFunction
+import drift.parser.exceptions.DPUnexpectedExpressionException
+import drift.parser.exceptions.DPUnexpectedIdentifierException
 import drift.parser.statements.parseLet
 
 
@@ -49,8 +48,12 @@ internal fun Parser.parseClassStaticBlock(
             staticMethods += parseFunction()
         }
 
-        else -> throw DriftParserException("Unexpected '${c.value}' in static block")
+        else -> throw DPUnexpectedIdentifierException(
+            unexpected = c,
+            context = "in static block")
     } else if (c !is Token.Symbol || c.value != "}") {
-        throw DriftParserException("Unexpected expression $c in static block")
+        throw DPUnexpectedExpressionException(
+            unexpected = c,
+            context = "in static block")
     }
 }

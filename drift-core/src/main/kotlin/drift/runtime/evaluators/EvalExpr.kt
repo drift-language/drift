@@ -8,32 +8,39 @@
  ******************************************************************************/
 package drift.runtime.evaluators
 
-import drift.ast.expressions.Assign
-import drift.ast.expressions.Binary
-import drift.ast.expressions.Call
-import drift.ast.expressions.Conditional
-import drift.ast.expressions.DrExpr
+import drift.ast.expressions.*
+import drift.ast.expressions.Set
 import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
-import drift.ast.expressions.Get
-import drift.ast.expressions.Lambda
-import drift.ast.expressions.ListLiteral
-import drift.ast.expressions.Literal
-import drift.ast.expressions.Set
-import drift.ast.expressions.Unary
-import drift.ast.expressions.Variable
 import drift.ast.statements.FunctionParameter
-import drift.runtime.values.callables.DrFunction
-import drift.runtime.values.callables.DrLambda
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.callables.DrReturn
-import drift.exceptions.DriftRuntimeException
-import drift.exceptions.DriftTypeException
 import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
 import drift.runtime.*
+import drift.runtime.exceptions.DMLNotFoundInModuleException
+import drift.runtime.exceptions.DRArgumentAlreadyBoundException
+import drift.runtime.exceptions.DRCannotNegateException
+import drift.runtime.exceptions.DRCannotSetObjectException
+import drift.runtime.exceptions.DRDivisionByZeroException
+import drift.runtime.exceptions.DRInvalidExpressionException
+import drift.runtime.exceptions.DRMissingArgumentException
+import drift.runtime.exceptions.DRMissingReturnStatementException
+import drift.runtime.exceptions.DRNamedArgumentsNotAllowedException
+import drift.runtime.exceptions.DRNonCallableInvocationException
+import drift.runtime.exceptions.DRNotAnObjectException
+import drift.runtime.exceptions.DRPositionalArgumentsNotAllowedException
+import drift.runtime.exceptions.DRPositionalMustPrecedeNamedArgumentsException
+import drift.runtime.exceptions.DRTooManyArgumentsException
+import drift.runtime.exceptions.DRTooManyPositionalArgumentsException
+import drift.runtime.exceptions.DRUnknownClassMemberException
+import drift.runtime.exceptions.DRUnknownClassStaticMemberException
+import drift.runtime.exceptions.DRUnknownOperatorException
+import drift.runtime.exceptions.DRUnknownParameterException
+import drift.runtime.exceptions.DRUnsuccessfulCastException
+import drift.runtime.exceptions.DRUnsupportedOperatorException
+import drift.runtime.exceptions.DRVariableNotDefinedException
+import drift.runtime.exceptions.DRWrongNumberOfClassArgumentsException
+import drift.runtime.values.callables.*
 import drift.runtime.values.containers.list.DrList
 import drift.runtime.values.containers.range.DrExclusiveRange
 import drift.runtime.values.containers.range.DrInclusiveRange
@@ -41,13 +48,7 @@ import drift.runtime.values.containers.range.DrRange
 import drift.runtime.values.imports.DrModule
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.oop.DrInstance
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
-import drift.runtime.values.primaries.DrNumeric
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.primaries.DrUInt
-import drift.runtime.values.primaries.promoteNumericPair
+import drift.runtime.values.primaries.*
 import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
@@ -79,13 +80,14 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         is Variable -> {
             val value = env.resolve(name)
                 ?: env.resolveClass(name)
-                ?: throw DriftRuntimeException("Undefined symbol: $name")
+                ?: throw DRVariableNotDefinedException(name = name)
 
             validateValue(unwrap(value))
         }
 
         // Callable call
         is Call -> {
+
             val callee = unwrap(callee.eval(env))
             val arguments = args.map { it.name to validateValue(it.expr.eval(env)) }
 
@@ -109,7 +111,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             ): Map<String, DrValue> {
 
                 if (arguments.size > parameters.size)
-                    throw DriftRuntimeException("Too many arguments.")
+                    throw DRTooManyArgumentsException(
+                        expected = parameters.size,
+                        actual = arguments.size)
 
                 val result = mutableMapOf<String, DrValue>()
                 var positionalIndex = 0
@@ -118,48 +122,44 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 for ((name, value) in arguments) {
                     if (name == null) {
                         if (!rules.allowPositional)
-                            throw DriftRuntimeException("Positional arguments are not allowed.")
+                            throw DRPositionalArgumentsNotAllowedException()
 
                         if (namedSeen)
-                            throw DriftRuntimeException(
-                                "Positional arguments must appear before named arguments.")
+                            throw DRPositionalMustPrecedeNamedArgumentsException()
 
                         if (positionalIndex >= parameters.size)
-                            throw DriftRuntimeException("Too many positional arguments.")
+                            throw DRTooManyPositionalArgumentsException(
+                                expected = parameters.size,
+                                actual = positionalIndex)
 
                         val param = parameters[positionalIndex++]
 
                         if (param.name in result)
-                            throw DriftRuntimeException(
-                                "Parameter '${param.name}' is already bound.")
+                            throw DRArgumentAlreadyBoundException(name = param.name)
 
                         result[param.name] = value
                     } else {
                         if (!rules.allowNamed)
-                            throw DriftRuntimeException("Named arguments are not allowed.")
+                            throw DRNamedArgumentsNotAllowedException()
 
                         namedSeen = true
 
                         val param = parameters.find { it.name == name }
-                            ?: throw DriftRuntimeException("Unknown argument '$name'.")
+                            ?: throw DRUnknownParameterException(name = name)
 
                         if (param.name in result)
-                            throw DriftRuntimeException(
-                                "Parameter '$name' is already bound.")
+                            throw DRArgumentAlreadyBoundException(name = name)
 
                         result[param.name] = value
                     }
                 }
 
                 // Defaults & missing
-                for (param in parameters) {
-                    if (param.name !in result) {
-                        val default = param.defaultValue
-                            ?: throw DriftRuntimeException(
-                                "Missing argument '${param.name}'.")
+                for (param in parameters) if (param.name !in result) {
+                    val default = param.defaultValue
+                        ?: throw DRMissingArgumentException(name = param.name)
 
-                        result[param.name] = validateValue(default.eval(DrEnv()))
-                    }
+                    result[param.name] = validateValue(default.eval(DrEnv()))
                 }
 
                 return result
@@ -169,21 +169,18 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             fun applyFunction(
                 fn: Function,
                 closure: DrEnv,
-                boundArgs: Map<String, DrValue>,
-                instance: DrInstance? = null
-            ) {
-                for (param in fn.parameters) {
+                boundArgs: Map<String, DrValue>) {
 
+                for (param in fn.parameters) {
                     val rawValue = boundArgs[param.name]
-                        ?: throw DriftRuntimeException(
-                            "Missing argument '${param.name}'")
+                        ?: throw DRMissingArgumentException(name = param.name)
 
                     val value = castNumericIfNeeded(rawValue, param.type)
 
-                    if (param.type !is AnyType && !isAssignable(value.type(), param.type)) {
-                        throw DriftTypeException(
-                            "Invalid argument for '${param.name}'")
-                    }
+                    if (param.type !is AnyType && !isAssignable(value.type(), param.type))
+                        throw DRUnsuccessfulCastException(
+                            valueType = value.type(),
+                            expectedType = param.type)
 
                     closure.define(param.name, value)
                 }
@@ -193,12 +190,11 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             fun evalFunction(
                 function: Function,
                 env: DrEnv,
-                boundArgs: Map<String, DrValue>,
-                instance: DrInstance? = null): DrValue {
+                boundArgs: Map<String, DrValue>): DrValue {
 
                 val newEnv = DrEnv(parent = env.copy())
 
-                applyFunction(function, newEnv, boundArgs, instance)
+                applyFunction(function, newEnv, boundArgs)
 
                 return evalBlock(function.returnType, function.body, newEnv)
             }
@@ -239,12 +235,11 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     return evalFunction(
                         callee.let,
                         newEnv,
-                        bindings,
-                        callee.instance as? DrInstance)
+                        bindings)
                 }
-                is DrNativeFunction -> {
-                    return callee.impl(null, arguments)
-                }
+                is DrNativeFunction ->
+                    callee.impl(null, arguments)
+
                 is DrClass -> {
 
                     val constructor = callee.constructor
@@ -252,10 +247,10 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     val actualParametersCount = arguments.size
 
                     if (arguments.size != expectedParametersCount) {
-                        throw DriftRuntimeException(
-                            "Wrong number of arguments for class '${callee.name}'\n" +
-                            "Expected: $expectedParametersCount\n" +
-                            "Actual: $actualParametersCount")
+                        throw DRWrongNumberOfClassArgumentsException(
+                            className = callee.name,
+                            expected = expectedParametersCount,
+                            actual = actualParametersCount)
                     }
 
                     val initEnv = DrEnv(parent = callee.closure.copy())
@@ -283,8 +278,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                                 allowNamed = true))
 
                         constructor.let.parameters.forEach { param ->
+
                             val argValue = bindings[param.name]
-                                ?: throw DriftRuntimeException("Missing argument '${param.name}'")
+                                ?: throw DRMissingArgumentException(name = param.name)
 
                             val variable = instanceEnv.resolve(param.name) as DrVariable
                             variable.set(castNumericIfNeeded(argValue, param.type))
@@ -316,11 +312,15 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             define("\$this", instance)
                         }
 
-                        evalFunction(constructor.let, constructorEnv, bindings, instance)
+                        evalFunction(
+                            constructor.let,
+                            constructorEnv,
+                            bindings)
                     }
 
                     return instance
                 }
+
                 is DrLambda -> {
 
                     val bindings = resolveArguments(
@@ -340,20 +340,19 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     return evalBlock(callee.let.returnType, callee.let.body, newEnv, true)
                 }
-                else -> throw DriftRuntimeException("Cannot call non-function: ${callee.asString()}")
+                else -> throw DRNonCallableInvocationException(
+                    name = callee.asString())
             }
         }
 
         // Binary computing
         is Binary -> {
+
             fun unwrap(v: DrValue) : DrValue =
                 if (v is DrVariable) v.value else v
 
             val leftValue = unwrap(left.eval(env))
             val rightValue = unwrap(right.eval(env))
-
-            fun unsupportedOperator(op: String, leftType: DrType, rightType: DrType) : String =
-                "Unsupported operator '$op' for types ${leftType.asString()} and ${rightType.asString()}"
 
             return when (operator) {
                 "+" -> {
@@ -364,22 +363,25 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt64::class -> DrInt64(a.asLong() + b.asLong())
                             DrUInt::class -> DrUInt(a.asUInt() + b.asUInt())
                             DrInt::class -> DrInt(a.asInt() + b.asInt())
-                            else -> throw DriftRuntimeException(unsupportedOperator(
-                                "+", leftValue.type(), rightValue.type()))
+                            else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                         }
                     } else if (leftValue is DrString) {
                         return DrString(leftValue.value + rightValue.asString())
                     } else {
-                        throw DriftRuntimeException(unsupportedOperator(
-                            "+", leftValue.type(), rightValue.type()))
+                        throw DRUnsupportedOperatorException(
+                            operator = operator,
+                            types = leftValue.type() to rightValue.type())
                     }
                 }
                 "-" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrInt(leftValue.value - rightValue.value)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "-", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                            operator = operator,
+                            types = leftValue.type() to rightValue.type())
                     }
                 }
                 "*" -> {
@@ -388,21 +390,22 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInt(leftValue.value * rightValue.value)
                         leftValue is DrString && rightValue is DrInt ->
                             DrString(leftValue.value.repeat(rightValue.value))
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "*", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                            operator = operator,
+                            types = leftValue.type() to rightValue.type())
                     }
                 }
                 "/" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt -> {
-                            if (rightValue.value == 0) {
-                                throw DriftRuntimeException("Division by zero is not allowed")
-                            }
+                            if (rightValue.value == 0)
+                                throw DRDivisionByZeroException()
 
                             DrInt(leftValue.value / rightValue.value)
                         }
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "/", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                            operator = operator,
+                            types = leftValue.type() to rightValue.type())
                     }
                 }
                 "==" -> DrBool(leftValue == rightValue)
@@ -411,32 +414,36 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value > rightValue.value)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            ">", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 "<" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value < rightValue.value)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "<", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 ">=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value >= rightValue.value)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            ">=", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 "<=" -> {
                     when {
                         leftValue is DrInt && rightValue is DrInt ->
                             DrBool(leftValue.value <= rightValue.value)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "<=", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 "><" -> when {
@@ -446,8 +453,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                         DrBool(l1.asLong() >= s1.asLong() && l2.asLong() <= e2.asLong())
                     }
-                    else -> throw DriftRuntimeException(unsupportedOperator(
-                        "><", leftValue.type(), rightValue.type()))
+                    else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                 }
                 ".." -> {
                     when {
@@ -455,8 +463,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrInclusiveRange(leftValue, rightValue)
                         leftValue is DrInt64 && rightValue is DrInt64 ->
                             DrInclusiveRange(leftValue, rightValue)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "..", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 "..<" -> {
@@ -465,23 +474,26 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             DrExclusiveRange(leftValue, rightValue)
                         leftValue is DrInt64 && rightValue is DrInt64 ->
                             DrExclusiveRange(leftValue, rightValue)
-                        else -> throw DriftRuntimeException(unsupportedOperator(
-                            "..<", leftValue.type(), rightValue.type()))
+                        else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                     }
                 }
                 "&&" -> when {
                     leftValue is DrBool && rightValue is DrBool ->
                         DrBool(leftValue.value && rightValue.value)
-                    else -> throw DriftRuntimeException(unsupportedOperator(
-                        "&&", leftValue.type(), rightValue.type()))
+                    else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                 }
                 "||" -> when {
                     leftValue is DrBool && rightValue is DrBool ->
                         DrBool(leftValue.value || rightValue.value)
-                    else -> throw DriftRuntimeException(unsupportedOperator(
-                        "||", leftValue.type(), rightValue.type()))
+                    else -> throw DRUnsupportedOperatorException(
+                                operator = operator,
+                                types = leftValue.type() to rightValue.type())
                 }
-                else -> throw DriftRuntimeException("Unknown binary operator '$operator'")
+                else -> throw DRUnknownOperatorException(operator = operator)
             }
         }
 
@@ -512,19 +524,21 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             return when (operator) {
                 "!" -> {
                     if (value !is DrBool)
-                        throw DriftRuntimeException(
-                            "Cannot negate non-boolean: ${value.type()}")
+                        throw DRCannotNegateException(
+                            type = value.type(),
+                            operator = operator)
 
                     DrBool(!value.value)
                 }
                 "-" -> {
                     if (value !is DrInt)
-                        throw DriftRuntimeException(
-                            "Cannot negate non-integer: ${value.type()}")
+                        throw DRCannotNegateException(
+                            type = value.type(),
+                            operator = operator)
 
                     DrInt(-value.value)
                 }
-                else -> throw DriftRuntimeException("Unknown unary operator '$operator'")
+                else -> throw DRUnknownOperatorException(operator = operator)
             }
         }
 
@@ -543,8 +557,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             when (receiverValue) {
                 is DrModule -> {
                     val value = receiverValue.get(name)
-                        ?: throw DriftRuntimeException(
-                            "Module symbol '${receiverValue.name}.$name' does not exist")
+                        ?: throw DMLNotFoundInModuleException(
+                            element = name,
+                            moduleNamespace = receiverValue.name)
 
                     validateValue(unwrap(value))
 
@@ -572,7 +587,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         )
                     }
 
-                    throw DriftRuntimeException("Member '$name' not found on class ${klass.name}")
+                    throw DRUnknownClassMemberException(
+                        memberName = name,
+                        className = klass.name)
                 }
 
                 is DrClass -> {
@@ -597,7 +614,9 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         )
                     }
 
-                    throw DriftRuntimeException("Static member '$name' not found on class ${klass.name}")
+                    throw DRUnknownClassStaticMemberException(
+                        memberName = name,
+                        className = klass.name)
                 }
             }
 
@@ -605,10 +624,12 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             if (type is ObjectType) {
                 val klass = env.resolveClass(type.className)
-                    ?: throw DriftRuntimeException("'${type.className}' is not an object.")
+                    ?: throw DRNotAnObjectException(valueType = type)
 
                 val method = klass.methods[name]
-                    ?: throw DriftRuntimeException("'${type.className}.$name' method not found.")
+                    ?: throw DRUnknownClassMemberException(
+                        memberName = name,
+                        className = type.className)
 
                 return DrMethod(
                     let = method.let,
@@ -617,7 +638,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     nativeImpl = method.nativeImpl)
             }
 
-            throw DriftRuntimeException("Cannot access attribute '$name' on non-object value")
+            throw DRNotAnObjectException(valueType = type)
         }
 
         // Object field setter
@@ -625,34 +646,38 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             val obj = unwrap(receiver.eval(env))
             val v = validateValue(value.eval(env))
 
+            if (obj.type() !is ObjectType)
+                throw DRNotAnObjectException(valueType = obj.type())
+
             when (obj) {
-                is DrModule -> throw DriftRuntimeException(
-                    "Cannot assign to symbol '$name' in module ${obj.name}")
+                is DrModule -> TODO()/*throw DriftRuntimeException(
+                    "Cannot assign to symbol '$name' in module ${obj.name}")*/
+                // FIXME: module setter should be possible (module.var = value)
 
                 is DrInstance -> obj.set(name, v)
 
                 is DrClass -> {
                     val field = obj.staticFields[name]
-                        ?: throw DriftRuntimeException("No static '$name' in class ${obj.name}")
+                        ?: throw DRUnknownClassStaticMemberException(
+                            memberName = name,
+                            className = obj.name)
 
                     field.set(env, v)
                 }
 
-                else -> throw DriftRuntimeException(
-                    "Cannot set an attribute to a non-object value")
+                else -> throw DRCannotSetObjectException(
+                    type = obj.type())
             }
 
             DrVoid
         }
 
         // List
-        is ListLiteral -> {
-            return DrList(values
-                .map { unwrap(it.eval(env)) }
-                .toMutableList())
-        }
+        is ListLiteral -> DrList(values
+            .map { unwrap(it.eval(env)) }
+            .toMutableList())
 
-        else -> throw DriftRuntimeException("Invalid expression $this")
+        else -> throw DRInvalidExpressionException()
     }
 }
 
@@ -664,11 +689,10 @@ private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, 
         val result = stmt.eval(env)
 
         if (result is DrReturn) {
-            if (!isAssignable(result.type(), returnType)) {
-                throw DriftTypeException(
-                    "Invalid return type: expected ${returnType.asString()}, " +
-                    "got ${result.type().asString()}")
-            }
+            if (!isAssignable(result.type(), returnType))
+                throw DRUnsuccessfulCastException(
+                    valueType = result.type(),
+                    expectedType = returnType)
 
             return unwrap(result.value)
         }
@@ -684,13 +708,12 @@ private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, 
             if (isAssignable(v.type(), returnType)) {
                 v
             } else {
-                throw DriftTypeException(
-                    "Invalid return type: expected ${returnType.asString()}, " +
-                    "got ${v.type().asString()}")
+                throw DRUnsuccessfulCastException(
+                    valueType = v.type(),
+                    expectedType = returnType)
             }
         }
-        returnType == VoidType -> DrVoid
-        returnType == AnyType  -> DrVoid
-        else     -> throw DriftRuntimeException("Missing return statement")
+        returnType == VoidType || returnType == AnyType -> DrVoid
+        else -> throw DRMissingReturnStatementException()
     }
 }

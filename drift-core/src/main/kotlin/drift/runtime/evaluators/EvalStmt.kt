@@ -8,34 +8,25 @@
  ******************************************************************************/
 package drift.runtime.evaluators
 
-import drift.ast.statements.Block
-import drift.ast.statements.Class
-import drift.ast.statements.DrStmt
-import drift.ast.statements.ExprStmt
-import drift.ast.statements.For
+import drift.ast.statements.*
 import drift.ast.statements.Function
-import drift.ast.statements.If
-import drift.ast.statements.Let
-import drift.ast.statements.Return
-import drift.ast.expressions.Set
-import drift.exceptions.DriftRuntimeException
+import drift.helper.evalCondition
 import drift.helper.rangeToList
 import drift.helper.validateValue
 import drift.runtime.*
+import drift.runtime.exceptions.DRCannotDestructureException
+import drift.runtime.exceptions.DRCannotIterateException
+import drift.runtime.exceptions.DRInvalidStatementException
+import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.values.callables.DrFunction
 import drift.runtime.values.callables.DrReturn
 import drift.runtime.values.containers.list.DrList
-import drift.runtime.values.oop.DrClass
+import drift.runtime.values.containers.range.DrExclusiveRange
+import drift.runtime.values.containers.range.DrInclusiveRange
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrNull
 import drift.runtime.values.specials.DrVoid
 import drift.runtime.values.variables.DrVariable
-import drift.helper.evalCondition
-import drift.helper.unwrap
-import drift.runtime.values.containers.range.DrExclusiveRange
-import drift.runtime.values.containers.range.DrInclusiveRange
-import drift.runtime.values.imports.DrModule
-import drift.runtime.values.oop.DrInstance
 import drift.utils.castNumericIfNeeded
 
 
@@ -153,7 +144,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
             if (env.isTopLevel()) {
                 val variable = env.resolve(name) as? DrVariable
-                    ?: throw DriftRuntimeException("Variable $name not found in global scope")
+                    ?: throw DRVariableNotDefinedException(name = name)
 
                 variable.set(v)
             } else {
@@ -171,7 +162,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                 is DrList -> iterable.items
                 is DrInclusiveRange -> rangeToList(iterable).map { it as DrValue }
                 is DrExclusiveRange -> rangeToList(iterable, exclusive = true).map { it as DrValue }
-                else -> throw DriftRuntimeException("Cannot iterate over ${iterable.type()}")
+                else -> throw DRCannotIterateException(type = iterable.type())
             }
 
             for ((index, item) in items.withIndex()) {
@@ -205,9 +196,9 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                         loopEnv.assign(name, DrVariable(name, AnyType, value, isMutable = true))
                     }
                 } else {
-                    throw DriftRuntimeException(
-                        "Cannot destructure ${item.type().asString()} into " +
-                        "${variables.size} variables")
+                    throw DRCannotDestructureException(
+                        type = item.type(),
+                        variablesCount = variables.size)
                 }
 
                 body.eval(loopEnv)
@@ -216,6 +207,6 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             DrVoid
         }
 
-        else -> throw DriftRuntimeException("Invalid statement $this")
+        else -> throw DRInvalidStatementException()
     }
 }

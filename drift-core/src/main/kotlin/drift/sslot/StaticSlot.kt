@@ -8,10 +8,10 @@
  ******************************************************************************/
 package drift.sslot
 
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrEnv
 import drift.runtime.DrType
 import drift.runtime.DrValue
+import drift.runtime.exceptions.DRCannotAssignToImmutableException
 import drift.runtime.values.variables.DrVariable
 
 
@@ -59,7 +59,7 @@ class StaticSlot(
 
     fun set(env: DrEnv, value: DrValue) {
         if (!isMutable)
-            throw DriftRuntimeException("Static field '$name' is not mutable")
+            throw DRCannotAssignToImmutableException(name = name)
 
         val variable = get(env)
         variable.set(value)

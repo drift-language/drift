@@ -9,25 +9,21 @@
 
 package drift.parser.expressions
 
-import drift.ast.expressions.Argument
-import drift.ast.expressions.Assign
-import drift.ast.expressions.Binary
-import drift.ast.expressions.Call
-import drift.ast.expressions.Conditional
-import drift.ast.expressions.DrExpr
-import drift.ast.expressions.Get
-import drift.ast.expressions.Literal
+import drift.ast.expressions.*
 import drift.ast.expressions.Set
-import drift.ast.expressions.Unary
-import drift.ast.expressions.Variable
 import drift.ast.statements.Block
 import drift.ast.statements.DrStmt
 import drift.ast.statements.ExprStmt
-import drift.exceptions.DriftParserException
+import drift.lexer.Token
 import drift.parser.Parser
-import drift.parser.Token
 import drift.parser.callables.parseLambda
 import drift.parser.containers.parseList
+import drift.parser.exceptions.DPInvalidAssignmentTargetException
+import drift.parser.exceptions.DPInvalidDriftConditionalBranchException
+import drift.parser.exceptions.DPNamedArgumentMustBeNamedException
+import drift.parser.exceptions.DPNumericSizeOverflowException
+import drift.parser.exceptions.DPUnexpectedExpressionException
+import drift.parser.exceptions.DPUnexpectedSymbolException
 import drift.parser.statements.parseBlock
 import drift.runtime.values.primaries.DrBool
 import drift.runtime.values.primaries.DrInt
@@ -39,24 +35,19 @@ import drift.runtime.values.specials.DrNull
 /******************************************************************************
  * DRIFT EXPRESSIONS PARSER METHODS
  *
- * All methods permitting to parse expressions are defined in this file.
+ * All methods permitting parsing expressions are defined in this file.
  ******************************************************************************/
 
 
 
 /**
- * Attempt to parse an expression
+ * Attempt to parse an expression.
  *
  * This method dispatches to the corresponding parsing
  * method for the provided expression.
  *
  * @param minPrecedence Minimum operator priority index
  * @return Constructed expression AST object
- * @throws DriftParserException Many cases may throw:
- * - On object field access/assign:
- *   - If none identifier follows the dot '.'
- * - On binary and special operator assignment:
- *   - If the target is neither a variable nor an object field
  */
 internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
     return parseBinary(minPrecedence)
@@ -64,6 +55,16 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
 
 
 
+/**
+ * Attempt to parse a binary expression.
+ *
+ * This method dispatches to the corresponding parsing
+ * method for the provided expression.
+ *
+ * @param minPrecedence Minimum operator priority index
+ * @return Constructed expression AST object
+ * @throws DPInvalidAssignmentTargetException
+ */
 internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
     var left = parseUnary()
 
@@ -78,7 +79,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
         val op = opToken.value
 
         if (matchSymbol(".")) {
-            val prop = expect<Token.Identifier>("Expected property name after '.'")
+            val prop = expect<Token.Identifier>("member name after '.'")
                 .value
 
             advance(false)
@@ -109,7 +110,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
                 when (left) {
                     is Variable -> Assign(left.name, right)
                     is Get -> Set(left.receiver, left.name, right)
-                    else -> throw DriftParserException("Invalid assignment target")
+                    else -> throw DPInvalidAssignmentTargetException()
                 }
             }
 
@@ -146,7 +147,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
  *
  * @return Constructed literal or lambda or parentheses
  * expression AST object
- * @throws DriftParserException If a token is unexpected
+ * @throws DPNumericSizeOverflowException
  */
 internal fun Parser.parsePrimary() : DrExpr {
     return when (val token = current()) {
@@ -159,7 +160,7 @@ internal fun Parser.parsePrimary() : DrExpr {
             Literal(token.value.run {
                 toIntOrNull()?.let { DrInt(it) }
                     ?: toLongOrNull()?.let { DrInt64(it) }
-                    ?: throw DriftParserException("Too long numeric ${token.value}")
+                    ?: throw DPNumericSizeOverflowException()
             })
         }
         is Token.BoolLiteral -> {
@@ -185,9 +186,13 @@ internal fun Parser.parsePrimary() : DrExpr {
                 expression
             }
             "[" -> parseList()
-            else -> throw DriftParserException("Unexpected token ${token.value}")
+            else -> throw DPUnexpectedSymbolException(
+                unexpected = token,
+                context = "in primary expression")
         }
-        else -> throw DriftParserException("Unexpected token $token")
+        else -> throw DPUnexpectedExpressionException(
+            unexpected = token,
+            context = "in primary expression")
     }
 }
 
@@ -233,7 +238,7 @@ internal fun Parser.parseUnary() : DrExpr {
  * value AST object
  */
 internal fun Parser.parseVariable() : DrExpr {
-    val name = expect<Token.Identifier>("Expected variable name")
+    val name = expect<Token.Identifier>("variable name")
 
     advance(false)
 
@@ -251,8 +256,6 @@ internal fun Parser.parseVariable() : DrExpr {
  * ```
  *
  * @return Constructed callable call AST object
- * @throws DriftParserException If the parameters expression
- * is unterminated, without ')' symbol at end
  */
 internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
     expectSymbol("(")
@@ -283,16 +286,13 @@ internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
  * Attempt to parse a named argument
  *
  * @return Call argument AST object
- * @throws DriftParserException Two cases may throw:
- * - If none name is provided to an argument
- * - If none '=' symbol is found
+ * @throws DPNamedArgumentMustBeNamedException
  */
 internal fun Parser.parseArgument() : Argument {
     val token = current()
 
-    if (token !is Token.Identifier) {
-        throw DriftParserException("Expected parameter name for named argument")
-    }
+    if (token !is Token.Identifier)
+        throw DPNamedArgumentMustBeNamedException()
 
     val name = token.value
     advance()
@@ -324,22 +324,21 @@ internal fun Parser.parseArgument() : Argument {
  * ```
  *
  * @param condition Condition expression
- * @return [Conditional] or [Ternary] AST object
- * @throws DriftParserException If a Drift-style conditional
- * expression branch is invalid
+ * @return [Conditional] AST object
+ * @throws DPInvalidDriftConditionalBranchException
  */
 internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
     val thenBlock: DrStmt = parseDriftIfBranch()
-    var elseBlock: DrStmt? = null
-
-    if (matchSymbol(":")) {
-        elseBlock = parseDriftIfBranch()
-    }
+    val elseBlock: DrStmt? =
+        if (matchSymbol(":")) parseDriftIfBranch()
+        else null
 
     if (thenBlock !is Block && thenBlock !is ExprStmt) {
-        throw DriftParserException("Invalid Drift IF branch")
+        throw DPInvalidDriftConditionalBranchException(
+            branchType = DPInvalidDriftConditionalBranchException.BranchType.IF)
     } else if (elseBlock != null && elseBlock !is Block && elseBlock !is ExprStmt) {
-        throw DriftParserException("Invalid Drift ELSE branch")
+        throw DPInvalidDriftConditionalBranchException(
+            branchType = DPInvalidDriftConditionalBranchException.BranchType.ELSE)
     }
 
     return Conditional(condition, thenBlock, elseBlock)

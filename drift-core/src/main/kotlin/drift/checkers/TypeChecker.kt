@@ -22,9 +22,8 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.If
 import drift.ast.statements.Let
 import drift.ast.statements.Return
-import drift.exceptions.DriftSemanticException
-import drift.exceptions.DriftTypeException
 import drift.runtime.*
+import drift.runtime.exceptions.DRClassNotDefinedException
 
 
 /******************************************************************************
@@ -112,15 +111,13 @@ class TypeChecker (private val env: DrEnv) {
      * Attempt to check the provided type
      *
      * @param type Type to check
-     * @throws DriftSemanticException If a class is
-     * no longer defined on checking
      */
     private fun checkType(type: DrType) {
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
             is ObjectType -> env.resolveClass(type.className)
-                ?: throw DriftTypeException("${type.className} type is undefined")
+                ?: throw DRClassNotDefinedException(name = type.className)
             else -> {}
         }
     }

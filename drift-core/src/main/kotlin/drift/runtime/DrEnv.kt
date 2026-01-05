@@ -9,8 +9,13 @@
 
 package drift.runtime
 
-import drift.exceptions.DriftRuntimeException
-import drift.runtime.values.callables.DrFunction
+import drift.runtime.exceptions.DRAlreadyDefinedException
+import drift.runtime.exceptions.DRClassAlreadyDefinedException
+import drift.runtime.exceptions.DRClassNotDefinedException
+import drift.runtime.exceptions.DRNotDefinedException
+import drift.runtime.exceptions.DRUnsuccessfulCastException
+import drift.runtime.exceptions.DRVariableAlreadyDefinedException
+import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.variables.DrVariable
 
@@ -27,7 +32,7 @@ import drift.runtime.values.variables.DrVariable
 /**
  * Drift environment main class.
  *
- * Permits to store variables, functions and classes
+ * Permits storing variables, functions and classes
  * on runtime.
  */
 class DrEnv(
@@ -47,16 +52,16 @@ class DrEnv(
      *
      * @param name Entity name
      * @param value Entity value
-     * @throws DriftRuntimeException If the provided name is already used
-     * into entities map.
+     * @throws DRUnsuccessfulCastException
+     * @throws DRAlreadyDefinedException
      */
     fun define(name: String, value: DrValue) {
-        if (value is DrVariable && !isAssignable(value.value.type(), value.type())) {
-            throw DriftRuntimeException("Cannot assign ${value.value.type()} to a ${value.type} variable")
-        }
+        if (value is DrVariable && !isAssignable(value.value.type(), value.type()))
+            throw DRUnsuccessfulCastException(value.value.type(), value.type())
+
 
         if (values.containsKey(name))
-            throw DriftRuntimeException("Entity '$name' is already defined")
+            throw DRAlreadyDefinedException(name = name)
 
         forceDefine(name, value)
     }
@@ -64,7 +69,7 @@ class DrEnv(
 
 
     /**
-     * Force a variable or function definition into environment.
+     * Force a variable or function definition into the environment.
      *
      * @param name Entity name
      * @param value Entity value
@@ -76,16 +81,15 @@ class DrEnv(
 
 
     /**
-     * Define a class into environment.
+     * Define a class into the environment.
      *
      * @param name Class name
      * @param klass Class structure
-     * @throws DriftRuntimeException If the provided name is already used
-     * into classes map.
+     * @throws DRClassAlreadyDefinedException
      */
     fun defineClass(name: String, klass: DrClass) {
         if (classes.containsKey(name))
-            throw DriftRuntimeException("Class '$name' is already defined")
+            throw DRClassAlreadyDefinedException(name = name)
 
         classes[name] = klass
     }
@@ -97,12 +101,11 @@ class DrEnv(
      *
      * @param name Entity name
      * @param value New entity value
-     * @throws DriftRuntimeException If the provided name is no longer used
-     * by the values map of the current environment and its parents
+     * @throws DRVariableAlreadyDefinedException
      */
     fun assign(name: String, value: DrValue) {
         val variable = resolve(name) as? DrVariable
-            ?: throw DriftRuntimeException("Variable '$name' does not exist")
+            ?: throw DRVariableNotDefinedException(name = name)
 
         variable.set(value)
     }
@@ -114,12 +117,11 @@ class DrEnv(
      *
      * @param name Class name
      * @param klass New class structure
-     * @throws DriftRuntimeException If the provided name is no longer used
-     * by the classes map of the current environment and its parents
+     * @throws DRClassNotDefinedException
      */
     fun assignClass(name: String, klass: DrClass) {
         if (!classes.containsKey(name))
-            throw DriftRuntimeException("Class '$name' does not exist")
+            throw DRClassNotDefinedException(name = name)
 
         classes[name] = klass
     }
@@ -142,12 +144,11 @@ class DrEnv(
      *
      * @param name Entity name
      * @return Entity value
-     * @throws DriftRuntimeException If the provided name is no
-     * longer recorded into values map
+     * @throws DRNotDefinedException
      */
     fun get(name: String) : DrValue = values[name]
         ?: parent?.get(name)
-        ?: throw DriftRuntimeException("Undefined symbol: $name")
+        ?: throw DRNotDefinedException(name = name)
 
 
 

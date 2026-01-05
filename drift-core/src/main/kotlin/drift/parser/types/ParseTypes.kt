@@ -9,17 +9,17 @@
 
 package drift.parser.types
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftTypeException
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
+import drift.parser.exceptions.DPSpecialInUnionTypeException
+import drift.parser.exceptions.DPWrongOptionalUnionTypeException
 import drift.runtime.*
 
 
 /******************************************************************************
  * DRIFT TYPES PARSER METHODS
  *
- * All methods permitting to parse types are defined in this file.
+ * All methods permitting parsing types are defined in this file.
  ******************************************************************************/
 
 
@@ -34,15 +34,13 @@ import drift.runtime.*
  * ```
  *
  * @return Constructed type AST object
- * @throws DriftParserException If both '?' and '|' operators
- * are used at the same time
- * @throws DriftTypeException If Last special type is united
- * to another type
+ * @throws DPWrongOptionalUnionTypeException
+ * @throws DPSpecialInUnionTypeException
  */
 internal fun Parser.parseType() : DrType {
     val types = mutableListOf<DrType>()
     var foundOptional = false
-    val token = expect<Token.Identifier>("Expected type name")
+    val token = expect<Token.Identifier>("type name")
     var type: DrType = when (token.value) {
         "Null"      -> NullType
         "Void"      -> VoidType
@@ -62,14 +60,14 @@ internal fun Parser.parseType() : DrType {
 
     while (matchSymbol("|")) {
         if (foundOptional)
-            throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+            throw DPWrongOptionalUnionTypeException()
 
         val next = parseType()
         when (next) {
             is LastType, is AnyType, is VoidType ->
-                throw DriftParserException("Cannot unite special type with another")
+                throw DPSpecialInUnionTypeException()
             is OptionalType ->
-                throw DriftParserException("Cannot use both '?' and '|' in the same type declaration")
+                throw DPWrongOptionalUnionTypeException()
             else ->
                 types.add(next)
         }
