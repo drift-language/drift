@@ -158,10 +158,10 @@ class SymbolCollector(private val env: DrEnv) {
     }
 
 
-    enum class MemberKind {
-        FIELD,
-        STATIC_FIELD,
-        METHOD,
-        STATIC_METHOD
+    enum class MemberKind(val label: String) {
+        FIELD("field"),
+        STATIC_FIELD("static field"),
+        METHOD("method"),
+        STATIC_METHOD("static method"),
     }
 }
