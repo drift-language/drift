@@ -28,7 +28,7 @@ import drift.exceptions.DriftException
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DriftCollectorsExceptions(
+open class DriftCollectorException(
     message: String,
     sourceName: String? = null,
     line: Int = 0,
@@ -53,7 +53,7 @@ class DCAmbiguousMemberNameException(
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
-) : DriftCollectorsExceptions(
+) : DriftCollectorException(
     message = "Ambiguous name: '$name' is already defined as $kind",
     sourceName = sourceName,
     line = line,
