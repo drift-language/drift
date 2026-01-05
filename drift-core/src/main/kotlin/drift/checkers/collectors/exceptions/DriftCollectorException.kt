@@ -54,7 +54,7 @@ class DCAmbiguousMemberNameException(
     line: Int = 0,
     pos: Int = 0
 ) : DriftCollectorException(
-    message = "Ambiguous name: '$name' is already defined as $kind",
+    message = "Ambiguous name: '$name' is already defined as ${kind.label}",
     sourceName = sourceName,
     line = line,
     pos = pos

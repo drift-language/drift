@@ -10,6 +10,7 @@ package drift.parser
 
 import drift.runtime.DriftRuntime
 import drift.runtime.exceptions.DRAlreadyDefinedException
+import drift.runtime.exceptions.DRCannotSetViaModuleAccessException
 import drift.runtime.exceptions.DRVariableAlreadyDefinedException
 import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.utils.evalProgram
@@ -75,6 +76,7 @@ class ImportTest {
         File(srcDir, "hola.drift")
             .writeText("""
                 let greeting = "Hello"
+                var mutableValue = 1
             """.trimIndent())
 
         this.projectConfig = loadConfig(tempDir!!)
@@ -185,6 +187,39 @@ class ImportTest {
                 import hola { * }
                 
                 let greeting = "Hello"
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign via module access must throw`() {
+        assertThrows<DRCannotSetViaModuleAccessException> {
+            mainCode("""
+                import hola
+                
+                hola.mutableValue = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign imported module entity is accepted`() {
+        assertDoesNotThrow {
+            mainCode("""
+                import hola { mutableValue }
+                
+                mutableValue = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign imported module entity by wildcard is accepted`() {
+        assertDoesNotThrow {
+            mainCode("""
+                import hola { * }
+                
+                mutableValue = 1
             """.trimIndent())
         }
     }

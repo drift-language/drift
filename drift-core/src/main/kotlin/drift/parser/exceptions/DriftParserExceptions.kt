@@ -70,7 +70,7 @@ class DPImportsStatementsMustPrecedeAllOtherStatementsException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-sealed class DPMissingExpectedTokenException(
+open class DPMissingExpectedTokenException(
     expected: String,
     found: Token? = null,
     sourceName: String? = null,
@@ -571,7 +571,7 @@ class DPUnterminatedBlockException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-sealed class DPInvalidTypeException(
+open class DPInvalidTypeException(
     message: String? = null,
     sourceName: String? = null,
     line: Int = 0,
