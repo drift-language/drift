@@ -13,6 +13,7 @@ import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
 import drift.runtime.evaluators.eval
+import drift.runtime.exceptions.DRAlreadyDefinedException
 import drift.runtime.exceptions.DRMissingReturnStatementException
 import drift.runtime.exceptions.DRUnknownClassMemberException
 import drift.runtime.exceptions.DRUnsuccessfulCastException
@@ -47,7 +48,7 @@ data class DrInstance(
         val default = "<[class#${klass.hashCode()}] ${klass.name} | instance ${this.hashCode()}>"
 
         val method = klass.methods["asString"]
-            ?: return default       // TODO: good?
+            ?: return default
 
         val local = DrEnv()
         local.define("\$this", this)
@@ -81,7 +82,7 @@ data class DrInstance(
 
 
     /**
-     * @return If provided name is a defined key in the values map
+     * @return If provided name is a defined key in the value map
      */
     fun has(name: String) : Boolean =
         env.exists(name)
@@ -92,18 +93,10 @@ data class DrInstance(
      *
      * @param name Attribute name
      * @return Attribute value
-     * @throws DriftRuntimeException If the provided name
-     * is no longer recorded into instance's attributes map
      */
     fun get(name: String) : DrValue {
-        // TODO: verify to possibly keep only if block, not following code
-        if (has(name)) {
-            if (klass.methods[name] != null)
-                TODO()
-//                throw DriftRuntimeException("$name already exists")
-
+        if (has(name))
             return env.get(name)
-        }
 
         val method = klass.methods[name]
 
@@ -114,7 +107,6 @@ data class DrInstance(
         throw DRUnknownClassMemberException(
             memberName = name,
             className = klass.name)
-//        throw DriftRuntimeException("'${klass.name}.$name' property or method not found")
     }
 
 
@@ -124,15 +116,11 @@ data class DrInstance(
      *
      * @param name Attribute name
      * @param value New attribute value to apply
-     * @throws DriftRuntimeException If the required variable
-     * is no longer declared
      */
     fun set(name: String, value: DrValue) {
         if (!has(name))
             throw DRVariableNotDefinedException(name = name)
-//            throw DriftRuntimeException("Cannot assign to undeclared property '${klass.name}.$name'")
 
-        // TODO: if method cannot be reassigned, not?
         env.assign(name, value)
     }
 }
