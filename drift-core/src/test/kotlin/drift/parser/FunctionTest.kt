@@ -1,6 +1,6 @@
 package drift.parser
 
-import drift.exceptions.DriftRuntimeException
+import drift.runtime.exceptions.DRMissingReturnStatementException
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.specials.DrVoid
 import drift.utils.evalProgram
@@ -74,7 +74,7 @@ class FunctionTest {
 
     @Test
     fun `Function with explicit return type without return statement must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRMissingReturnStatementException> {
             evalProgram("""
                 fun test : Int { }
                 test()

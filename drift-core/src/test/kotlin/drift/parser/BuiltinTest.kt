@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftRuntimeException
+import drift.runtime.exceptions.DRUnknownClassMemberException
 import drift.utils.evalProgram
 import drift.utils.evalWithOutput
 import org.junit.jupiter.api.Test
@@ -31,9 +31,9 @@ class BuiltinTest {
 
     @Test
     fun `Unexisting native method access on primitive instance must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
-                print("hello".x)
+                "hello".x
             """.trimIndent())
         }
     }

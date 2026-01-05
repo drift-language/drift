@@ -12,9 +12,10 @@ package drift.parser
 import drift.runtime.evaluators.eval
 import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
-import drift.exceptions.DriftRuntimeException
-import drift.exceptions.DriftTypeException
+import drift.lexer.lex
 import drift.runtime.*
+import drift.runtime.exceptions.DRDivisionByZeroException
+import drift.runtime.exceptions.DRUnsupportedOperatorException
 import drift.runtime.values.containers.range.DrExclusiveRange
 import drift.runtime.values.containers.range.DrInclusiveRange
 import drift.runtime.values.oop.DrClass
@@ -35,6 +36,7 @@ class BinaryExprTest {
         val env = DrEnv()
         env.apply {
             defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
             defineClass("Int64", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
             defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
             defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
@@ -91,7 +93,7 @@ class BinaryExprTest {
 
     @Test
     fun `Division by zero should throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRDivisionByZeroException> {
             evalProgram("""
                 let x = 1 / 0
             """.trimIndent())
@@ -123,7 +125,7 @@ class BinaryExprTest {
 
     @Test
     fun `Test inclusive range with unsigned integer must throw`() {
-        assertThrows<DriftTypeException> {
+        assertThrows<DRUnsupportedOperatorException> {
             evalExpr("""
                 let a: UInt = 1
                 let b: Int64 = 3
@@ -135,7 +137,7 @@ class BinaryExprTest {
 
     @Test
     fun `Test inclusive range with both different integer types`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnsupportedOperatorException> {
             evalExpr("""
                 let a: Int = 1
                 let b: Int64 = 3
@@ -171,7 +173,7 @@ class BinaryExprTest {
 
     @Test
     fun `Test exclusive range with unsigned integer must throw`() {
-        assertThrows<DriftTypeException> {
+        assertThrows<DRUnsupportedOperatorException> {
             evalExpr("""
                 let a: UInt = 1
                 let b: Int64 = 3
@@ -183,7 +185,7 @@ class BinaryExprTest {
 
     @Test
     fun `Test exclusive range with both different integer types`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnsupportedOperatorException> {
             evalExpr("""
                 let a: Int = 1
                 let b: Int64 = 3

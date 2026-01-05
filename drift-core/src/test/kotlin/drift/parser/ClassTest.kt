@@ -1,8 +1,7 @@
 package drift.parser
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
-import drift.exceptions.DriftTypeException
+import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
+import drift.runtime.exceptions.*
 import drift.utils.evalProgram
 import drift.utils.evalWithOutput
 import drift.utils.evalWithOutputs
@@ -25,7 +24,7 @@ class ClassTest {
 
     @Test
     fun `Class with missing constructor argument`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRWrongNumberOfClassArgumentsException> {
             evalProgram("""
                 class User(name: String)
                 let u = User()
@@ -35,7 +34,7 @@ class ClassTest {
 
     @Test
     fun `Class with too many constructor arguments`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRWrongNumberOfClassArgumentsException> {
             evalProgram("""
                 class User(name: String)
                 let u = User("John", 1)
@@ -56,11 +55,11 @@ class ClassTest {
 
     @Test
     fun `Class with unknown property`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
                 class User(name: String)
-                let u = User("John")
-                print(u.age)
+                let u = User(name = "John")
+                u.age
             """.trimIndent())
         }
     }
@@ -83,10 +82,10 @@ class ClassTest {
 
     @Test
     fun `Class with unknown method`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
                 class User(name: String)
-                let u = User("John")
+                let u = User(name = "John")
                 u.unknown()
             """.trimIndent())
         }
@@ -94,19 +93,19 @@ class ClassTest {
 
     @Test
     fun `Assign class attribute from primary constructor must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotAssignToImmutableException> {
             evalProgram("""
                 class User(name: String)
                 let u = User(name = "John")
                 u.name = "Bob"
-                test(u.name)
+                u.name
             """.trimIndent())
         }
     }
 
     @Test
     fun `Assign property on non-instance`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotSetObjectException> {
             evalProgram("""
                 let x = 5
                 x.name = "Bob"
@@ -138,7 +137,7 @@ class ClassTest {
 
     @Test
     fun `Class with invalid asString return type`() {
-        assertThrows<DriftTypeException> {
+        assertThrows<DRUnsuccessfulCastException> {
             evalWithOutput("""
                 class User(name: String) {
                     fun asString : Int { return 42 }
@@ -203,8 +202,8 @@ class ClassTest {
 
     @Test
     fun `Constructor with mixed positional and named args`() {
-        assertThrows<DriftRuntimeException> {
-            val result = evalWithOutput("""
+        assertThrows<DRPositionalArgumentsNotAllowedException> {
+            evalProgram("""
                 class User(name: String, age: Int)
                 let u = User("John", age = 20)
                 test(u.age)
@@ -214,7 +213,7 @@ class ClassTest {
 
     @Test
     fun `Duplicate named constructor argument must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRWrongNumberOfClassArgumentsException> {
             evalProgram("""
                 class User(name: String)
                 let u = User(name = "John", name = "Bob")
@@ -224,7 +223,7 @@ class ClassTest {
 
     @Test
     fun `Unassigned field access must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotUseUnassignedEntityException> {
             evalProgram("""
                 class A {
                     let x: Int
@@ -237,7 +236,7 @@ class ClassTest {
 
     @Test
     fun `Assign immutable field must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotAssignToImmutableException> {
             evalProgram("""
                 class A {
                     let x = 1
@@ -264,7 +263,7 @@ class ClassTest {
 
     @Test
     fun `Using this outside method must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             evalProgram("""
                 class A {
                     let x = ${'$'}this
@@ -307,7 +306,7 @@ class ClassTest {
 
     @Test
     fun `Calling instance method on class must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
                 class A {
                     fun hello { return "hi" }
@@ -335,7 +334,7 @@ class ClassTest {
 
     @Test
     fun `Assign static let must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotAssignToImmutableException> {
             evalProgram("""
                 class A {
                     static {
@@ -364,7 +363,7 @@ class ClassTest {
 
     @Test
     fun `Field and method name collision must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DCAmbiguousMemberNameException> {
             evalProgram("""
                 class A {
                     let x = 1
@@ -376,7 +375,7 @@ class ClassTest {
 
     @Test
     fun `Primary constructor must reject positional arguments`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRPositionalArgumentsNotAllowedException> {
             evalProgram("""
             class A(x: Int, y: Int)
             let a = A(1, 2)
@@ -386,7 +385,7 @@ class ClassTest {
 
     @Test
     fun `Primary constructor must reject mixed arguments`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRPositionalArgumentsNotAllowedException> {
             evalProgram("""
             class A(x: Int, y: Int)
             let a = A(y = 1, 2)
@@ -396,7 +395,7 @@ class ClassTest {
 
     @Test
     fun `Standard constructor must reject positional after named`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRPositionalMustPrecedeNamedArgumentsException> {
             evalProgram("""
             class A {
                 fun init(x: Int, y: Int) {}
@@ -408,7 +407,7 @@ class ClassTest {
 
     @Test
     fun `Positional and named binding to same parameter must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRArgumentAlreadyBoundException> {
             evalProgram("""
             fun f(a: Int, b: Int) {}
             f(1, a = 2)
@@ -418,7 +417,7 @@ class ClassTest {
 
     @Test
     fun `Unknown named constructor argument must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownParameterException> {
             evalProgram("""
             class A(x: Int)
             let a = A(y = 2)
@@ -441,7 +440,7 @@ class ClassTest {
 
     @Test
     fun `Accessing static field through instance must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
             class A {
                 static {
@@ -449,19 +448,19 @@ class ClassTest {
                 }
             }
             let a = A()
-            test(a.x)
+            a.x
         """.trimIndent())
         }
     }
 
     @Test
     fun `Accessing instance field through class must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassStaticMemberException> {
             evalProgram("""
             class A {
                 let x = 1
             }
-            test(A.x)
+            A.x
         """.trimIndent())
         }
     }
@@ -488,7 +487,7 @@ class ClassTest {
 
     @Test
     fun `Use dynamic field assignment as value must throw (Void)`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnsupportedOperatorException> {
             evalProgram("""
                 class A { var x = 1 }
                 let _ = A()

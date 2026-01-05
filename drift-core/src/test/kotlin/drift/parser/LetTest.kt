@@ -1,18 +1,14 @@
 package drift.parser
 
-import drift.ast.statements.DrStmt
-import drift.runtime.evaluators.eval
-import drift.checkers.collectors.SymbolCollector
-import drift.checkers.TypeChecker
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
-import drift.runtime.*
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.oop.DrClass
+import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
+import drift.parser.exceptions.DPMissingExpectedTokenException
+import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
+import drift.runtime.exceptions.DRCannotUseVoidAsValueException
+import drift.runtime.exceptions.DRUnassignableException
 import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.specials.DrNull
 import drift.runtime.values.variables.DrVariable
 import drift.utils.evalProgram
+import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -20,203 +16,142 @@ import kotlin.test.assertEquals
 
 class LetTest {
 
-    private fun parse(code: String): List<DrValue> {
-        val ast: List<DrStmt> = Parser(lex(code)).parse()
-        val outputs = mutableListOf<DrValue>()
-        val env = DrEnv()
-        env.apply {
-            define(
-                "print", DrNativeFunction(
-                    impl = { _, args ->
-                        outputs.add(args[0].second)
-                        DrNull
-                    },
-                    paramTypes = listOf(AnyType),
-                    returnType = NullType
-                )
-            )
-
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
-        }
-
-        SymbolCollector(env).collect(ast)
-        TypeChecker(env).check(ast)
-
-        for (statement in ast) {
-            statement.eval(env)
-        }
-
-        return outputs
-    }
-
     @Test
     fun `Declare immutable variable without typing`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             let a = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare mutable variable without typing`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare immutable variable with good type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             let a : Int = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare immutable variable with wrong type`() {
-        assertThrows<DriftRuntimeException> {
-            parse("""
+        assertThrows<DRUnassignableException> {
+            evalWithOutputs("""
                 let a : String = 1
                 
-                print(a)
+                test(a)
             """.trimIndent())
         }
     }
 
     @Test
     fun `Declare immutable variable with union type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             let a : String|Int = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare immutable variable with nullable type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             let a : Int? = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare mutable variable with good type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a : Int = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare mutable variable with wrong type`() {
-        assertThrows<DriftRuntimeException> {
-            parse("""
+        assertThrows<DRUnassignableException> {
+            evalWithOutputs("""
                 var a : String = 1
                 
-                print(a)
+                test(a)
             """.trimIndent())
         }
     }
 
     @Test
     fun `Declare mutable variable with union type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a : String|Int = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare mutable variable with nullable type`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a : Int? = 1
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare immutable variable with ternary`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a = true ? 1 : 0
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare mutable variable with ternary`() {
-        val output = parse("""
+        val output = evalWithOutputs("""
             var a = true ? 1 : 0
             
-            print(a)
+            test(a)
         """.trimIndent())
 
-        assertEquals(listOf(DrInt(1)), output.map {
-            if (it is DrVariable) it.value
-            else it
-        })
+        assertEquals(listOf("1"), output)
     }
 
     @Test
     fun `Declare immutable variable with invalid name`() {
-        assertThrows<DriftParserException> {
-            parse("""
+        assertThrows<DPMissingExpectedTokenException> {
+            evalWithOutputs("""
                 let 55 = 0
             """.trimIndent())
         }
@@ -224,8 +159,8 @@ class LetTest {
 
     @Test
     fun `Declare mutable variable with invalid name`() {
-        assertThrows<DriftParserException> {
-            parse("""
+        assertThrows<DPMissingExpectedTokenException> {
+            evalWithOutputs("""
                 var 55 = 0
             """.trimIndent())
         }
@@ -234,7 +169,7 @@ class LetTest {
     @Test
     fun `Declare using union int & class types`() {
         assertDoesNotThrow {
-            parse("""
+            evalWithOutputs("""
                 class User(name: String)
                 let u: User|Int = User(name = "Bob")
             """.trimIndent())
@@ -243,29 +178,29 @@ class LetTest {
 
     @Test
     fun `Declare immutable variable with void value must throw`() {
-        assertThrows<DriftRuntimeException> {
-            parse("""
-                fun test {}
+        assertThrows<DRCannotUseVoidAsValueException> {
+            evalWithOutputs("""
+                fun foo {}
                 
-                let a = test()
+                let a = foo()
             """.trimIndent())
         }
     }
 
     @Test
     fun `Declare mutable variable with void value must throw`() {
-        assertThrows<DriftRuntimeException> {
-            parse("""
-                fun test {}
+        assertThrows<DRCannotUseVoidAsValueException> {
+            evalWithOutputs("""
+                fun foo {}
                 
-                var a = test()
+                var a = foo()
             """.trimIndent())
         }
     }
 
     @Test
     fun `Declare immutable variable with '$' prefix (reserved) must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPUnallowedVariableInjectionPrefixUsageException> {
             evalProgram("""
                 let ${'$'}a = 1
             """.trimIndent())
@@ -274,7 +209,7 @@ class LetTest {
 
     @Test
     fun `Declare mutable variable with '$' prefix (reserved) must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPUnallowedVariableInjectionPrefixUsageException> {
             evalProgram("""
                 var ${'$'}a = 1
             """.trimIndent())
@@ -283,7 +218,7 @@ class LetTest {
 
     @Test
     fun `Use immutable variable declaration as value must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPExpectedNewlineBetweenTopLevelStatementsException> {
             evalProgram("""
                 let a = let b = 1
             """.trimIndent())
@@ -292,7 +227,7 @@ class LetTest {
 
     @Test
     fun `Use mutable variable declaration as value must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPExpectedNewlineBetweenTopLevelStatementsException> {
             evalProgram("""
                 let a = var b = 1
             """.trimIndent())

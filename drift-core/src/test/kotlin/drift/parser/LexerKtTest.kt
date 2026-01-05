@@ -1,5 +1,7 @@
 package drift.parser
 
+import drift.lexer.Token
+import drift.lexer.lex
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

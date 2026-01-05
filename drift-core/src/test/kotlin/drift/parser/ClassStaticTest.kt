@@ -8,8 +8,12 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
+import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
+import drift.parser.exceptions.DPUnexpectedExpressionException
+import drift.runtime.exceptions.DRCannotAssignToImmutableException
+import drift.runtime.exceptions.DRInvalidStatementException
+import drift.runtime.exceptions.DRUnknownClassMemberException
+import drift.runtime.exceptions.DRVariableAlreadyDefinedException
 import drift.utils.evalProgram
 import drift.utils.evalWithOutput
 import drift.utils.evalWithOutputs
@@ -68,7 +72,7 @@ class ClassStaticTest {
 
     @Test
     fun `Invalid statement in static block must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPUnexpectedExpressionException> {
             evalProgram("""
                 class A {
                     static { 123 }
@@ -79,7 +83,7 @@ class ClassStaticTest {
 
     @Test
     fun `Static field should not be accessible via instance getter stmt`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
                 class A {
                     static {
@@ -94,7 +98,7 @@ class ClassStaticTest {
 
     @Test
     fun `Static method should not be accessible via instance getter stmt`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnknownClassMemberException> {
             evalProgram("""
                 class A {
                     static {
@@ -109,7 +113,7 @@ class ClassStaticTest {
 
     @Test
     fun `Same name for both static and dynamic fields must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DCAmbiguousMemberNameException> {
             evalProgram("""
                 class A {
                     static {
@@ -124,7 +128,7 @@ class ClassStaticTest {
 
     @Test
     fun `Same name for both static and dynamic methods must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DCAmbiguousMemberNameException> {
             evalProgram("""
                 class A {
                     static {
@@ -158,7 +162,7 @@ class ClassStaticTest {
 
     @Test
     fun `Static immutable field modification must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotAssignToImmutableException> {
             evalProgram("""
                 class A {
                     static {
@@ -184,7 +188,7 @@ class ClassStaticTest {
 
     @Test
     fun `Same name for static field and primary constructor field must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DCAmbiguousMemberNameException> {
             evalProgram("""
                 class A(value: String) {
                     static {

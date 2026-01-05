@@ -1,12 +1,12 @@
 package drift.ast
 
-import drift.exceptions.DriftLexerException
-import drift.parser.Token
-import drift.parser.lex
+import drift.lexer.Token
+import drift.lexer.exceptions.DLUnexpectedCharacterException
+import drift.lexer.exceptions.DLUnterminatedStringLiteralException
+import drift.lexer.lex
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SymbolsTest {
@@ -55,7 +55,7 @@ class SymbolsTest {
     fun `Handles unknown character gracefully`() {
         val code = "@"
 
-        assertThrows<DriftLexerException> {
+        assertThrows<DLUnexpectedCharacterException> {
             lex(code)
         }
     }
@@ -64,7 +64,7 @@ class SymbolsTest {
     fun `Handles unterminated string literal`() {
         val code = "\"hello"
 
-        assertThrows<DriftLexerException> {
+        assertThrows<DLUnterminatedStringLiteralException> {
             lex(code)
         }
     }
