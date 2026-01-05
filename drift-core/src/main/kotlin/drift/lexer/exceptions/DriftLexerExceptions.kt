@@ -29,7 +29,7 @@ import drift.lexer.Token
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DriftLexerException(
+sealed class DriftLexerException(
     val token: Token? = null,
     message: String,
     sourceName: String? = null,

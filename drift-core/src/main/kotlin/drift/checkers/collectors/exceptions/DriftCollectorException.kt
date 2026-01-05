@@ -28,7 +28,7 @@ import drift.exceptions.DriftException
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DriftCollectorException(
+sealed class DriftCollectorException(
     message: String,
     sourceName: String? = null,
     line: Int = 0,

@@ -17,7 +17,7 @@ package drift.runtime.exceptions
 
 
 
-open class DriftModuleLoaderException(
+sealed class DriftModuleLoaderException(
     message: String,
     sourceName: String? = null,
     line: Int = 0,

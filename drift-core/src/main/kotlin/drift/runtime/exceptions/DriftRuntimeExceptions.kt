@@ -29,7 +29,7 @@ import drift.runtime.DrValue
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DriftRuntimeException(
+sealed class DriftRuntimeException(
     message: String,
     sourceName: String? = null,
     line: Int = 0,
@@ -48,7 +48,7 @@ open class DriftRuntimeException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRNotSupportedTypeException(
+sealed class DRNotSupportedTypeException(
     type: DrType,
     message: String = "${type.asString()} is not supported in the current context.",
     sourceName: String? = null,
@@ -220,7 +220,7 @@ class DRUnsuccessfulCastException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRAlreadyDefinedException(
+sealed class DRAlreadyDefinedException(
     message: String? = null,
     name: String,
     sourceName: String? = null,
@@ -292,7 +292,7 @@ class DRVariableAlreadyDefinedException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRNotDefinedException(
+sealed class DRNotDefinedException(
     message: String? = null,
     name: String,
     sourceName: String? = null,
@@ -366,7 +366,7 @@ class DRVariableNotDefinedException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRWrongNumberOfArgumentsException(
+sealed class DRWrongNumberOfArgumentsException(
     message: String? = null,
     expected: Int,
     actual: Int,
@@ -423,7 +423,7 @@ class DRWrongNumberOfClassArgumentsException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRTooManyArgumentsException(
+sealed class DRTooManyArgumentsException(
     message: String? = null,
     expected: Int,
     actual: Int,
@@ -764,7 +764,7 @@ class DRCannotNegateUnsignedException(
  * @property line The line where the error is
  * @property pos The character position where the error is
  */
-open class DRUnknownClassMemberException(
+sealed class DRUnknownClassMemberException(
     message: String? = null,
     memberName: String,
     className: String,
