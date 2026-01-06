@@ -94,13 +94,23 @@ class SymbolCollector(private val env: DrEnv) {
      */
     internal inner class ClassCollector {
 
-        val classFields = mutableMapOf<String, Let>()
+        /** Global member registry */
         val classStaticFields = mutableMapOf<String, StaticSlot>()
         val classMethods = mutableMapOf<String, DrMethod>()
         val classStaticMethods = mutableMapOf<String, DrMethod>()
 
         val members = mutableMapOf<String, MemberKind>()
 
+
+        /**
+         * Collect class' symbols: dynamic and static
+         * fields and methods.
+         *
+         * Once the members are collected, the whole class
+         * structure is defined in the current [DrEnv].
+         *
+         * @param stmt Class' declaration statement
+         */
         internal fun collectClass(stmt: Class) {
             stmt.fields.forEach { field ->
                 registerMember(field.name, MemberKind.FIELD)
@@ -153,6 +163,17 @@ class SymbolCollector(private val env: DrEnv) {
         }
 
 
+        /**
+         * Register a class' member with its kind in
+         * the global member registry.
+         * It does not register to a dedicated registry
+         * (e.g., fields one, etc.).
+         *
+         * It also verifies cases of ambiguous naming.
+         *
+         * @param name Class member's name
+         * @param kind Class member's kind (type)
+         */
         private fun registerMember(name: String, kind: MemberKind) {
             val memberKind = members[name]
 
@@ -164,6 +185,11 @@ class SymbolCollector(private val env: DrEnv) {
     }
 
 
+
+    /**
+     * Internal representation of a class member kind
+     * (e.g., field, method, etc.).
+     */
     enum class MemberKind(val label: String) {
         FIELD("field"),
         STATIC_FIELD("static field"),
