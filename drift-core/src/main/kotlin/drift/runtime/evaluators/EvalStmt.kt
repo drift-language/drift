@@ -95,44 +95,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         }
 
         // Class definition
-        is Class -> {
-            /*
-            val klass = DrClass(
-                name,
-                fields.associateBy { field -> field.name }.toMutableMap(),
-                methods.associate { method ->
-                    method.name to DrMethod(method, env)
-                }.toMutableMap(),
-                staticFields.associate { field ->
-                    val variable = DrVariable(
-                        field.name,
-                        field.type,
-                        DrNotAssigned,
-                        field.isMutable)
-
-                    var value = validateValue(field.value.eval(env), ignoreNotAssigned = true)
-
-                    if (field.type != AnyType)
-                        value = castNumericIfNeeded(value, field.type)
-
-                    variable.set(value)
-
-                    field.name to variable
-                }.toMutableMap(),
-                staticMethods.associate {
-                    it.name to DrMethod(it, env)
-                }.toMutableMap(),
-                env.copy())
-
-            if (env.isTopLevel()) {
-                env.assignClass(name, klass)
-            } else {
-                env.defineClass(name, klass)
-            }
-            */
-
-            DrVoid
-        }
+        is Class -> DrVoid      /* NOTE: defined by collector */
 
         // Variable definition
         is Let -> {
