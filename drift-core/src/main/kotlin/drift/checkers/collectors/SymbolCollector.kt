@@ -95,10 +95,6 @@ class SymbolCollector(private val env: DrEnv) {
     internal inner class ClassCollector {
 
         /** Global member registry */
-        val classStaticFields = mutableMapOf<String, StaticSlot>()
-        val classMethods = mutableMapOf<String, DrMethod>()
-        val classStaticMethods = mutableMapOf<String, DrMethod>()
-
         val members = mutableMapOf<String, MemberKind>()
 
 
@@ -112,16 +108,25 @@ class SymbolCollector(private val env: DrEnv) {
          * @param stmt Class' declaration statement
          */
         internal fun collectClass(stmt: Class) {
+            val fields = mutableMapOf<String, Let>()
+            val staticFields = mutableMapOf<String, StaticSlot>()
+            val methods = mutableMapOf<String, DrMethod>()
+            val staticMethods = mutableMapOf<String, DrMethod>()
+            val constructorType: DrClass.ConstructorType =
+                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
+                else DrClass.ConstructorType.STANDARD
+
+
             stmt.fields.forEach { field ->
                 registerMember(field.name, MemberKind.FIELD)
 
-                classFields[field.name] = field
+                fields[field.name] = field
             }
 
             stmt.staticFields.forEach { field ->
                 registerMember(field.name, MemberKind.STATIC_FIELD)
 
-                classStaticFields[field.name] = StaticSlot(
+                staticFields[field.name] = StaticSlot(
                     name = field.name,
                     type = field.type,
                     isMutable = field.isMutable,
@@ -131,7 +136,7 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.methods.forEach { method ->
                 registerMember(method.name, MemberKind.METHOD)
 
-                classMethods[method.name] = DrMethod(
+                methods[method.name] = DrMethod(
                     method,
                     env.copy(),
                     null,
@@ -141,23 +146,20 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.staticMethods.forEach { method ->
                 registerMember(method.name, MemberKind.STATIC_METHOD)
 
-                classStaticMethods[method.name] = DrMethod(
+                staticMethods[method.name] = DrMethod(
                     method,
                     env.copy(),
                     null,
                     null)
             }
 
-            val constructorType: DrClass.ConstructorType =
-                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
-                else DrClass.ConstructorType.STANDARD
 
             env.defineClass(stmt.name, DrClass(
                 stmt.name,
-                classFields,
-                classMethods,
-                classStaticFields,
-                classStaticMethods,
+                fields,
+                methods,
+                staticFields,
+                staticMethods,
                 env.copy(),
                 constructorType))
         }
