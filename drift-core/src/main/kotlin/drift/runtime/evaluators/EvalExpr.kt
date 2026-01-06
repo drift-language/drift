@@ -249,14 +249,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     val expectedParametersCount = constructor?.let?.parameters?.size ?: 0
                     val actualParametersCount = arguments.size
 
-                    if (arguments.size != expectedParametersCount) {
+                    if (arguments.size != expectedParametersCount)
                         throw DRWrongNumberOfClassArgumentsException(
                             className = callee.name,
                             expected = expectedParametersCount,
                             actual = actualParametersCount)
-                    }
 
-                    val initEnv = DrEnv(parent = callee.closure.copy())
+                    val callEnv = DrEnv(parent = callee.closure.copy())
                     val instanceEnv = DrEnv()
 
                     for ((name, field) in callee.fields) {
@@ -266,7 +265,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             value = DrNotAssigned,
                             isMutable = field.isMutable)
 
-                        initEnv.define(name, variable)
+                        callEnv.define(name, variable)
                         instanceEnv.define(name, variable)
                     }
 
@@ -294,7 +293,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         val variable = instanceEnv.resolve(name) as DrVariable
 
                         if (variable.value == DrNotAssigned) {
-                            val value = validateValue(field.value.eval(initEnv))
+                            val value = validateValue(field.value.eval(callEnv))
                             variable.set(value)
                         }
                     }
@@ -311,7 +310,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                                 allowPositional = true,
                                 allowNamed = true))
 
-                        val constructorEnv = DrEnv(parent = instanceEnv.copy()).apply {
+                        val constructorEnv = DrEnv(parent = callee.closure.copy()).apply {
                             define("\$this", instance)
                         }
 
@@ -584,7 +583,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     klass.methods[name]?.let { method ->
                         return DrMethod(
                             let = method.let,
-                            closure = env,
+                            closure = klass.closure.copy(),
                             instance = receiverValue,
                             nativeImpl = method.nativeImpl
                         )
@@ -636,7 +635,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                 return DrMethod(
                     let = method.let,
-                    closure = env,
+                    closure = klass.closure.copy(),
                     instance = receiverValue,
                     nativeImpl = method.nativeImpl)
             }

@@ -495,4 +495,142 @@ class ClassTest {
             """.trimIndent())
         }
     }
+
+    @Test
+    fun `Method may capture variables visible at class declaration`() {
+        val result = evalWithOutput("""
+        let secret = 123
+        
+        class A {
+            fun f { return secret }
+        }
+        
+        let a = A()
+        test(a.f())
+    """.trimIndent())
+
+        assertEquals("123", result)
+    }
+
+    @Test
+    fun `Method must not capture variables declared after class`() {
+        assertThrows<DRVariableNotDefinedException> {
+            evalProgram("""
+            class A {
+                fun f { return secret }
+            }
+
+            let a = A()
+            let secret = 123
+            a.f()
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Method must not capture call site locals`() {
+        assertThrows<DRVariableNotDefinedException> {
+            evalProgram("""
+            class A {
+                fun f { return secret }
+            }
+
+            fun caller {
+                let secret = 42
+                let a = A()
+                a.f()
+            }
+
+            caller()
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Method must not capture sibling method locals`() {
+        assertThrows<DRVariableNotDefinedException> {
+            evalProgram("""
+            class A {
+                fun a {
+                    let secret = 1
+                }
+
+                fun b {
+                    return secret
+                }
+            }
+
+            let a = A()
+            a.b()
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Method must only see instance fields via this`() {
+        assertThrows<DRVariableNotDefinedException> {
+            evalProgram("""
+            class A {
+                let x = 10
+                fun f { return x }
+            }
+
+            let a = A()
+            a.f()
+        """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Method must access instance fields through this`() {
+        val result = evalWithOutput("""
+        class A {
+            let x = 10
+            fun f { return ${'$'}this.x }
+        }
+
+        let a = A()
+        test(a.f())
+    """.trimIndent())
+
+        assertEquals("10", result)
+    }
+
+    @Test
+    fun `Method must not see caller variables even with same name as field`() {
+        val result = evalWithOutput("""
+        class A {
+            let x = 1
+            fun f { return ${'$'}this.x }
+        }
+
+        let a = A()
+        let x = 999
+        test(a.f())
+    """.trimIndent())
+
+        assertEquals("1", result)
+    }
+
+    @Test
+    fun `Method environment must be isolated per instance`() {
+        val result = evalWithOutputs("""
+        class A {
+            var x = 0
+            fun inc { ${'$'}this.x = ${'$'}this.x + 1 }
+            fun get { return ${'$'}this.x }
+        }
+
+        let a = A()
+        let b = A()
+
+        a.inc()
+        a.inc()
+
+        test(a.get())
+        test(b.get())
+    """.trimIndent())
+
+        assertEquals(listOf("2", "0"), result)
+    }
 }
