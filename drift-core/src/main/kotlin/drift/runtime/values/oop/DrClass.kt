@@ -9,11 +9,13 @@
 
 package drift.runtime.values.oop
 
+import drift.ast.statements.Let
+import drift.runtime.DrEnv
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
 import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.variables.DrVariable
+import drift.sslot.StaticSlot
 
 
 /******************************************************************************
@@ -23,25 +25,39 @@ import drift.runtime.values.variables.DrVariable
  ******************************************************************************/
 
 
+const val constructorName: String = "init"
+
+
 
 /**
- * AST representation of a class.
+ * Runtime representation of a class.
  */
 data class DrClass(
     /** Class name */
     val name: String,
 
     /** Class fields, attributes */
-    val fields: MutableMap<String, DrVariable> = mutableMapOf(),
+    val fields: MutableMap<String, Let> = mutableMapOf(),
 
     /** Class methods */
     val methods: MutableMap<String, DrMethod> = mutableMapOf(),
 
     /** Class static fields, attributes */
-    val staticFields: MutableMap<String, DrVariable> = mutableMapOf(),
+    val staticFields: MutableMap<String, StaticSlot> = mutableMapOf(),
 
     /** Class static methods */
-    val staticMethods: MutableMap<String, DrMethod> = mutableMapOf()) : DrValue {
+    val staticMethods: MutableMap<String, DrMethod> = mutableMapOf(),
+
+    /** Class initialization environment */
+    val closure: DrEnv,
+
+    /** Class Constructor type (primary or standard) */
+    val constructorType: ConstructorType? = null) : DrValue {
+
+
+    /** Constructor if existing, else NULL */
+    val constructor : DrMethod?
+        get() = methods[constructorName]
 
 
     /** @return A prepared string version of the type */
@@ -49,4 +65,10 @@ data class DrClass(
 
     /** @return The object representation of the type */
     override fun type(): DrType = ObjectType(name)
+
+
+    enum class ConstructorType {
+        PRIMARY,
+        STANDARD
+    }
 }

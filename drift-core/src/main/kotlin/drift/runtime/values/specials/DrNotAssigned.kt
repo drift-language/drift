@@ -22,7 +22,7 @@ import drift.runtime.UnknownType
 
 
 /**
- * AST representation of the NotAssigned type, which represents
+ * Runtime representation of the NotAssigned type, which represents
  * a variable which does not have a value.
  *
  * It is linked to [UnknownType].

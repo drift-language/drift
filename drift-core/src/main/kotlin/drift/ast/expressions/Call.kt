@@ -25,5 +25,5 @@ package drift.ast.expressions
  * @property args Callable arguments list
  */
 data class Call(
-    val callee: Expression,
-    val args: List<Argument>) : Expression
+    val callee: DrExpr,
+    val args: List<Argument>) : DrExpr

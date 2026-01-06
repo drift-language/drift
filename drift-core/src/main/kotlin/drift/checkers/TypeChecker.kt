@@ -12,7 +12,7 @@ package drift.checkers
 import drift.ast.expressions.Assign
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.ast.expressions.Get
 import drift.ast.expressions.Set
 import drift.ast.expressions.Unary
@@ -22,9 +22,8 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.If
 import drift.ast.statements.Let
 import drift.ast.statements.Return
-import drift.exceptions.DriftSemanticException
-import drift.exceptions.DriftTypeException
 import drift.runtime.*
+import drift.runtime.exceptions.DRClassNotDefinedException
 
 
 /******************************************************************************
@@ -85,7 +84,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param expr Expression to check
      */
-    private fun checkExpr(expr: Expression) {
+    private fun checkExpr(expr: DrExpr) {
         when (expr) {
             is Binary -> {
                 checkExpr(expr.left)
@@ -112,15 +111,13 @@ class TypeChecker (private val env: DrEnv) {
      * Attempt to check the provided type
      *
      * @param type Type to check
-     * @throws DriftSemanticException If a class is
-     * no longer defined on checking
      */
     private fun checkType(type: DrType) {
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
             is ObjectType -> env.resolveClass(type.className)
-                ?: throw DriftTypeException("${type.className} type is undefined")
+                ?: throw DRClassNotDefinedException(name = type.className)
             else -> {}
         }
     }

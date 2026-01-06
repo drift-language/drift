@@ -8,8 +8,8 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
+import drift.parser.exceptions.DPNumericSizeOverflowException
+import drift.runtime.exceptions.DRCannotNegateUnsignedException
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrUInt
@@ -45,7 +45,7 @@ class PrimaryTest {
 
     @Test
     fun `Define invalid numeric variable without explicit typing must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPNumericSizeOverflowException> {
             evalProgram("""
                 let a = 1000000000000000000000000000000000000
             """.trimIndent())
@@ -54,7 +54,7 @@ class PrimaryTest {
 
     @Test
     fun `Define negative numeric as unsigned integer must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotNegateUnsignedException> {
             evalProgram("""
                 let a: UInt = -2
             """.trimIndent())

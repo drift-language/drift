@@ -8,9 +8,12 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.DriftRuntime
-import drift.utils.evalAndGetEnv
+import drift.runtime.exceptions.DRAlreadyDefinedException
+import drift.runtime.exceptions.DRCannotSetViaModuleAccessException
+import drift.runtime.exceptions.DRVariableAlreadyDefinedException
+import drift.runtime.exceptions.DRVariableNotDefinedException
+import drift.utils.evalProgram
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -73,6 +76,7 @@ class ImportTest {
         File(srcDir, "hola.drift")
             .writeText("""
                 let greeting = "Hello"
+                var mutableValue = 1
             """.trimIndent())
 
         this.projectConfig = loadConfig(tempDir!!)
@@ -82,7 +86,7 @@ class ImportTest {
     fun `Global import without alias`() {
         assertDoesNotThrow {
             val output = mainCode("""
-                import hola
+                import hola 
                 
                 print(hola.greeting)
             """.trimIndent())
@@ -106,7 +110,7 @@ class ImportTest {
 
     @Test
     fun `Global import with alias called with source name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola as h
                 
@@ -130,7 +134,7 @@ class ImportTest {
 
     @Test
     fun `Composed import called with module name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola { greeting }
                 
@@ -167,11 +171,55 @@ class ImportTest {
 
     @Test
     fun `Composed import with wildcard and member renaming called with source name must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             mainCode("""
                 import hola { *, greeting as g }
                 
                 print(greeting)
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Name collision between wildcard and let must throw`() {
+        assertThrows<DRAlreadyDefinedException> {
+            mainCode("""
+                import hola { * }
+                
+                let greeting = "Hello"
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign via module access must throw`() {
+        assertThrows<DRCannotSetViaModuleAccessException> {
+            mainCode("""
+                import hola
+                
+                hola.mutableValue = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign imported module entity is accepted`() {
+        assertDoesNotThrow {
+            mainCode("""
+                import hola { mutableValue }
+                
+                mutableValue = 1
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Assign imported module entity by wildcard is accepted`() {
+        assertDoesNotThrow {
+            mainCode("""
+                import hola { * }
+                
+                mutableValue = 1
             """.trimIndent())
         }
     }

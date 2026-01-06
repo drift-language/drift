@@ -4,7 +4,7 @@ import drift.runtime.evaluators.eval
 import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
 import drift.parser.Parser
-import drift.parser.lex
+import drift.lexer.lex
 import drift.runtime.DrEnv
 import drift.runtime.values.oop.DrClass
 import org.junit.jupiter.api.Test
@@ -13,10 +13,11 @@ import kotlin.test.assertNotNull
 class DriftPipelineTest {
 
     private fun evalSource(source: String) : DrEnv {
-        val env = DrEnv().apply {
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf()))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
+        val env = DrEnv()
+        env.apply {
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
         }
         val tokens = lex(source)
         val ast = Parser(tokens).parse()

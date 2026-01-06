@@ -8,10 +8,10 @@
  ******************************************************************************/
 package drift.parser.containers
 
-import drift.ast.expressions.Expression
+import drift.ast.expressions.DrExpr
 import drift.ast.expressions.ListLiteral
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
 import drift.parser.expressions.parseExpression
 
 
@@ -32,7 +32,7 @@ import drift.parser.expressions.parseExpression
 internal fun Parser.parseList() : ListLiteral {
     expectSymbol("[")
 
-    val values = mutableListOf<Expression>()
+    val values = mutableListOf<DrExpr>()
 
     if (!checkSymbol("]")) {
         do {

@@ -13,13 +13,17 @@ import drift.ast.statements.Class
 import drift.ast.statements.DrStmt
 import drift.ast.statements.Function
 import drift.ast.statements.Let
-import drift.exceptions.DriftParserException
+import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
+import drift.helper.validateValue
+import drift.runtime.AnyType
 import drift.runtime.DrEnv
-import drift.runtime.values.callables.DrFunction
+import drift.runtime.evaluators.eval
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.oop.DrClass
 import drift.runtime.values.specials.DrNotAssigned
 import drift.runtime.values.variables.DrVariable
+import drift.sslot.StaticSlot
+
 
 /******************************************************************************
  * DRIFT SYMBOL COLLECTOR CHECKER
@@ -27,6 +31,7 @@ import drift.runtime.values.variables.DrVariable
  * The symbol collector is a middleware that pre-defines each
  * entity before run the code
  ******************************************************************************/
+
 
 
 /**
@@ -59,13 +64,25 @@ class SymbolCollector(private val env: DrEnv) {
      */
     private fun collectStatement(stmt: DrStmt) {
         when (stmt) {
-            is Class -> ClassCollector().collectClass(stmt)
+            is Class ->
+                ClassCollector().collectClass(stmt)
+
             is Function -> {
-                val function = DrFunction(stmt, env.copy())
-                env.define(stmt.name, function)
+                val functionVar = DrVariable(
+                    name = stmt.name,
+                    type = AnyType,         // TODO: FunctionType ?
+                    value = DrNotAssigned,
+                    isMutable = false)
+
+                env.define(stmt.name, functionVar)
             }
-            is Let ->
-                env.define(stmt.name, DrVariable(stmt.name, stmt.type, DrNotAssigned, stmt.isMutable))
+
+            is Let -> env.define(stmt.name, DrVariable(
+                stmt.name,
+                stmt.type,
+                DrNotAssigned,
+                stmt.isMutable))
+
             else -> {}
         }
     }
@@ -77,30 +94,49 @@ class SymbolCollector(private val env: DrEnv) {
      */
     internal inner class ClassCollector {
 
-        val classFields = mutableMapOf<String, DrVariable>()
-        val classStaticFields = mutableMapOf<String, DrVariable>()
-        val classMethods = mutableMapOf<String, DrMethod>()
-        val classStaticMethods = mutableMapOf<String, DrMethod>()
-
+        /** Global member registry */
         val members = mutableMapOf<String, MemberKind>()
 
+
+        /**
+         * Collect class' symbols: dynamic and static
+         * fields and methods.
+         *
+         * Once the members are collected, the whole class
+         * structure is defined in the current [DrEnv].
+         *
+         * @param stmt Class' declaration statement
+         */
         internal fun collectClass(stmt: Class) {
+            val fields = mutableMapOf<String, Let>()
+            val staticFields = mutableMapOf<String, StaticSlot>()
+            val methods = mutableMapOf<String, DrMethod>()
+            val staticMethods = mutableMapOf<String, DrMethod>()
+            val constructorType: DrClass.ConstructorType =
+                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
+                else DrClass.ConstructorType.STANDARD
+
+
             stmt.fields.forEach { field ->
                 registerMember(field.name, MemberKind.FIELD)
 
-                classFields[field.name] = convertLetToVariable(field)
+                fields[field.name] = field
             }
 
             stmt.staticFields.forEach { field ->
                 registerMember(field.name, MemberKind.STATIC_FIELD)
 
-                classStaticFields[field.name] = convertLetToVariable(field)
+                staticFields[field.name] = StaticSlot(
+                    name = field.name,
+                    type = field.type,
+                    isMutable = field.isMutable,
+                    initializer = { env -> validateValue(field.value.eval(env)) })
             }
 
             stmt.methods.forEach { method ->
                 registerMember(method.name, MemberKind.METHOD)
 
-                classMethods[method.name] = DrMethod(
+                methods[method.name] = DrMethod(
                     method,
                     env.copy(),
                     null,
@@ -110,46 +146,56 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.staticMethods.forEach { method ->
                 registerMember(method.name, MemberKind.STATIC_METHOD)
 
-                classStaticMethods[method.name] = DrMethod(
+                staticMethods[method.name] = DrMethod(
                     method,
                     env.copy(),
                     null,
                     null)
             }
 
+
             env.defineClass(stmt.name, DrClass(
                 stmt.name,
-                classFields,
-                classMethods,
-                classStaticFields,
-                classStaticMethods))
+                fields,
+                methods,
+                staticFields,
+                staticMethods,
+                env.copy(),
+                constructorType))
         }
 
 
+        /**
+         * Register a class' member with its kind in
+         * the global member registry.
+         * It does not register to a dedicated registry
+         * (e.g., fields one, etc.).
+         *
+         * It also verifies cases of ambiguous naming.
+         *
+         * @param name Class member's name
+         * @param kind Class member's kind (type)
+         */
         private fun registerMember(name: String, kind: MemberKind) {
             val memberKind = members[name]
 
             if (memberKind != null)
-                throw DriftParserException("Ambiguous member name: $name is already defined as $memberKind")
+                throw DCAmbiguousMemberNameException(name, memberKind)
 
             members[name] = kind
         }
     }
-}
 
 
-internal fun convertLetToVariable(let: Let) : DrVariable =
-    DrVariable(
-        let.name,
-        let.type,
-        DrNotAssigned,
-        let.isMutable
-    )
 
-
-internal enum class MemberKind {
-    FIELD,
-    STATIC_FIELD,
-    METHOD,
-    STATIC_METHOD
+    /**
+     * Internal representation of a class member kind
+     * (e.g., field, method, etc.).
+     */
+    enum class MemberKind(val label: String) {
+        FIELD("field"),
+        STATIC_FIELD("static field"),
+        METHOD("method"),
+        STATIC_METHOD("static method")
+    }
 }

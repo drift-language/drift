@@ -11,9 +11,11 @@ package drift.parser
 
 import drift.ast.statements.DrStmt
 import drift.ast.statements.Import
-import drift.exceptions.DriftParserException
+import drift.lexer.Token
+import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
+import drift.parser.exceptions.DPImportsStatementsMustPrecedeAllOtherStatementsException
+import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.parser.statements.parseStatement
-import project.ProjectConfig
 
 
 /******************************************************************************
@@ -28,7 +30,7 @@ import project.ProjectConfig
  * Main parser class.
  *
  * The parser constructs an Abstract Syntax Tree (AST)
- * by using the lexer ([lex]) tokens.
+ * by using the lexer ([drift.lexer.lex]) tokens.
  */
 class Parser(
     /** Provided lexer tokens */
@@ -143,8 +145,7 @@ class Parser(
      * on each top-level statement and evaluating each one.
      *
      * @return The entire list of statements (AST)
-     * @throws DriftParserException If two statements are not separated
-     * by a newline on top-level
+     * @throws DPImportsStatementsMustPrecedeAllOtherStatementsException
      */
     fun parse(): List<DrStmt> {
         val statements = mutableListOf<DrStmt>()
@@ -157,7 +158,7 @@ class Parser(
 
             if (statement is Import) {
                 if (!canImport) {
-                    throw DriftParserException("Imports must be declared at the top of the file")
+                    throw DPImportsStatementsMustPrecedeAllOtherStatementsException()
                 }
             } else {
                 canImport = false
@@ -170,7 +171,8 @@ class Parser(
             if (next is Token.NewLine) {
                 advance()
             } else if (!isAtEnd()) {
-                throw DriftParserException("Expected newline after top-level statement but found $next")
+                throw DPExpectedNewlineBetweenTopLevelStatementsException(
+                    found = next)
             }
         }
 
@@ -259,34 +261,36 @@ class Parser(
      * This method does not advance.
      *
      * @param T Expected token type
-     * @param message Custom error message beginning
+     * @param expected Custom error message beginning
      * @return Expected token object if the search is successful
-     * @throws DriftParserException If the expected symbol type does
-     * not match with current token one
+     * @throws DPMissingExpectedTokenException
      */
-    internal inline fun <reified T : Token> expect(message: String) : T {
+    internal inline fun <reified T : Token> expect(expected: String) : T {
         val token = current()
 
-        return token as? T ?: throw DriftParserException("$message, but found $token")
+        return token as? T ?: throw DPMissingExpectedTokenException(
+            expected = expected,
+            found = token)
     }
 
 
 
     /**
-     * Expect the provided symbol on current token.
+     * Expect the provided symbol on the current token.
      *
      * If found, an implicit advance — ignoring newlines —
      * is done
      *
      * @param expected Expected symbol
-     * @throws DriftParserException If the expected symbol is
-     * not found
+     * @throws DPMissingExpectedTokenException
      */
     internal fun expectSymbol(expected: String, advanceOnSuccess: Boolean = true) {
         val token = current()
 
         if (token !is Token.Symbol || token.value != expected) {
-            throw DriftParserException("Expected '$expected' but found $token")
+            throw DPMissingExpectedTokenException(
+                expected = "symbol '$expected'",
+                found = token)
         }
 
         if (advanceOnSuccess)

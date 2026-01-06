@@ -1,12 +1,11 @@
 package drift.parser
 
 import drift.ast.statements.Function
-import drift.runtime.evaluators.eval
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftTypeException
+import drift.lexer.lex
+import drift.parser.exceptions.DPSpecialInUnionTypeException
 import drift.runtime.*
+import drift.runtime.exceptions.DRUnsuccessfulCastException
 import drift.utils.evalProgram
-import drift.utils.testConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,7 +59,7 @@ class FunctionTypeTest {
 
     @Test
     fun `Function with wrong return type and expression`() {
-        assertThrows<DriftTypeException> {
+        assertThrows<DRUnsuccessfulCastException> {
             evalProgram("""
                 fun test(): String { return 1 }
                 
@@ -107,7 +106,7 @@ class FunctionTypeTest {
 
     @Test
     fun `Function with union return type Int and Last must throw`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPSpecialInUnionTypeException> {
             parseFunctionFromSource("""
                 fun test(): Int|Last { return 1 }
                 test()

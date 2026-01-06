@@ -1,6 +1,12 @@
 package drift.parser
 
-import drift.exceptions.DriftRuntimeException
+import drift.runtime.exceptions.DRCannotAssignToImmutableException
+import drift.runtime.exceptions.DRCannotUseVoidAsValueException
+import drift.runtime.exceptions.DRInvalidExpressionException
+import drift.runtime.exceptions.DRUnassignableException
+import drift.runtime.exceptions.DRUnsuccessfulCastException
+import drift.runtime.exceptions.DRVariableNotDefinedException
+import drift.utils.evalProgram
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -11,7 +17,7 @@ class AssignTest {
 
     @Test
     fun `Reassign to immutable variable`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotAssignToImmutableException> {
             evalWithOutputs("""
                 let a = 1
                 a = 2
@@ -35,7 +41,7 @@ class AssignTest {
 
     @Test
     fun `Reassign to mutable variable with wrong type`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnassignableException> {
             evalWithOutputs("""
                 var a : Int = 1
                 a = "Hello"
@@ -76,12 +82,12 @@ class AssignTest {
 
     @Test
     fun `Reassign mutable variable with wrong class type`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRUnassignableException> {
             evalWithOutputs("""
                 class User(name: String)
                 class Product(id: Int)
                 var u: User? = null
-                u = Product(1)
+                u = Product(id = 1)
             """.trimIndent())
         }
     }
@@ -101,7 +107,7 @@ class AssignTest {
 
     @Test
     fun `Undeclared variable must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRVariableNotDefinedException> {
             evalWithOutputs("""
                 b = 1
             """.trimIndent())
@@ -110,11 +116,21 @@ class AssignTest {
 
     @Test
     fun `Assign mutable variable with void value must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotUseVoidAsValueException> {
             evalWithOutputs("""
-                fun test {}
+                fun foo {}
                 
-                var a = test()
+                var a = foo()
+            """.trimIndent())
+        }
+    }
+
+    @Test
+    fun `Use assignment as value must throw (Void)`() {
+        assertThrows<DRCannotUseVoidAsValueException> {
+            evalProgram("""
+                var b = 0
+                let a = b = 1
             """.trimIndent())
         }
     }

@@ -9,9 +9,12 @@
 
 package drift.helper
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
+import drift.runtime.DrType
 import drift.runtime.DrValue
+import drift.runtime.exceptions.DRCannotUseUnassignedEntityException
+import drift.runtime.exceptions.DRCannotUseVoidAsValueException
+import drift.runtime.exceptions.DRNotSupportedTypeInRangeException
+import drift.runtime.exceptions.DRRangeLimitsMustHaveSameTypeException
 import drift.runtime.values.containers.range.DrRange
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrInt64
@@ -24,7 +27,7 @@ import drift.runtime.values.variables.DrVariable
 /******************************************************************************
  * VALUE HELPER FUNCTIONS
  *
- * All functions which help to manipulate AST values objects
+ * All Runtime functions that help to manipulate AST values objects
  * are defined in this file
  ******************************************************************************/
 
@@ -57,17 +60,17 @@ fun unwrap(value: DrValue) : DrValue {
  * @param ignoreVoid If Void must throw an exception
  * (cannot use void)
  * @return Validated value
- * @throws DriftRuntimeException If non-ignored
- * NotAssigned or Void is found (cannot use ...)
+ * @throws DRCannotUseUnassignedEntityException
+ * @throws DRCannotUseVoidAsValueException
  */
 fun validateValue(value: DrValue, ignoreNotAssigned: Boolean = false, ignoreVoid: Boolean = false) : DrValue {
     return when (value) {
         is DrNotAssigned ->
             if (ignoreNotAssigned) value
-            else throw DriftRuntimeException("Cannot use unassigned")
+            else throw DRCannotUseUnassignedEntityException()
         is DrVoid ->
             if (ignoreVoid) value
-            else throw DriftRuntimeException("Cannot use void")
+            else throw DRCannotUseVoidAsValueException()
         else -> value
     }
 }
@@ -79,6 +82,8 @@ fun validateValue(value: DrValue, ignoreNotAssigned: Boolean = false, ignoreVoid
  *
  * @param range Range to convert
  * @return Converted List of integers
+ * @throws DRRangeLimitsMustHaveSameTypeException
+ * @throws DRNotSupportedTypeInRangeException
  */
 fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> {
     return when {
@@ -91,8 +96,9 @@ fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> 
             else (range.from.value as Long..<range.to.value as Long).map { DrInt64(it) }
 
         range.from::class != range.to::class ->
-            throw DriftParserException("Both Range limits must have the same type")
+            throw DRRangeLimitsMustHaveSameTypeException()
 
-        else -> throw DriftParserException("Range limits must have the same type")
+        else -> throw DRNotSupportedTypeInRangeException(
+            type = (range.from as DrValue).type())
     }
 }

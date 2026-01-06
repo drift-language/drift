@@ -24,4 +24,4 @@ package drift.ast.expressions
  * @property values List values
  */
 data class ListLiteral(
-    val values: MutableList<Expression>) : Expression
+    val values: MutableList<DrExpr>) : DrExpr

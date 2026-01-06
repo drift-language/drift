@@ -34,6 +34,6 @@ import drift.ast.statements.DrStmt
  * condition is unsuccessful
  */
 data class Conditional(
-    val condition: Expression,
+    val condition: DrExpr,
     val thenBranch: DrStmt,
-    val elseBranch: DrStmt?) : Expression
+    val elseBranch: DrStmt?) : DrExpr

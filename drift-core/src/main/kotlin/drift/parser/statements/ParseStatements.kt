@@ -11,21 +11,16 @@ package drift.parser.statements
 
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
-import drift.ast.statements.Block
-import drift.ast.statements.DrStmt
-import drift.ast.statements.ExprStmt
-import drift.ast.statements.For
-import drift.ast.statements.If
-import drift.ast.statements.Import
-import drift.ast.statements.ImportPart
-import drift.ast.statements.Let
-import drift.ast.statements.Return
-import drift.exceptions.DriftParserException
+import drift.ast.statements.*
+import drift.lexer.Token
 import drift.parser.Parser
-import drift.parser.Token
-import drift.parser.classes.parseClass
-import drift.parser.expressions.parseExpression
 import drift.parser.callables.parseFunction
+import drift.parser.classes.parseClass
+import drift.parser.exceptions.DPMissingExpectedTokenException
+import drift.parser.exceptions.DPStaticFieldMustBeInitializedException
+import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
+import drift.parser.exceptions.DPUnterminatedBlockException
+import drift.parser.expressions.parseExpression
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.DrType
@@ -113,11 +108,17 @@ internal fun Parser.parseStatement() : DrStmt {
  *
  * @param isMutable If the variable to declare is mutable
  * @return Constructed variable declaration AST object
- * @throws DriftParserException If the variable name is not found
+ * @throws DPUnallowedVariableInjectionPrefixUsageException
+ * @throws DPStaticFieldMustBeInitializedException
  */
 internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = true) : Let {
-    val nameToken = expect<Token.Identifier>("Expected variable name")
+    val injectedVariablePrefix = '$'
+
+    val nameToken = expect<Token.Identifier>("variable name")
     val name = nameToken.value
+
+    if (name.first() == injectedVariablePrefix)
+        throw DPUnallowedVariableInjectionPrefixUsageException()
 
     advance(peekSymbol(":", true)
             || peekSymbol("=", true))
@@ -136,13 +137,14 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
     var expr = if (matchSymbol("=")) {
         parseExpression()
     } else if (!acceptUnassigned) {
-        throw DriftParserException("Static field '$name' must be initialized")
+        throw DPStaticFieldMustBeInitializedException(
+            fieldName = name)
     } else {
         Literal(DrNotAssigned)
     }
 
     if (expr is Lambda) {
-        expr = expr.copy(name)
+        expr = expr.copy(name = name)
     }
 
     return Let(name, type, expr, isMutable)
@@ -209,12 +211,7 @@ internal fun Parser.parseReturn() : Return =
  * ```
  *
  * @return Constructed block statement AST object
- * @throws DriftParserException Many cases may
- * throw this exception:
- * - If the '{' character is not found
- * - If the block is unterminated
- * - If two statements are not separated by a newline
- * or a '}' symbol
+ * @throws DPMissingExpectedTokenException
  */
 internal fun Parser.parseBlock() : Block {
     skip(Token.NewLine)
@@ -229,16 +226,18 @@ internal fun Parser.parseBlock() : Block {
         statements.add(statement)
 
         if (current() == null)
-            throw DriftParserException("Unterminated block, expected '}'")
+            throw DPUnterminatedBlockException()
 
         when (val next = current()) {
             is Token.NewLine -> advance()
-            is Token.Symbol -> if (next.value != "}") {
-                throw DriftParserException("Expected newline or '}' after statement but found $next")
-            }
-            else -> {
-                throw DriftParserException("Expected newline or '}' after statement but found $next")
-            }
+            is Token.Symbol -> if (next.value != "}")
+                throw DPMissingExpectedTokenException(
+                    expected = "newline or '}'",
+                    found = next)
+            else ->
+                throw DPMissingExpectedTokenException(
+                    expected = "newline or '}'",
+                    found = next)
         }
     }
 
@@ -256,10 +255,8 @@ internal fun Parser.parseBlock() : Block {
  * }
  * ```
  *
- * @return Constructed for statement AST object
- * @throws DriftParserException Two cases may throw:
- * - If none variable follows the 'as' keyword
- * - If the for statement is not closed by the '}' symbol
+ * @return Constructed "for" statement AST object
+ * @throws DPMissingExpectedTokenException
  */
 internal fun Parser.parseFor() : For {
     val iterable = parseExpression()
@@ -276,7 +273,7 @@ internal fun Parser.parseFor() : For {
 
         do {
             val name = expect<Token.Identifier>(
-                "Expected variable name after '${Token.Keyword.AS}'").value
+                "variable name after '${Token.Keyword.AS}'").value
 
             variables.add(name)
 
@@ -295,8 +292,12 @@ internal fun Parser.parseFor() : For {
             is Token.NewLine -> advance()
             is Token.Symbol ->
                 if (c.value == "}") break
-                else throw DriftParserException("Expected newline or '}' after statement but found $c")
-            else -> throw DriftParserException("Expected newline or '}' after statement but found $c")
+                else throw DPMissingExpectedTokenException(
+                    expected = "newline or '}'",
+                    found = c)
+            else -> throw DPMissingExpectedTokenException(
+                    expected = "newline or '}'",
+                    found = c)
         }
     }
 
@@ -329,7 +330,7 @@ internal fun Parser.parseImport() : Import {
             if (matchSymbol("*")) {
                 wildcard = true
             } else {
-                val partName = expect<Token.Identifier>("Expected variable name")
+                val partName = expect<Token.Identifier>("variable name")
 
                 advance(false)
 
@@ -338,7 +339,7 @@ internal fun Parser.parseImport() : Import {
 
                 if (c is Token.Identifier && c.isKeyword(Token.Keyword.AS)) {
                     advance(false)
-                    partAlias = expect<Token.Identifier>("Expected variable name")
+                    partAlias = expect<Token.Identifier>("variable name")
                     advance(false)
                 }
 

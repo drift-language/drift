@@ -8,8 +8,7 @@
  ******************************************************************************/
 package drift.parser
 
-import drift.exceptions.DriftParserException
-import drift.exceptions.DriftRuntimeException
+import drift.runtime.exceptions.DRCannotDestructureException
 import drift.utils.evalProgram
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
@@ -60,7 +59,7 @@ class ForTest {
 
     @Test
     fun `For using range, with many variables must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotDestructureException> {
             evalProgram("""
                 for 1..3 { as a, b
                     print(a, b)
@@ -129,7 +128,7 @@ class ForTest {
 
     @Test
     fun `For using list, with more than 2 variables must throw`() {
-        assertThrows<DriftRuntimeException> {
+        assertThrows<DRCannotDestructureException> {
             evalProgram("""
                 for [1, 2, 3] { as a, b, c
                     test(a, b, c)

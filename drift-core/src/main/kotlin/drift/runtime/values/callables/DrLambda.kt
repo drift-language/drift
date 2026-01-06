@@ -27,7 +27,7 @@ import drift.runtime.SingleType
 
 
 /**
- * AST representation of a lambda function.
+ * Runtime representation of a lambda function.
  *
  * It does not represent [DrFunction], [DrNativeFunction]
  * and [DrMethod].

@@ -22,7 +22,7 @@ import drift.runtime.ObjectType
 
 
 /**
- * AST representation of a boolean.
+ * Runtime representation of a boolean.
  *
  * @see DrPrimary
  */

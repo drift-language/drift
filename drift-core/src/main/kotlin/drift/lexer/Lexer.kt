@@ -6,10 +6,10 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.lexer
 
-package drift.parser
-
-import drift.exceptions.DriftLexerException
+import drift.lexer.exceptions.DLUnexpectedCharacterException
+import drift.lexer.exceptions.DLUnterminatedStringLiteralException
 
 
 /******************************************************************************
@@ -192,70 +192,78 @@ sealed class Token {
  *
  * @param input Source code to lex
  * @return List of tokens
- * @throws DriftLexerException If a character is unexpected
+ * @throws DLUnexpectedCharacterException
  */
 fun lex(input: String): List<Token> {
     val tokens = mutableListOf<Token>()
-    var i = 0
+    var pos = 0
+    var line = 1
     var depth = 0
 
-    while (i < input.length) {
-        val c = input[i]
+    while (pos < input.length) {
+        val c = input[pos]
 
-        if (c == '\r' && i + 1 < input.length && input[i + 1] == '\n') {
+        if (c == '\r' && pos + 1 < input.length && input[pos + 1] == '\n') {
             if (depth == 0)
                 tokens.add(Token.NewLine)
 
-            i += 2
+            line++
+            pos += 2
             continue
         } else if (c == '\n' || c == '\r') {
             if (depth == 0)
                 tokens.add(Token.NewLine)
 
-            i++
+            line++
+            pos++
             continue
         }
 
         if (c.isWhitespace()) {
             tokens.add(Token.Whitespace)
 
-            i++
+            pos++
             continue
         } else if (c == '"') {
-            val (token, next) = lexString(input, i)
+            val (token, next) = lexString(input, pos)
+                ?: throw DLUnterminatedStringLiteralException(
+                    line = line,
+                    pos = pos,
+                )
+
             tokens.add(token)
 
-            i = next
+            pos = next
             continue
         } else if (c.isDigit()) {
-            val (token, next) = lexNumeric(input, i)
+            val (token, next) = lexNumeric(input, pos)
             tokens.add(token)
 
-            i = next
+            pos = next
             continue
         } else if (c.isLetter() || c == '_' || c == '$') {
-            val (token, next) = lexWord(input, i)
+            val (token, next) = lexWord(input, pos)
             tokens.add(token)
 
-            i = next
+            pos = next
             continue
-        } else if (input.substring(i).take(3) in threeCharsSymbols) {
-            val (token, next) = lexSymbol(input, i, 3)
+        } else if (input.substring(pos).take(3) in threeCharsSymbols) {
+            val (token, next) = lexSymbol(input, pos, 3)
             tokens.add(token)
 
-            i = next
+            pos = next
             continue
-        } else if (input.substring(i).take(2) in twoCharsSymbols) {
-            val (token, next) = lexSymbol(input, i, 2)
+        } else if (input.substring(pos).take(2) in twoCharsSymbols) {
+            val (token, next) = lexSymbol(input, pos, 2)
             tokens.add(token)
 
-            i = next
+            pos = next
             continue
         } else if (c in singleCharSymbols) {
-            val (token, next) = lexSymbol(input, i)
+            val (token, next) = lexSymbol(input, pos)
             tokens.add(token)
 
-            i = next
+            pos = next
 
             if (listOf('(', '[').contains(c))
                 depth++
@@ -264,7 +272,10 @@ fun lex(input: String): List<Token> {
 
             continue
         } else {
-            throw DriftLexerException("Unexpected character '$c'")
+            throw DLUnexpectedCharacterException(
+                unexpected = c,
+                line = line,
+                pos = pos)
         }
     }
 
@@ -279,12 +290,12 @@ fun lex(input: String): List<Token> {
  * This function tokenizes a string expression
  *
  * @param input Source code
- * @param startIndex Start index of the expression to tokenize
+ * @param startIndex The start index of the expression to tokenize
  * @return A pair composed by the [Token.StringLiteral] object and the next
- * character position index
- * @throws DriftLexerException If the string expression is unterminated (unclosed)
+ * character position index. If the string cannot be lexed, NULL will be returned
+ * @throws DLUnterminatedStringLiteralException
  */
-fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
+fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int>? {
     var i = startIndex + 1
     val start = i
 
@@ -292,9 +303,7 @@ fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
         i++
     }
 
-    if (i >= input.length) {
-        throw DriftLexerException("Unterminated string literal")
-    }
+    if (i >= input.length) return null
 
     val content = input.substring(start, i)
 
@@ -307,8 +316,8 @@ fun lexString(input: String, startIndex: Int): Pair<Token.StringLiteral, Int> {
  * This function tokenizes a numeric expression
  *
  * @param input Source code
- * @param startIndex Start index of the expression to tokenize
- * @return A pair composed by the [Token.IntLiteral] object and the next
+ * @param startIndex The start index of the expression to tokenize
+ * @return A pair composed by the [Token.NumericLiteral] object and the next
  * character position index
  */
 fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
@@ -332,7 +341,7 @@ fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
  * Null, booleans and identifiers are lexed by this function.
  *
  * @param input Source code
- * @param startIndex Start index of the expression to tokenize
+ * @param startIndex The start index of the expression to tokenize
  * @return A pair composed by the [Token] object and the next
  * character position index
  */
@@ -343,9 +352,7 @@ fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
         i++
     }
 
-    val word = input.substring(startIndex, i)
-
-    return when (word) {
+    return when (val word = input.substring(startIndex, i)) {
         "true" -> Token.BoolLiteral(true) to i
         "false" -> Token.BoolLiteral(false) to i
         "null" -> Token.NullLiteral to i

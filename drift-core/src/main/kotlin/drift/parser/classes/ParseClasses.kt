@@ -9,25 +9,22 @@
 
 package drift.parser.classes
 
-import drift.ast.expressions.Assign
 import drift.ast.expressions.Literal
-import drift.ast.expressions.Variable
 import drift.ast.statements.Class
-import drift.ast.statements.ExprStmt
 import drift.ast.statements.Function
 import drift.ast.statements.FunctionParameter
 import drift.ast.statements.Let
-import drift.exceptions.DriftParserException
 import drift.parser.Parser
-import drift.parser.Token
+import drift.lexer.Token
 import drift.parser.callables.parseFunction
 import drift.parser.callables.parseHook
+import drift.parser.exceptions.DPOnlyOneConstructorPerClassException
+import drift.parser.exceptions.DPOnlyOneStaticBlockPerClassException
+import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
+import drift.parser.statements.parseLet
 import drift.parser.types.parseType
-import drift.runtime.UnknownType
 import drift.runtime.VoidType
 import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.specials.DrVoid
-import sun.invoke.util.BytecodeDescriptor.parseMethod
 
 
 /******************************************************************************
@@ -49,14 +46,9 @@ import sun.invoke.util.BytecodeDescriptor.parseMethod
  *
  * @return Constructed class definition statement
  * AST object
- * @throws DriftParserException Many cases may throw:
- * - If none class name is provided
- * - If none name is provided for a field, `class U(: Type)`
- * for example
- * - If non-method statement is defined into the class body
  */
 internal fun Parser.parseClass() : Class {
-    val nameToken = expect<Token.Identifier>("Expected class name")
+    val nameToken = expect<Token.Identifier>("class name")
     val name = nameToken.value
     val fields = mutableListOf<Let>()
     val methods = mutableListOf<Function>()
@@ -72,7 +64,7 @@ internal fun Parser.parseClass() : Class {
 
         if (!checkSymbol(")")) {
             do {
-                val paramToken = expect<Token.Identifier>("Expected field name")
+                val paramToken = expect<Token.Identifier>("field name")
 
                 advance()
 
@@ -96,9 +88,7 @@ internal fun Parser.parseClass() : Class {
             methods.add(Function(
                 Token.Keyword.INIT.value,
                 constructorParameters,
-                constructorParameters.map {
-                    ExprStmt(Assign(it.name, Variable(it.name)))
-                },
+                listOf(),
                 VoidType))
         }
 
@@ -117,14 +107,21 @@ internal fun Parser.parseClass() : Class {
                 when {
                     c.isKeyword(Token.Keyword.INIT) -> {
                         if (hasPrimaryConstructor) {
-                            throw DriftParserException(
-                                "A class cannot have both primary " +
-                                "and standard constructors")
+                            throw DPOnlyOneConstructorPerClassException()
                         }
 
                         methods.add(parseHook(
                             forceParameters = true,
                             disableReturnStatement = true))
+                    }
+                    c.isKeyword(Token.Keyword.IMMUTLET) ||
+                    c.isKeyword(Token.Keyword.MUTLET) -> {
+
+                        advance(false)
+
+                        fields += parseLet(
+                            isMutable = c.isKeyword(Token.Keyword.MUTLET),
+                            acceptUnassigned = true)
                     }
                     c.isKeyword(Token.Keyword.FUNCTION) -> {
                         advance()
@@ -132,11 +129,8 @@ internal fun Parser.parseClass() : Class {
                         methods.add(parseFunction())
                     }
                     c.isKeyword(Token.Keyword.STATIC) -> {
-                        if (isStaticBlockAlreadyDefined) {
-                            throw DriftParserException(
-                                "A class cannot have more than " +
-                                "one static block")
-                        }
+                        if (isStaticBlockAlreadyDefined)
+                            throw DPOnlyOneStaticBlockPerClassException()
 
                         isStaticBlockAlreadyDefined = true
 
@@ -150,15 +144,15 @@ internal fun Parser.parseClass() : Class {
                             parseClassStaticBlock(staticFields, staticMethods)
                         }
                     }
-                    else -> throw DriftParserException("Only methods are allowed inside class body")
+                    else -> throw DPUnexpectedStatementInClassBodyException()
                 }
             } else {
-                throw DriftParserException("Only methods are allowed inside class body")
+                throw DPUnexpectedStatementInClassBodyException()
             }
 
             if (current() is Token.NewLine) advance()
         }
     }
 
-    return Class(name, fields, methods, staticFields, staticMethods)
+    return Class(name, fields, methods, staticFields, staticMethods, hasPrimaryConstructor = hasPrimaryConstructor)
 }

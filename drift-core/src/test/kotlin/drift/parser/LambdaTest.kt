@@ -1,6 +1,7 @@
 package drift.parser
 
-import drift.exceptions.DriftParserException
+import drift.parser.exceptions.DPParameterAlreadyDefinedException
+import drift.runtime.exceptions.DRVariableAlreadyDefinedException
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -100,7 +101,7 @@ class LambdaTest {
 
     @Test
     fun `Lambda with same parameter defined two times must throw exception`() {
-        assertThrows<DriftParserException> {
+        assertThrows<DPParameterAlreadyDefinedException> {
             evalWithOutputs("""
                 test((x, x) -> { return x } ())
             """.trimIndent())

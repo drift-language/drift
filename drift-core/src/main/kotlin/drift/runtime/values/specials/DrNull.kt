@@ -23,7 +23,7 @@ import drift.runtime.NullType
 
 
 /**
- * AST representation of the NULL type, which represents
+ * Runtime representation of the NULL type, which represents
  * the absence of a value in Drift.
  *
  * It is used for variables or expressions that do not

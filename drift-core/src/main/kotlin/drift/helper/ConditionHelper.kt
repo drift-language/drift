@@ -9,10 +9,10 @@
 
 package drift.helper
 
-import drift.ast.expressions.Expression
-import drift.runtime.evaluators.eval
-import drift.exceptions.DriftRuntimeException
+import drift.ast.expressions.DrExpr
 import drift.runtime.DrEnv
+import drift.runtime.evaluators.eval
+import drift.runtime.exceptions.DRNotSupportedTypeInBooleanExpressionException
 import drift.runtime.values.primaries.DrBool
 
 
@@ -32,14 +32,15 @@ import drift.runtime.values.primaries.DrBool
  * @param condition Condition to evaluate
  * @param env Environment instance to use
  * @return If the condition is respected or not
- * @throws DriftRuntimeException If the provided condition
+ * @throws DRNotSupportedTypeInBooleanExpressionException If the provided condition
  * expression is not boolean
  */
-fun evalCondition(condition: Expression, env: DrEnv) : Boolean {
+fun evalCondition(condition: DrExpr, env: DrEnv) : Boolean {
     val conditionValue = condition.eval(env)
 
     if (conditionValue !is DrBool) {
-        throw DriftRuntimeException("Condition must be boolean")
+        throw DRNotSupportedTypeInBooleanExpressionException(
+            type = conditionValue.type())
     }
 
     return conditionValue.value

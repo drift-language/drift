@@ -8,13 +8,15 @@
  ******************************************************************************/
 package drift.runtime.values.oop
 
-import drift.exceptions.DriftRuntimeException
-import drift.exceptions.DriftTypeException
 import drift.runtime.DrEnv
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
 import drift.runtime.evaluators.eval
+import drift.runtime.exceptions.DRMissingReturnStatementException
+import drift.runtime.exceptions.DRUnknownClassMemberException
+import drift.runtime.exceptions.DRUnsuccessfulCastException
+import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrReturn
 import drift.runtime.values.primaries.DrString
@@ -29,14 +31,14 @@ import drift.runtime.values.primaries.DrString
 
 
 /**
- * AST representation of a class instance.
+ * Runtime representation of a class instance.
  */
 data class DrInstance(
     /** Class structure */
     val klass: DrClass,
 
-    /** Class attributes map */
-    val values: MutableMap<String, DrValue>) : DrValue {
+    /** Instance environment */
+    val env: DrEnv) : DrValue {
 
 
 
@@ -44,34 +46,34 @@ data class DrInstance(
     override fun asString() : String {
         val default = "<[class#${klass.hashCode()}] ${klass.name} | instance ${this.hashCode()}>"
 
-        try {
-            val method = klass.methods["asString"]
-                ?: throw DriftRuntimeException("Method 'asString' not found on class ${klass.name}")
+        val method = klass.methods["asString"]
+            ?: return default
 
-            val local = DrEnv()
-            local.define("\$this", this)
+        val local = DrEnv()
+        local.define("\$this", this)
 
-            var result: DrValue? = null
+        var result: DrValue? = null
 
-            for (statement in method.let.body) {
-                val evalResult = statement.eval(local)
+        for (statement in method.let.body) {
+            val evalResult = statement.eval(local)
 
-                if (evalResult is DrReturn) {
-                    result = evalResult.value
-                    break
-                }
-
-                result = evalResult
+            if (evalResult is DrReturn) {
+                result = evalResult.value
+                break
             }
 
-            if (result !is DrString) {
-                throw DriftTypeException("asString must return String")
-            }
-
-            return result.asString()
-        } catch (e: DriftRuntimeException) {
-            return default
+            result = evalResult
         }
+
+        if (result == null)
+            throw DRMissingReturnStatementException()
+
+        if (result !is DrString)
+            throw DRUnsuccessfulCastException(
+                valueType = result.type(),
+                expectedType = ObjectType("String"))
+
+        return result.asString()
     }
 
     /** @return The object representation of the type */
@@ -79,10 +81,10 @@ data class DrInstance(
 
 
     /**
-     * @return If provided name is a defined key in the values map
+     * @return If provided name is a defined key in the value map
      */
     fun has(name: String) : Boolean =
-        values.containsKey(name)
+        env.exists(name)
 
 
     /**
@@ -90,17 +92,10 @@ data class DrInstance(
      *
      * @param name Attribute name
      * @return Attribute value
-     * @throws DriftRuntimeException If the provided name
-     * is no longer recorded into instance's attributes map
      */
     fun get(name: String) : DrValue {
-        if (values.containsKey(name)) {
-            if (klass.methods[name] != null) {
-                throw DriftRuntimeException("$name already exists")
-            }
-
-            return values[name]!!
-        }
+        if (has(name))
+            return env.get(name)
 
         val method = klass.methods[name]
 
@@ -108,7 +103,9 @@ data class DrInstance(
             return method.copy(instance = this)
         }
 
-        throw DriftRuntimeException("'${klass.name}.$name' property or method not found")
+        throw DRUnknownClassMemberException(
+            memberName = name,
+            className = klass.name)
     }
 
 
@@ -118,13 +115,11 @@ data class DrInstance(
      *
      * @param name Attribute name
      * @param value New attribute value to apply
-     * @throws DriftRuntimeException If the required variable
-     * is no longer declared
      */
     fun set(name: String, value: DrValue) {
-        if (!values.containsKey(name))
-            throw DriftRuntimeException("Cannot assign to undeclared property '${klass.name}.$name'")
+        if (!has(name))
+            throw DRVariableNotDefinedException(name = name)
 
-        values[name] = value
+        env.assign(name, value)
     }
 }

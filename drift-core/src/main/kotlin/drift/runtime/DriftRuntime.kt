@@ -10,12 +10,12 @@ package drift.runtime
 
 import drift.ast.statements.Function
 import drift.ast.statements.Import
-import drift.runtime.evaluators.eval
-import drift.checkers.collectors.SymbolCollector
 import drift.checkers.TypeChecker
-import drift.exceptions.DriftRuntimeException
+import drift.checkers.collectors.SymbolCollector
+import drift.lexer.lex
 import drift.parser.Parser
-import drift.parser.lex
+import drift.runtime.evaluators.eval
+import drift.runtime.exceptions.DRUnsuccessfulCastException
 import drift.runtime.values.callables.DrMethod
 import drift.runtime.values.callables.DrNativeFunction
 import drift.runtime.values.oop.DrClass
@@ -24,6 +24,7 @@ import drift.runtime.values.primaries.DrString
 import drift.runtime.values.specials.DrVoid
 import project.ProjectConfig
 import java.io.File
+
 
 /******************************************************************************
  * DRIFT RUNTIME
@@ -63,17 +64,19 @@ object DriftRuntime {
                             name = "length",
                             paramTypes = emptyList(),
                             returnType = ObjectType("Int"),
-                            impl = { receiver, args ->
+                            impl = { receiver, _ ->
                                 val instance = receiver as? DrString
-                                    ?: throw DriftRuntimeException("length() called on non-String")
+                                    ?: throw DRUnsuccessfulCastException(
+                                        valueType = receiver?.type() ?: AnyType,
+                                        expectedType = ObjectType("String"))
 
                                 DrInt(instance.value.length)
-                            })))))
+                            }))), closure = env))
 
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf()))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf()))
-            defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf()))
-            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf()))
+            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
         }
 
         SymbolCollector(env).collect(ast)

@@ -9,10 +9,10 @@
 
 package drift.utils
 
-import drift.exceptions.DriftRuntimeException
 import drift.runtime.DrType
 import drift.runtime.DrValue
 import drift.runtime.ObjectType
+import drift.runtime.exceptions.DRCannotNegateUnsignedException
 import drift.runtime.values.primaries.DrInt
 import drift.runtime.values.primaries.DrInt64
 import drift.runtime.values.primaries.DrUInt
@@ -40,8 +40,6 @@ infix fun Int.concat(other: Int) = "$this$other".toInt()
  *
  * @param value Value to possibly cast
  * @param expected Cast type expected
- * @throws DriftRuntimeException If the provided value is negative,
- * it cannot be cast to UInt type for safety purpose
  */
 fun castNumericIfNeeded(value: DrValue, expected: DrType) : DrValue {
     if (value is DrInt) {
@@ -50,8 +48,7 @@ fun castNumericIfNeeded(value: DrValue, expected: DrType) : DrValue {
             ObjectType("UInt") -> {
                 val v = value.value
 
-                if (v < 0)
-                    throw DriftRuntimeException("Cannot assign negative value ($v) to UInt")
+                if (v < 0) throw DRCannotNegateUnsignedException()
 
                 DrUInt(v.toUInt())
             }
