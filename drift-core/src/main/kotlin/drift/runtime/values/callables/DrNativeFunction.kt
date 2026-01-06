@@ -26,7 +26,7 @@ import drift.runtime.SingleType
 
 
 /**
- * AST representation of a native function.
+ * Runtime representation of a native function.
  *
  * It does not represent [DrFunction], [DrLambda]
  * and [DrMethod].

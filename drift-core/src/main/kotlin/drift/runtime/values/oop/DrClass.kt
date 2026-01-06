@@ -30,7 +30,7 @@ const val constructorName: String = "init"
 
 
 /**
- * AST representation of a class.
+ * Runtime representation of a class.
  */
 data class DrClass(
     /** Class name */

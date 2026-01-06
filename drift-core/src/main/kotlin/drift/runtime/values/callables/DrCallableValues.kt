@@ -20,7 +20,7 @@ import drift.runtime.*
 
 
 /**
- * AST representation of a callable return statement.
+ * Runtime representation of a callable return statement.
  */
 data class DrReturn(val value: DrValue) : DrValue {
     /** @return A prepared string version of the type */

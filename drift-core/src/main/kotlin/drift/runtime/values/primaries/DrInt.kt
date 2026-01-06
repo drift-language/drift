@@ -22,7 +22,7 @@ import drift.runtime.ObjectType
 
 
 /**
- * AST representation of a 32-bit integer.
+ * Runtime representation of a 32-bits integer.
  *
  * @see DrPrimary
  */

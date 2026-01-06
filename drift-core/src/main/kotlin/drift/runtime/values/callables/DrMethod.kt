@@ -28,7 +28,7 @@ import drift.runtime.values.oop.DrInstance
 
 
 /**
- * AST representation of a class method.
+ * Runtime representation of a class method.
  *
  * It does not represent [DrFunction], [DrNativeFunction]
  * and [DrLambda].

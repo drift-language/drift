@@ -22,7 +22,7 @@ import drift.runtime.ObjectType
 
 
 /**
- * AST representation of a string.
+ * Runtime representation of a string.
  *
  * @see DrPrimary
  */

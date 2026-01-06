@@ -31,7 +31,7 @@ import drift.runtime.values.primaries.DrString
 
 
 /**
- * AST representation of a class instance.
+ * Runtime representation of a class instance.
  */
 data class DrInstance(
     /** Class structure */

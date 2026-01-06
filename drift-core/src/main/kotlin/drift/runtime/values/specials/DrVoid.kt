@@ -22,7 +22,7 @@ import drift.runtime.VoidType
 
 
 /**
- * AST representation of the VOID type, which represents
+ * Runtime representation of the VOID type, which represents
  * the absence of return for a function.
  *
  * @see drift.runtime.VoidType
