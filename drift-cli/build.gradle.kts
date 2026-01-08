@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.drift"
-version = "0.1"
+version = "2026.0"
 
 repositories {
     mavenCentral()
