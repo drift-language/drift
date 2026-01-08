@@ -46,16 +46,15 @@ tasks.register("generateVersion") {
     val versionFile = File(outputDir, "drift/DriftVersion.kt")
     versionFile.parentFile.mkdirs()
 
-    val year = project.findProperty("driftYear")?.toString()?.toIntOrNull() ?: Year.now().value.toString()
-    val driftPublicVersion = project.findProperty("driftPublicVersion")?.toString()?.toIntOrNull() ?: "0"
     val gitHash = "git rev-parse --short HEAD".runCommand()
+    val projectVersion = project.version.toString()
 
     versionFile.writeText(
         """
             package drift
-            
+
             object DriftVersion {
-                val fullVersion = "$year.$driftPublicVersion.$gitHash"
+                val fullVersion = "$projectVersion.$gitHash"
             }
         """.trimIndent())
 }
