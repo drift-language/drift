@@ -313,7 +313,6 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         val constructorEnv = DrEnv(parent = callee.closure.copy()).apply {
                             define("\$this", instance)
                         }
-                    }
 
                         evalFunction(
                             constructor.let,
