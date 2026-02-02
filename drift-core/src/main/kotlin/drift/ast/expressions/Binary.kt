@@ -27,6 +27,6 @@ package drift.ast.expressions
  * @property right Right operand
  */
 data class Binary(
-    val left: DrExpr,
+    val left: ParserExpression,
     val operator: String,
-    val right: DrExpr) : DrExpr
+    val right: ParserExpression) : ParserExpression()

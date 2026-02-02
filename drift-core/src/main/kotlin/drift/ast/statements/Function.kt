@@ -8,8 +8,9 @@
  ******************************************************************************/
 package drift.ast.statements
 
+import drift.ast.bindings.FunctionParameter
 import drift.runtime.AnyType
-import drift.runtime.DrType
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -27,12 +28,12 @@ import drift.runtime.DrType
  * @property parameters Callable arguments structures
  * @property body Callable body AST
  * @property returnType Callable return type
- * @see drift.runtime.values.callables.DrFunction
- * @see drift.runtime.values.callables.DrMethod
- * @see drift.runtime.values.callables.DrLambda
+ * @see drift.runtime.values.callables.ParserFunction
+ * @see drift.runtime.values.callables.ParserMethod
+ * @see drift.runtime.values.callables.ParserLambda
  */
 data class Function(
     val name: String,
     val parameters: List<FunctionParameter>,
-    val body: List<DrStmt>,
-    val returnType: DrType = AnyType) : DrStmt
+    val body: List<ParserStatement>,
+    val returnType: ParserType = AnyType) : ParserStatement()

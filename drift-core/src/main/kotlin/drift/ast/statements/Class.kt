@@ -31,4 +31,4 @@ data class Class(
     val methods: MutableList<Function> = mutableListOf(),
     val staticFields: MutableList<Let> = mutableListOf(),
     val staticMethods: MutableList<Function> = mutableListOf(),
-    val hasPrimaryConstructor: Boolean = false) : DrStmt
+    val hasPrimaryConstructor: Boolean = false) : ParserStatement()

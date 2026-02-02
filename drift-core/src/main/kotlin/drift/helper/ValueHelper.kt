@@ -9,19 +9,18 @@
 
 package drift.helper
 
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 import drift.runtime.exceptions.DRCannotUseUnassignedEntityException
 import drift.runtime.exceptions.DRCannotUseVoidAsValueException
 import drift.runtime.exceptions.DRNotSupportedTypeInRangeException
 import drift.runtime.exceptions.DRRangeLimitsMustHaveSameTypeException
-import drift.runtime.values.containers.range.DrRange
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
+import drift.runtime.values.containers.range.ParserRange
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserInt64
 import drift.runtime.values.primaries.DrInteger
-import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.specials.DrVoid
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.specials.ParserVoid
+import drift.runtime.values.variables.ParserVariable
 
 
 /******************************************************************************
@@ -40,10 +39,10 @@ import drift.runtime.values.variables.DrVariable
  * @return The contained value if exists;
  * else the provided value
  */
-fun unwrap(value: DrValue) : DrValue {
+fun unwrap(value: ParserValue) : ParserValue {
     var current = value
 
-    while (current is DrVariable)
+    while (current is ParserVariable)
         current = current.value
 
     return current
@@ -63,12 +62,12 @@ fun unwrap(value: DrValue) : DrValue {
  * @throws DRCannotUseUnassignedEntityException
  * @throws DRCannotUseVoidAsValueException
  */
-fun validateValue(value: DrValue, ignoreNotAssigned: Boolean = false, ignoreVoid: Boolean = false) : DrValue {
+fun validateValue(value: ParserValue, ignoreNotAssigned: Boolean = false, ignoreVoid: Boolean = false) : ParserValue {
     return when (value) {
-        is DrNotAssigned ->
+        is ParserNotAssigned ->
             if (ignoreNotAssigned) value
             else throw DRCannotUseUnassignedEntityException()
-        is DrVoid ->
+        is ParserVoid ->
             if (ignoreVoid) value
             else throw DRCannotUseVoidAsValueException()
         else -> value
@@ -85,20 +84,20 @@ fun validateValue(value: DrValue, ignoreNotAssigned: Boolean = false, ignoreVoid
  * @throws DRRangeLimitsMustHaveSameTypeException
  * @throws DRNotSupportedTypeInRangeException
  */
-fun rangeToList(range: DrRange, exclusive: Boolean = false): List<DrInteger<*>> {
+fun rangeToList(range: ParserRange, exclusive: Boolean = false): List<DrInteger<*>> {
     return when {
-        range.from is DrInt && range.to is DrInt ->
-            if (!exclusive) (range.from.value as Int..range.to.value as Int).map { DrInt(it) }
-            else (range.from.value as Int..<range.to.value as Int).map { DrInt(it) }
+        range.from is ParserInt && range.to is ParserInt ->
+            if (!exclusive) (range.from.value as Int..range.to.value as Int).map { ParserInt(it) }
+            else (range.from.value as Int..<range.to.value as Int).map { ParserInt(it) }
 
-        range.from is DrInt64 && range.to is DrInt64 ->
-            if (!exclusive) (range.from.value as Long..range.to.value as Long).map { DrInt64(it) }
-            else (range.from.value as Long..<range.to.value as Long).map { DrInt64(it) }
+        range.from is ParserInt64 && range.to is ParserInt64 ->
+            if (!exclusive) (range.from.value as Long..range.to.value as Long).map { ParserInt64(it) }
+            else (range.from.value as Long..<range.to.value as Long).map { ParserInt64(it) }
 
         range.from::class != range.to::class ->
             throw DRRangeLimitsMustHaveSameTypeException()
 
         else -> throw DRNotSupportedTypeInRangeException(
-            type = (range.from as DrValue).type())
+            type = (range.from as ParserValue).type())
     }
 }

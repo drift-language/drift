@@ -8,6 +8,9 @@
  ******************************************************************************/
 package drift.ast.expressions
 
+import drift.ast.AstNodeId
+import drift.ast.ParserNode
+
 
 /******************************************************************************
  * DRIFT EXPRESSION STRUCTURES
@@ -21,5 +24,5 @@ package drift.ast.expressions
  * This interface represents all expression
  * structures
  */
-interface DrExpr
+abstract class ParserExpression : ParserNode()
 

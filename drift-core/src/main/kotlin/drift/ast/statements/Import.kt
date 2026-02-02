@@ -29,4 +29,4 @@ data class Import(
     val steps: List<String>,
     val alias: String? = null,
     val parts: List<ImportPart>? = null,
-    val wildcard: Boolean = false) : DrStmt
+    val wildcard: Boolean = false) : ParserStatement()

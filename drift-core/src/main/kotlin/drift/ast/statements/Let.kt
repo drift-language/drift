@@ -9,8 +9,8 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.DrExpr
-import drift.runtime.DrType
+import drift.ast.expressions.ParserExpression
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -31,6 +31,6 @@ import drift.runtime.DrType
  */
 data class Let(
     val name: String,
-    val type: DrType,
-    val value: DrExpr,
-    val isMutable: Boolean) : DrStmt
+    val type: ParserType,
+    val value: ParserExpression,
+    val isMutable: Boolean) : ParserStatement()

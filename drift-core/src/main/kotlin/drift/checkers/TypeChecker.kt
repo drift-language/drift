@@ -12,12 +12,12 @@ package drift.checkers
 import drift.ast.expressions.Assign
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
-import drift.ast.expressions.DrExpr
+import drift.ast.expressions.ParserExpression
 import drift.ast.expressions.Get
 import drift.ast.expressions.Set
 import drift.ast.expressions.Unary
 import drift.ast.statements.Block
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.ast.statements.ExprStmt
 import drift.ast.statements.If
 import drift.ast.statements.Let
@@ -48,7 +48,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param ast AST to check
      */
-    fun check(ast: List<DrStmt>) {
+    fun check(ast: List<ParserStatement>) {
         for (stmt in ast) {
             checkStatement(stmt)
         }
@@ -61,7 +61,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param stmt Statement to check
      */
-    private fun checkStatement(stmt: DrStmt) {
+    private fun checkStatement(stmt: ParserStatement) {
         when (stmt) {
             is Let -> checkType(stmt.type)
             is ExprStmt -> checkExpr(stmt.expr)
@@ -84,7 +84,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param expr Expression to check
      */
-    private fun checkExpr(expr: DrExpr) {
+    private fun checkExpr(expr: ParserExpression) {
         when (expr) {
             is Binary -> {
                 checkExpr(expr.left)
@@ -112,7 +112,7 @@ class TypeChecker (private val env: DrEnv) {
      *
      * @param type Type to check
      */
-    private fun checkType(type: DrType) {
+    private fun checkType(type: ParserType) {
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }

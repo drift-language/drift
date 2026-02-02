@@ -8,6 +8,9 @@
  ******************************************************************************/
 package drift.ast.statements
 
+import drift.ast.AstNodeId
+import drift.ast.ParserNode
+
 
 /******************************************************************************
  * DRIFT STATEMENT STRUCTURES
@@ -21,5 +24,4 @@ package drift.ast.statements
  * This interface represents all statement
  * structures.
  */
-interface DrStmt
-
+abstract class ParserStatement : ParserNode()

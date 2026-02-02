@@ -9,9 +9,9 @@
 
 package drift.ast.expressions
 
-import drift.ast.statements.DrStmt
-import drift.ast.statements.FunctionParameter
-import drift.runtime.DrType
+import drift.ast.statements.ParserStatement
+import drift.ast.bindings.FunctionParameter
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -27,13 +27,11 @@ import drift.runtime.DrType
  * in a variable or returned by another function,
  * for example
  *
- * @property name Lambda entity name if defined (like variable)
  * @property parameters Lambda arguments structures
  * @property body Lambda body AST
  * @property returnType Lambda return type
  */
 data class Lambda(
-    val name: String? = null,
     val parameters: List<FunctionParameter>,
-    val body: List<DrStmt>,
-    val returnType: DrType) : DrExpr
+    val body: List<ParserStatement>,
+    val returnType: ParserType) : ParserExpression()

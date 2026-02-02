@@ -10,7 +10,7 @@
 package drift.checkers.collectors
 
 import drift.ast.statements.Class
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.ast.statements.Function
 import drift.ast.statements.Let
 import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
@@ -18,10 +18,10 @@ import drift.helper.validateValue
 import drift.runtime.AnyType
 import drift.runtime.DrEnv
 import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.callables.ParserMethod
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.variables.ParserVariable
 import drift.sslot.StaticSlot
 
 
@@ -49,7 +49,7 @@ class SymbolCollector(private val env: DrEnv) {
      *
      * @param ast AST to check
      */
-    fun collect(ast: List<DrStmt>) {
+    fun collect(ast: List<ParserStatement>) {
         for (stmt in ast) {
             collectStatement(stmt)
         }
@@ -62,25 +62,25 @@ class SymbolCollector(private val env: DrEnv) {
      *
      * @param stmt Statement to check
      */
-    private fun collectStatement(stmt: DrStmt) {
+    private fun collectStatement(stmt: ParserStatement) {
         when (stmt) {
             is Class ->
                 ClassCollector().collectClass(stmt)
 
             is Function -> {
-                val functionVar = DrVariable(
+                val functionVar = ParserVariable(
                     name = stmt.name,
                     type = AnyType,         // TODO: FunctionType ?
-                    value = DrNotAssigned,
+                    value = ParserNotAssigned,
                     isMutable = false)
 
                 env.define(stmt.name, functionVar)
             }
 
-            is Let -> env.define(stmt.name, DrVariable(
+            is Let -> env.define(stmt.name, ParserVariable(
                 stmt.name,
                 stmt.type,
-                DrNotAssigned,
+                ParserNotAssigned,
                 stmt.isMutable))
 
             else -> {}
@@ -110,11 +110,11 @@ class SymbolCollector(private val env: DrEnv) {
         internal fun collectClass(stmt: Class) {
             val fields = mutableMapOf<String, Let>()
             val staticFields = mutableMapOf<String, StaticSlot>()
-            val methods = mutableMapOf<String, DrMethod>()
-            val staticMethods = mutableMapOf<String, DrMethod>()
-            val constructorType: DrClass.ConstructorType =
-                if (stmt.hasPrimaryConstructor) DrClass.ConstructorType.PRIMARY
-                else DrClass.ConstructorType.STANDARD
+            val methods = mutableMapOf<String, ParserMethod>()
+            val staticMethods = mutableMapOf<String, ParserMethod>()
+            val constructorType: ParserClass.ConstructorType =
+                if (stmt.hasPrimaryConstructor) ParserClass.ConstructorType.PRIMARY
+                else ParserClass.ConstructorType.STANDARD
 
 
             stmt.fields.forEach { field ->
@@ -136,7 +136,7 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.methods.forEach { method ->
                 registerMember(method.name, MemberKind.METHOD)
 
-                methods[method.name] = DrMethod(
+                methods[method.name] = ParserMethod(
                     method,
                     env.copy(),
                     null,
@@ -146,7 +146,7 @@ class SymbolCollector(private val env: DrEnv) {
             stmt.staticMethods.forEach { method ->
                 registerMember(method.name, MemberKind.STATIC_METHOD)
 
-                staticMethods[method.name] = DrMethod(
+                staticMethods[method.name] = ParserMethod(
                     method,
                     env.copy(),
                     null,
@@ -154,7 +154,7 @@ class SymbolCollector(private val env: DrEnv) {
             }
 
 
-            env.defineClass(stmt.name, DrClass(
+            env.defineClass(stmt.name, ParserClass(
                 stmt.name,
                 fields,
                 methods,
