@@ -45,3 +45,5 @@ bin/
 ### DRIFT DEV ###
 *.drift
 Standard/
+
+CLAUDE.md
