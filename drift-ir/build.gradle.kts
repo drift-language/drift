@@ -5,11 +5,10 @@ plugins {
 }
 
 group = "dev.drift"
-version = "0.1"
+version = "2026.0"
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 kotlin {
@@ -21,18 +20,14 @@ kotlin {
 dependencies {
     testImplementation(kotlin("test"))
 
-    implementation(project(":drift-common"))
-    implementation("fr.belic.drift:2026.0")
+    implementation(project(":drift-core"))
+
+//    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+//    testImplementation("org.junit.jupiter:junit-jupiter")
+//    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+//    implementation(kotlin("stdlib-jdk8"))
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-sourceSets.main {
-    resources.srcDir(layout.buildDirectory.dir("generated/resources"))
-}
-
-application {
-    mainClass.set("drift.DriftReplKt")
 }
