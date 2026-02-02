@@ -24,12 +24,12 @@ import drift.runtime.DrEnv
 import drift.runtime.NullType
 import drift.runtime.ObjectType
 import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.callables.ParserMethod
+import drift.runtime.values.callables.ParserNativeFunction
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserVoid
 import project.loadConfig
 import java.io.File
 
@@ -49,9 +49,7 @@ fun main(args: Array<String>) {
         ))
     }
 
-    if (args.isEmpty()) {
-        return
-    }
+    if (args.isEmpty()) return
 
     t.run {
         println(bold("Entry: ${args[0]}"))
@@ -76,17 +74,17 @@ fun main(args: Array<String>) {
     t.println("\n——————\n")
 
     env.run {
-        define("print", DrNativeFunction(
+        define("print", ParserNativeFunction(
             impl = { _, args ->
                 println(args.joinToString(" ") { it.second.asString() })
-                DrVoid
+                ParserVoid
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
         ))
 
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(
-            "length" to DrMethod(
+        defineClass("String", ParserClass("String", mutableMapOf(), mutableMapOf(
+            "length" to ParserMethod(
                 let = Function(
                     name = "length",
                     parameters = emptyList(),
@@ -94,23 +92,23 @@ fun main(args: Array<String>) {
                     body = emptyList()
                 ),
                 closure = env,
-                nativeImpl = DrNativeFunction(
+                nativeImpl = ParserNativeFunction(
                     name = "length",
                     paramTypes = emptyList(),
                     returnType = ObjectType("Int"),
                     impl = { receiver, args ->
-                        val instance = receiver as DrString
+                        val instance = receiver as ParserString
 
-                        DrInt(instance.value.length)
+                        ParserInt(instance.value.length)
                     }
                 )
             )
         ), closure = env))
 
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", ParserClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
     SymbolCollector(env).collect(ast)

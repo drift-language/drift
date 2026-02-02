@@ -7,35 +7,49 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.runtime.values.imports
+package drift.runtime.values.primaries
 
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 import drift.runtime.ObjectType
 
 
 /******************************************************************************
- * DRIFT IMPORT MODULE TYPE
+ * DRIFT 64-BITS INTEGER RUNTIME TYPE
  *
- * Runtime class to represent an import module.
+ * Runtime class for 64-bits Integer type.
  ******************************************************************************/
 
 
 
 /**
- * Import statement
+ * Runtime representation of a 64-bits integer.
+ *
+ * @see DrPrimary
  */
-data class DrModule(
-    val namespace: String,
-    val name: String,
-    val symbols: Map<String, DrValue>) : DrValue {
+data class ParserInt64(
+    /** Integer value */
+    override val value: Long) : DrPrimary<Long>, ParserValue, DrInteger<Long> {
 
-    fun get(symbol: String): DrValue? =
-        symbols[symbol]
 
-    override fun asString(): String =
-        "<module $namespace>"
 
-    override fun type(): DrType =
-        ObjectType("Module")
+    /** @return A prepared string version of the type */
+    override fun asString() = value.toString()
+
+    /** @return The object representation of the type */
+    override fun type() = ObjectType("Int64")
+
+
+    override fun asInt(): Int = try {
+        value.toInt()
+    } catch (e: NumberFormatException) {
+        0
+    }
+
+    override fun asLong(): Long = value
+
+    override fun asUInt(): UInt = try {
+        value.toUInt()
+    } catch (_: NumberFormatException) {
+        0U
+    }
 }

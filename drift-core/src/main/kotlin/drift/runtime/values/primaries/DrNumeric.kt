@@ -39,9 +39,9 @@ sealed interface DrNumeric {
     /** Get the numeric type rank for the current instance */
     val numericRank : NumericRank
         get() = when (this) {
-            is DrInt -> NumericRank.Int
-            is DrUInt -> NumericRank.UInt
-            is DrInt64 -> NumericRank.Int64
+            is ParserInt -> NumericRank.Int
+            is ParserUInt -> NumericRank.UInt
+            is ParserInt64 -> NumericRank.Int64
         }
 
     fun asInt() : Int
@@ -62,8 +62,8 @@ fun promoteNumericPair(left: DrNumeric, right: DrNumeric) : Triple<DrNumeric, Dr
     val rank = maxOf(left.numericRank, right.numericRank)
 
     return when (rank) {
-        NumericRank.Int64 -> Triple(DrInt64(left.asLong()), DrInt64(right.asLong()), DrInt64::class)
-        NumericRank.UInt -> Triple(DrUInt(left.asUInt()), DrUInt(right.asUInt()), DrUInt::class)
-        NumericRank.Int -> Triple(DrInt(left.asInt()), DrInt(right.asInt()), DrInt::class)
+        NumericRank.Int64 -> Triple(ParserInt64(left.asLong()), ParserInt64(right.asLong()), ParserInt64::class)
+        NumericRank.UInt -> Triple(ParserUInt(left.asUInt()), ParserUInt(right.asUInt()), ParserUInt::class)
+        NumericRank.Int -> Triple(ParserInt(left.asInt()), ParserInt(right.asInt()), ParserInt::class)
     }
 }

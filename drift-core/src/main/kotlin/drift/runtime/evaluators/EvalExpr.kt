@@ -10,9 +10,9 @@ package drift.runtime.evaluators
 
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.ast.statements.Function
-import drift.ast.statements.FunctionParameter
+import drift.ast.bindings.FunctionParameter
 import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
@@ -42,18 +42,18 @@ import drift.runtime.exceptions.DRUnsupportedOperatorException
 import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.exceptions.DRWrongNumberOfClassArgumentsException
 import drift.runtime.values.callables.*
-import drift.runtime.values.containers.list.DrList
-import drift.runtime.values.containers.range.DrExclusiveRange
-import drift.runtime.values.containers.range.DrInclusiveRange
-import drift.runtime.values.containers.range.DrRange
-import drift.runtime.values.imports.DrModule
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.oop.DrInstance
+import drift.runtime.values.containers.list.ParserList
+import drift.runtime.values.containers.range.ParserExclusiveRange
+import drift.runtime.values.containers.range.ParserInclusiveRange
+import drift.runtime.values.containers.range.ParserRange
+import drift.runtime.values.imports.ParserModule
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.oop.ParserInstance
 import drift.runtime.values.primaries.*
-import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.specials.DrNull
-import drift.runtime.values.specials.DrVoid
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.specials.ParserNull
+import drift.runtime.values.specials.ParserVoid
+import drift.runtime.values.variables.ParserVariable
 import drift.utils.castNumericIfNeeded
 
 
@@ -70,9 +70,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed expression value
- * @see DrExpr
+ * @see ParserExpression
  */
-fun DrExpr.eval(env: DrEnv): DrValue {
+fun ParserExpression.eval(env: DrEnv): ParserValue {
     return when (this) {
         // Literal
         is Literal -> value
@@ -107,16 +107,16 @@ fun DrExpr.eval(env: DrEnv): DrValue {
              */
             fun resolveArguments(
                 parameters: List<FunctionParameter>,
-                arguments: List<Pair<String?, DrValue>>,
+                arguments: List<Pair<String?, ParserValue>>,
                 rules: ArgumentRules
-            ): Map<String, DrValue> {
+            ): Map<String, ParserValue> {
 
                 if (arguments.size > parameters.size)
                     throw DRTooManyArgumentsException(
                         expected = parameters.size,
                         actual = arguments.size)
 
-                val result = mutableMapOf<String, DrValue>()
+                val result = mutableMapOf<String, ParserValue>()
                 var positionalIndex = 0
                 var namedSeen = false
 
@@ -170,7 +170,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             fun applyFunction(
                 fn: Function,
                 closure: DrEnv,
-                boundArgs: Map<String, DrValue>) {
+                boundArgs: Map<String, ParserValue>) {
 
                 for (param in fn.parameters) {
                     val rawValue = boundArgs[param.name]
@@ -191,7 +191,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             fun evalFunction(
                 function: Function,
                 env: DrEnv,
-                boundArgs: Map<String, DrValue>): DrValue {
+                boundArgs: Map<String, ParserValue>): ParserValue {
 
                 val newEnv = DrEnv(parent = env.copy())
 
@@ -202,7 +202,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
 
             when (callee) {
-                is DrFunction -> {
+                is ParserFunction -> {
 
                     val bindings = resolveArguments(
                         callee.let.parameters,
@@ -217,7 +217,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         bindings)
                 }
 
-                is DrMethod -> {
+                is ParserMethod -> {
 
                     val bindings = resolveArguments(
                         callee.let.parameters,
@@ -230,7 +230,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         return callee.nativeImpl.impl(callee.instance, arguments)
 
                     val newEnv = DrEnv(parent = callee.closure.copy()).apply {
-                        if (callee.instance is DrInstance)
+                        if (callee.instance is ParserInstance)
                             define("\$this", callee.instance)
                     }
 
@@ -240,10 +240,10 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         bindings)
                 }
 
-                is DrNativeFunction ->
+                is ParserNativeFunction ->
                     callee.impl(null, arguments)
 
-                is DrClass -> {
+                is ParserClass -> {
 
                     val constructor = callee.constructor
                     val expectedParametersCount = constructor?.let?.parameters?.size ?: 0
@@ -259,17 +259,17 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     val instanceEnv = DrEnv()
 
                     for ((name, field) in callee.fields) {
-                        val variable = DrVariable(
+                        val variable = ParserVariable(
                             name = name,
                             type = field.type,
-                            value = DrNotAssigned,
+                            value = ParserNotAssigned,
                             isMutable = field.isMutable)
 
                         callEnv.define(name, variable)
                         instanceEnv.define(name, variable)
                     }
 
-                    if (callee.constructorType == DrClass.ConstructorType.PRIMARY &&
+                    if (callee.constructorType == ParserClass.ConstructorType.PRIMARY &&
                         constructor != null) {
 
                         val bindings = resolveArguments(
@@ -284,23 +284,23 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                             val argValue = bindings[param.name]
                                 ?: throw DRMissingArgumentException(name = param.name)
 
-                            val variable = instanceEnv.resolve(param.name) as DrVariable
+                            val variable = instanceEnv.resolve(param.name) as ParserVariable
                             variable.set(castNumericIfNeeded(argValue, param.type))
                         }
                     }
 
                     for ((name, field) in callee.fields) {
-                        val variable = instanceEnv.resolve(name) as DrVariable
+                        val variable = instanceEnv.resolve(name) as ParserVariable
 
-                        if (variable.value == DrNotAssigned) {
+                        if (variable.value == ParserNotAssigned) {
                             val value = validateValue(field.value.eval(callEnv))
                             variable.set(value)
                         }
                     }
 
-                    val instance = DrInstance(callee, instanceEnv)
+                    val instance = ParserInstance(callee, instanceEnv)
 
-                    if (callee.constructorType == DrClass.ConstructorType.STANDARD &&
+                    if (callee.constructorType == ParserClass.ConstructorType.STANDARD &&
                         constructor != null) {
 
                         val bindings = resolveArguments(
@@ -323,7 +323,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     return instance
                 }
 
-                is DrLambda -> {
+                is ParserLambda -> {
 
                     val bindings = resolveArguments(
                         callee.let.parameters,
@@ -350,8 +350,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         // Binary computing
         is Binary -> {
 
-            fun unwrap(v: DrValue) : DrValue =
-                if (v is DrVariable) v.value else v
+            fun unwrap(v: ParserValue) : ParserValue =
+                if (v is ParserVariable) v.value else v
 
             val leftValue = unwrap(left.eval(env))
             val rightValue = unwrap(right.eval(env))
@@ -362,15 +362,15 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         val (a, b, resultType) = promoteNumericPair(leftValue, rightValue)
 
                         return when (resultType) {
-                            DrInt64::class -> DrInt64(a.asLong() + b.asLong())
-                            DrUInt::class -> DrUInt(a.asUInt() + b.asUInt())
-                            DrInt::class -> DrInt(a.asInt() + b.asInt())
+                            ParserInt64::class -> ParserInt64(a.asLong() + b.asLong())
+                            ParserUInt::class -> ParserUInt(a.asUInt() + b.asUInt())
+                            ParserInt::class -> ParserInt(a.asInt() + b.asInt())
                             else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
                         }
-                    } else if (leftValue is DrString) {
-                        return DrString(leftValue.value + rightValue.asString())
+                    } else if (leftValue is ParserString) {
+                        return ParserString(leftValue.value + rightValue.asString())
                     } else {
                         throw DRUnsupportedOperatorException(
                             operator = operator,
@@ -379,8 +379,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "-" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrInt(leftValue.value - rightValue.value)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserInt(leftValue.value - rightValue.value)
                         else -> throw DRUnsupportedOperatorException(
                             operator = operator,
                             types = leftValue.type() to rightValue.type())
@@ -388,10 +388,10 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "*" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrInt(leftValue.value * rightValue.value)
-                        leftValue is DrString && rightValue is DrInt ->
-                            DrString(leftValue.value.repeat(rightValue.value))
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserInt(leftValue.value * rightValue.value)
+                        leftValue is ParserString && rightValue is ParserInt ->
+                            ParserString(leftValue.value.repeat(rightValue.value))
                         else -> throw DRUnsupportedOperatorException(
                             operator = operator,
                             types = leftValue.type() to rightValue.type())
@@ -399,23 +399,23 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "/" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt -> {
+                        leftValue is ParserInt && rightValue is ParserInt -> {
                             if (rightValue.value == 0)
                                 throw DRDivisionByZeroException()
 
-                            DrInt(leftValue.value / rightValue.value)
+                            ParserInt(leftValue.value / rightValue.value)
                         }
                         else -> throw DRUnsupportedOperatorException(
                             operator = operator,
                             types = leftValue.type() to rightValue.type())
                     }
                 }
-                "==" -> DrBool(leftValue == rightValue)
-                "!=" -> DrBool(leftValue != rightValue)
+                "==" -> ParserBool(leftValue == rightValue)
+                "!=" -> ParserBool(leftValue != rightValue)
                 ">" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrBool(leftValue.value > rightValue.value)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserBool(leftValue.value > rightValue.value)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
@@ -423,8 +423,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "<" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrBool(leftValue.value < rightValue.value)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserBool(leftValue.value < rightValue.value)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
@@ -432,8 +432,8 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 ">=" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrBool(leftValue.value >= rightValue.value)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserBool(leftValue.value >= rightValue.value)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
@@ -441,19 +441,19 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "<=" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrBool(leftValue.value <= rightValue.value)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserBool(leftValue.value <= rightValue.value)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
                     }
                 }
                 "><" -> when {
-                    leftValue is DrNumeric && rightValue is DrRange -> {
+                    leftValue is DrNumeric && rightValue is ParserRange -> {
                         val (l1, s1, _) = promoteNumericPair(leftValue, rightValue.from)
                         val (l2, e2, _) = promoteNumericPair(leftValue, rightValue.to)
 
-                        DrBool(l1.asLong() >= s1.asLong() && l2.asLong() <= e2.asLong())
+                        ParserBool(l1.asLong() >= s1.asLong() && l2.asLong() <= e2.asLong())
                     }
                     else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
@@ -461,10 +461,10 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 ".." -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrInclusiveRange(leftValue, rightValue)
-                        leftValue is DrInt64 && rightValue is DrInt64 ->
-                            DrInclusiveRange(leftValue, rightValue)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserInclusiveRange(leftValue, rightValue)
+                        leftValue is ParserInt64 && rightValue is ParserInt64 ->
+                            ParserInclusiveRange(leftValue, rightValue)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
@@ -472,25 +472,25 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 }
                 "..<" -> {
                     when {
-                        leftValue is DrInt && rightValue is DrInt ->
-                            DrExclusiveRange(leftValue, rightValue)
-                        leftValue is DrInt64 && rightValue is DrInt64 ->
-                            DrExclusiveRange(leftValue, rightValue)
+                        leftValue is ParserInt && rightValue is ParserInt ->
+                            ParserExclusiveRange(leftValue, rightValue)
+                        leftValue is ParserInt64 && rightValue is ParserInt64 ->
+                            ParserExclusiveRange(leftValue, rightValue)
                         else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
                     }
                 }
                 "&&" -> when {
-                    leftValue is DrBool && rightValue is DrBool ->
-                        DrBool(leftValue.value && rightValue.value)
+                    leftValue is ParserBool && rightValue is ParserBool ->
+                        ParserBool(leftValue.value && rightValue.value)
                     else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
                 }
                 "||" -> when {
-                    leftValue is DrBool && rightValue is DrBool ->
-                        DrBool(leftValue.value || rightValue.value)
+                    leftValue is ParserBool && rightValue is ParserBool ->
+                        ParserBool(leftValue.value || rightValue.value)
                     else -> throw DRUnsupportedOperatorException(
                                 operator = operator,
                                 types = leftValue.type() to rightValue.type())
@@ -504,7 +504,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             return if (evalCondition(condition, env)) {
                 thenBranch.eval(env)
             } else {
-                elseBranch?.eval(env) ?: DrNull
+                elseBranch?.eval(env) ?: ParserNull
             }
         }
 
@@ -516,7 +516,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 .mapValues { (_, v) -> unwrap(v) }
                 .toMap()
 
-            DrLambda(f, env.copy(), capture)
+            ParserLambda(f, env.copy(), capture)
         }
 
         // Unary computing
@@ -525,20 +525,20 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
             return when (operator) {
                 "!" -> {
-                    if (value !is DrBool)
+                    if (value !is ParserBool)
                         throw DRCannotNegateException(
                             type = value.type(),
                             operator = operator)
 
-                    DrBool(!value.value)
+                    ParserBool(!value.value)
                 }
                 "-" -> {
-                    if (value !is DrInt)
+                    if (value !is ParserInt)
                         throw DRCannotNegateException(
                             type = value.type(),
                             operator = operator)
 
-                    DrInt(-value.value)
+                    ParserInt(-value.value)
                 }
                 else -> throw DRUnknownOperatorException(operator = operator)
             }
@@ -548,7 +548,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
         is Assign -> {
             val v = validateValue(value.eval(env))
             env.assign(name, v)
-            DrVoid
+            ParserVoid
         }
 
         // Object field getter
@@ -557,7 +557,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
             val receiverValue = unwrap(receiver.eval(env))
 
             when (receiverValue) {
-                is DrModule -> {
+                is ParserModule -> {
                     val value = receiverValue.get(name)
                         ?: throw DMLNotFoundInModuleException(
                             element = name,
@@ -568,12 +568,12 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     return value
                 }
 
-                is DrInstance -> {
+                is ParserInstance -> {
                     val klass = receiverValue.klass
 
                     // Instance Fields
                     if (receiverValue.has(name)) {
-                        val value: DrValue = receiverValue.get(name)
+                        val value: ParserValue = receiverValue.get(name)
                         validateValue(unwrap(value))
 
                         return value
@@ -581,7 +581,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     // Instance Methods
                     klass.methods[name]?.let { method ->
-                        return DrMethod(
+                        return ParserMethod(
                             let = method.let,
                             closure = klass.closure.copy(),
                             instance = receiverValue,
@@ -594,7 +594,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         className = klass.name)
                 }
 
-                is DrClass -> {
+                is ParserClass -> {
                     val klass = receiverValue
 
                     // Static fields
@@ -608,7 +608,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 
                     // Static methods
                     klass.staticMethods[name]?.let { staticMethod ->
-                        return DrMethod(
+                        return ParserMethod(
                             let = staticMethod.let,
                             closure = env,
                             instance = null,
@@ -633,7 +633,7 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                         memberName = name,
                         className = type.className)
 
-                return DrMethod(
+                return ParserMethod(
                     let = method.let,
                     closure = klass.closure.copy(),
                     instance = receiverValue,
@@ -652,11 +652,11 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                 throw DRNotAnObjectException(valueType = obj.type())
 
             when (obj) {
-                is DrModule -> throw DRCannotSetViaModuleAccessException()
+                is ParserModule -> throw DRCannotSetViaModuleAccessException()
 
-                is DrInstance -> obj.set(name, v)
+                is ParserInstance -> obj.set(name, v)
 
-                is DrClass -> {
+                is ParserClass -> {
                     val field = obj.staticFields[name]
                         ?: throw DRUnknownClassStaticMemberException(
                             memberName = name,
@@ -669,11 +669,11 @@ fun DrExpr.eval(env: DrEnv): DrValue {
                     type = obj.type())
             }
 
-            DrVoid
+            ParserVoid
         }
 
         // List
-        is ListLiteral -> DrList(values
+        is ListLiteral -> ParserList(values
             .map { unwrap(it.eval(env)) }
             .toMutableList())
 
@@ -682,13 +682,13 @@ fun DrExpr.eval(env: DrEnv): DrValue {
 }
 
 
-private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : DrValue {
-    var last: DrValue = DrNull
+private fun evalBlock(returnType: ParserType, statements: List<ParserStatement>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : ParserValue {
+    var last: ParserValue = ParserNull
 
     for (stmt in statements) {
         val result = stmt.eval(env)
 
-        if (result is DrReturn) {
+        if (result is ParserReturn) {
             if (!isAssignable(result.type(), returnType))
                 throw DRUnsuccessfulCastException(
                     valueType = result.type(),
@@ -713,7 +713,7 @@ private fun evalBlock(returnType: DrType, statements: List<DrStmt>, env: DrEnv, 
                     expectedType = returnType)
             }
         }
-        returnType == VoidType || returnType == AnyType -> DrVoid
+        returnType == VoidType || returnType == AnyType -> ParserVoid
         else -> throw DRMissingReturnStatementException()
     }
 }

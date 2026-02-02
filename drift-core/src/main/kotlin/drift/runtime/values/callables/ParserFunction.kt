@@ -9,56 +9,56 @@
 
 package drift.runtime.values.callables
 
-import drift.runtime.AnyType
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.ast.statements.Function
+import drift.runtime.DrEnv
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.MultiTypes
 import drift.runtime.ObjectType
 import drift.runtime.SingleType
 
 
 /******************************************************************************
- * DRIFT NATIVE FUNCTION RUNTIME TYPE
+ * DRIFT FUNCTION RUNTIME TYPE
  *
- * Runtime class to represent Native Function structures.
+ * Runtime class to represent Function statements.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a native function.
+ * Runtime representation of a function.
  *
- * It does not represent [DrFunction], [DrLambda]
- * and [DrMethod].
+ * It does not represent [ParserLambda], [ParserNativeFunction]
+ * and [ParserMethod].
  *
- * @see DrCallable
+ * ```
+ * fun test(arg) {
+ *      // Body
+ * }
+ * ```
+ *
+ * @see ParserCallable
  */
-data class DrNativeFunction(
-    /** Function optional name */
-    val name: String? = null,
+data class ParserFunction(
+    /** Function structure */
+    val let: Function,
 
-    /** Kotlin function source code callback */
-    val impl: (receiver: DrValue?, args: List<Pair<String?, DrValue>>) -> DrValue,
-
-    /** Types of [impl] arguments, in same order */
-    val paramTypes: List<DrType>,
-
-    /** Function return type */
-    val returnType: DrType = AnyType
-) : DrValue, DrCallable {
+    /** Function closure, environment instance */
+    val closure: DrEnv
+) : ParserValue, ParserCallable {
 
 
 
     /** @return A prepared string version of the type */
     override fun asString(): String =
-        "<[native#${hashCode()}] ${type().asString()}>"
-
+        "<[function@${hashCode()}] ${let.name} ${type().asString()}>"
 
     /** @return The object representation of the type */
-    override fun type(): DrType = ObjectType(
+    override fun type(): ParserType = ObjectType(
         "Function", mapOf(
-            "paramTypes" to MultiTypes(paramTypes),
-            "returnType" to SingleType(returnType)
+            "paramTypes" to MultiTypes(let.parameters.map { it.type }),
+            "returnType" to SingleType(let.returnType)
         )
     )
 }

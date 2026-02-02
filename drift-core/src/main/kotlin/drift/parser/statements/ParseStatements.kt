@@ -9,6 +9,7 @@
 
 package drift.parser.statements
 
+import drift.ast.bindings.ForVariable
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
 import drift.ast.statements.*
@@ -23,9 +24,9 @@ import drift.parser.exceptions.DPUnterminatedBlockException
 import drift.parser.expressions.parseExpression
 import drift.parser.types.parseType
 import drift.runtime.AnyType
-import drift.runtime.DrType
-import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.ParserType
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.specials.ParserVoid
 
 
 /******************************************************************************
@@ -44,7 +45,7 @@ import drift.runtime.values.specials.DrVoid
  *
  * @return Constructed statement AST object
  */
-internal fun Parser.parseStatement() : DrStmt {
+internal fun Parser.parseStatement() : ParserStatement {
     return when (val token = current()) {
         is Token.Symbol -> when (token.value) {
             "{" -> {
@@ -68,7 +69,7 @@ internal fun Parser.parseStatement() : DrStmt {
             }
             token.isKeyword(Token.Keyword.LEAVE) -> {
                 advance(false)
-                Return(Literal(DrVoid))
+                Return(Literal(ParserVoid))
             }
             token.isKeyword(Token.Keyword.FOR) -> {
                 advance(false)
@@ -124,7 +125,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
             || peekSymbol("=", true))
 
     // Type definition
-    val type : DrType = if (matchSymbol(":")) {
+    val type : ParserType = if (matchSymbol(":")) {
         parseType()
     } else {
         AnyType
@@ -140,7 +141,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
         throw DPStaticFieldMustBeInitializedException(
             fieldName = name)
     } else {
-        Literal(DrNotAssigned)
+        Literal(ParserNotAssigned)
     }
 
     if (expr is Lambda) {
@@ -172,7 +173,7 @@ internal fun Parser.parseClassicIf() : If {
     skip(Token.NewLine)
 
     val thenBlock = parseStatement()
-    var elseBlock: DrStmt? = null
+    var elseBlock: ParserStatement? = null
 
     if (current() is Token.Identifier
         && (current() as Token.Identifier).isKeyword(Token.Keyword.ELSE)) {
@@ -216,7 +217,7 @@ internal fun Parser.parseReturn() : Return =
 internal fun Parser.parseBlock() : Block {
     skip(Token.NewLine)
 
-    val statements = mutableListOf<DrStmt>()
+    val statements = mutableListOf<ParserStatement>()
 
     while (true) {
         if (matchSymbol("}"))
@@ -264,7 +265,7 @@ internal fun Parser.parseFor() : For {
     expectSymbol("{")
     skip(Token.NewLine)
 
-    val variables = mutableListOf<String>()
+    val variables = mutableListOf<ForVariable>()
 
     val c = current()
 
@@ -272,10 +273,7 @@ internal fun Parser.parseFor() : For {
         advance(false)
 
         do {
-            val name = expect<Token.Identifier>(
-                "variable name after '${Token.Keyword.AS}'").value
-
-            variables.add(name)
+            variables.add(parseForVariable())
 
             advance(false)
         } while (matchSymbol(","))
@@ -283,18 +281,20 @@ internal fun Parser.parseFor() : For {
         advance()
     }
 
-    val statements = mutableListOf<DrStmt>()
+    val statements = mutableListOf<ParserStatement>()
 
     while (!checkSymbol("}")) {
         statements.add(parseStatement())
 
         when (val c = current()) {
             is Token.NewLine -> advance()
+
             is Token.Symbol ->
                 if (c.value == "}") break
                 else throw DPMissingExpectedTokenException(
                     expected = "newline or '}'",
                     found = c)
+
             else -> throw DPMissingExpectedTokenException(
                     expected = "newline or '}'",
                     found = c)
@@ -304,6 +304,12 @@ internal fun Parser.parseFor() : For {
     expectSymbol("}")
 
     return For(iterable, variables, Block(statements))
+}
+
+internal fun Parser.parseForVariable() : ForVariable {
+    val name = expect<Token.Identifier>("variable name").value
+
+    return ForVariable(name)
 }
 
 

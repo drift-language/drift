@@ -9,7 +9,7 @@
 
 package drift.parser
 
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.ast.statements.Import
 import drift.lexer.Token
 import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
@@ -147,8 +147,8 @@ class Parser(
      * @return The entire list of statements (AST)
      * @throws DPImportsStatementsMustPrecedeAllOtherStatementsException
      */
-    fun parse(): List<DrStmt> {
-        val statements = mutableListOf<DrStmt>()
+    fun parse(): List<ParserStatement> {
+        val statements = mutableListOf<ParserStatement>()
         var canImport = true
 
         while (!isAtEnd()) {

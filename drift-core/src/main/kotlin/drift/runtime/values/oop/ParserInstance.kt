@@ -9,17 +9,17 @@
 package drift.runtime.values.oop
 
 import drift.runtime.DrEnv
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.ObjectType
 import drift.runtime.evaluators.eval
 import drift.runtime.exceptions.DRMissingReturnStatementException
 import drift.runtime.exceptions.DRUnknownClassMemberException
 import drift.runtime.exceptions.DRUnsuccessfulCastException
 import drift.runtime.exceptions.DRVariableNotDefinedException
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrReturn
-import drift.runtime.values.primaries.DrString
+import drift.runtime.values.callables.ParserMethod
+import drift.runtime.values.callables.ParserReturn
+import drift.runtime.values.primaries.ParserString
 
 
 /******************************************************************************
@@ -33,12 +33,12 @@ import drift.runtime.values.primaries.DrString
 /**
  * Runtime representation of a class instance.
  */
-data class DrInstance(
+data class ParserInstance(
     /** Class structure */
-    val klass: DrClass,
+    val klass: ParserClass,
 
     /** Instance environment */
-    val env: DrEnv) : DrValue {
+    val env: DrEnv) : ParserValue {
 
 
 
@@ -52,12 +52,12 @@ data class DrInstance(
         val local = DrEnv()
         local.define("\$this", this)
 
-        var result: DrValue? = null
+        var result: ParserValue? = null
 
         for (statement in method.let.body) {
             val evalResult = statement.eval(local)
 
-            if (evalResult is DrReturn) {
+            if (evalResult is ParserReturn) {
                 result = evalResult.value
                 break
             }
@@ -68,7 +68,7 @@ data class DrInstance(
         if (result == null)
             throw DRMissingReturnStatementException()
 
-        if (result !is DrString)
+        if (result !is ParserString)
             throw DRUnsuccessfulCastException(
                 valueType = result.type(),
                 expectedType = ObjectType("String"))
@@ -77,7 +77,7 @@ data class DrInstance(
     }
 
     /** @return The object representation of the type */
-    override fun type(): DrType = ObjectType(klass.name)
+    override fun type(): ParserType = ObjectType(klass.name)
 
 
     /**
@@ -93,13 +93,13 @@ data class DrInstance(
      * @param name Attribute name
      * @return Attribute value
      */
-    fun get(name: String) : DrValue {
+    fun get(name: String) : ParserValue {
         if (has(name))
             return env.get(name)
 
         val method = klass.methods[name]
 
-        if (method is DrMethod) {
+        if (method is ParserMethod) {
             return method.copy(instance = this)
         }
 
@@ -116,7 +116,7 @@ data class DrInstance(
      * @param name Attribute name
      * @param value New attribute value to apply
      */
-    fun set(name: String, value: DrValue) {
+    fun set(name: String, value: ParserValue) {
         if (!has(name))
             throw DRVariableNotDefinedException(name = name)
 

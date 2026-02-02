@@ -23,12 +23,12 @@ package drift.runtime
  * natively in Drift, like primary ones, classes,
  * callables, etc.
  */
-interface DrValue {
+interface ParserValue {
     /** @return A prepared string version of the value */
     fun asString() : String
 
     /** @return The type corresponding to the value */
-    fun type() : DrType
+    fun type() : ParserType
 }
 
 
@@ -51,11 +51,11 @@ interface TypeArgument
  * This data class permits to contain one type,
  * a powerful component of [TypeArgument] interface.
  */
-data class SingleType(val type: DrType) : TypeArgument
+data class SingleType(val type: ParserType) : TypeArgument
 
 
 /**
  * This data class permits to contain many types,
  * a powerful component of [TypeArgument] interface.
  */
-data class MultiTypes(val types: List<DrType>) : TypeArgument
+data class MultiTypes(val types: List<ParserType>) : TypeArgument

@@ -9,47 +9,31 @@
 
 package drift.runtime.values.primaries
 
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 import drift.runtime.ObjectType
 
 
 /******************************************************************************
- * DRIFT UNSIGNED INTEGER RUNTIME TYPE
+ * DRIFT STRING RUNTIME TYPE
  *
- * Runtime class for Unsigned Integer type.
+ * Runtime class for String type.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a 32-bits unsigned integer.
+ * Runtime representation of a string.
  *
  * @see DrPrimary
  */
-data class DrUInt(
-    /** Integer value */
-    override val value: UInt) : DrPrimary<UInt>, DrValue, DrNumeric {
-
+data class ParserString(
+    /** String value (unquoted) */
+    override val value: String) : ParserValue, DrPrimary<String> {
 
 
     /** @return A prepared string version of the type */
-    override fun asString() = value.toString()
+    override fun asString() = value
 
     /** @return The object representation of the type */
-    override fun type() = ObjectType("UInt")
-
-
-    override fun asInt(): Int = try {
-        value.toInt()
-    } catch (_: NumberFormatException) {
-        0
-    }
-
-    override fun asLong(): Long = try {
-        value.toLong()
-    } catch (_: NumberFormatException) {
-        0L
-    }
-
-    override fun asUInt(): UInt = value
+    override fun type() = ObjectType("String")
 }

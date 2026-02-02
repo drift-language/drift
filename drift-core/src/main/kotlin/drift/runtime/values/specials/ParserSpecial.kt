@@ -6,35 +6,20 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.values.specials
 
-package drift.runtime.values.primaries
-
-import drift.runtime.DrValue
-import drift.runtime.ObjectType
+import drift.runtime.ParserValue
 
 
 /******************************************************************************
- * DRIFT BOOLEAN RUNTIME TYPE
+ * DRIFT SPECIAL RUNTIME TYPE
  *
- * Runtime class for Boolean type.
+ * Interface for all special types.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a boolean.
- *
- * @see DrPrimary
+ * Runtime interface representing all Drift special types.
  */
-data class DrBool(
-    /** Boolean value */
-    override val value: Boolean) : DrValue, DrPrimary<Boolean> {
-
-
-
-    /** @return A prepared string version of the type */
-    override fun asString() = value.toString()
-
-    /** @return The object representation of the type */
-    override fun type() = ObjectType("Bool")
-}
+interface ParserSpecial : ParserValue

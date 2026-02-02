@@ -9,10 +9,10 @@
 
 package drift.parser.callables
 
-import drift.ast.expressions.DrExpr
+import drift.ast.expressions.ParserExpression
 import drift.ast.expressions.Lambda
 import drift.ast.statements.Function
-import drift.ast.statements.FunctionParameter
+import drift.ast.bindings.FunctionParameter
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.*
@@ -20,7 +20,7 @@ import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.runtime.AnyType
-import drift.runtime.DrType
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -64,7 +64,7 @@ internal fun Parser.parseFunction() : Function {
         expectSymbol(")")
     }
 
-    val returnType: DrType =
+    val returnType: ParserType =
         if (matchSymbol(":")) parseType()
         else AnyType
 
@@ -125,7 +125,7 @@ internal fun Parser.parseLambda() : Lambda {
 
     expectSymbol(")")
 
-    val returnType: DrType =
+    val returnType: ParserType =
         if (matchSymbol(":")) parseType()
         else AnyType
 
@@ -133,7 +133,7 @@ internal fun Parser.parseLambda() : Lambda {
 
     val body = parseBlock().statements
 
-    return Lambda(null, parameters, body, returnType)
+    return Lambda(parameters, body, returnType)
 }
 
 
@@ -147,7 +147,7 @@ internal fun Parser.parseLambda() : Lambda {
 internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParameter>) : FunctionParameter {
     val isPositional: Boolean = matchSymbol("*")
     val paramToken = expect<Token.Identifier>("parameter name")
-    var value: DrExpr? = null
+    var value: ParserExpression? = null
 
     if (parameters.firstOrNull { it.name == paramToken.value } != null)
         throw DPParameterAlreadyDefinedException(
@@ -155,7 +155,7 @@ internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParam
 
     advance()
 
-    var paramType: DrType = AnyType
+    var paramType: ParserType = AnyType
 
     if (matchSymbol(":"))
         paramType = parseType()

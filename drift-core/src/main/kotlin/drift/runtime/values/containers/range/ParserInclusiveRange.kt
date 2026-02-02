@@ -8,55 +8,52 @@
  ******************************************************************************/
 package drift.runtime.values.containers.range
 
-import drift.runtime.DrType
+import drift.runtime.ParserType
 import drift.runtime.ObjectType
 import drift.runtime.values.primaries.DrInteger
 
 
 /******************************************************************************
- * DRIFT EXCLUSIVE RANGE RUNTIME TYPE
+ * DRIFT INCLUDED RANGE RUNTIME TYPE
  *
- * Runtime class for ExclusiveRange type.
+ * Runtime class for InclusiveRange type.
  ******************************************************************************/
 
 
 
 /**
- * Runtime exclusive range structure.
+ * Runtime inclusive range structure.
  *
- * An exclusive range is a simplified structure representing
- * each integer between [from] and [to] (excluded) values.
- *
- * At this moment, Drift supports only a right-excluded interval.
- * We plan to add left-excluded and both-excluded soon.
+ * An inclusive range is a simplified structure representing
+ * each integer between [from] and [to] (included) values.
  *
  * ### Syntax
- * Type: ```[Type..<]```
+ * Type: ```[Type..]```
  * ```
- * // This represents the values: 1, 2, 3 and 4.
- * let range = 1..<5
+ * // This represents the values: 1, 2, 3, 4 and 5.
+ * let range = 1..5
  * ```
  */
-data class DrExclusiveRange(
+data class ParserInclusiveRange(
     override val from: DrInteger<*>,
     override val to: DrInteger<*>
-) : DrRange {
+) : ParserRange {
 
     companion object {
-        fun factory(from: DrInteger<*>, to: DrInteger<*>) : DrRange {
+        fun factory(from: DrInteger<*>, to: DrInteger<*>) : ParserRange {
             require(from::class == to::class) { "Range requires both ends to be of the same type" }
 
-            return DrExclusiveRange(from, to)
+            return ParserInclusiveRange(from, to)
         }
     }
 
 
     /** @return A prepared string version of the type */
     override fun asString(): String =
-        "[ ${from.value} -> <${to.value} ]"
+        "[ ${from.value} -> ${to.value} ]"
 
 
     /** @return The object representation of the type */
-    override fun type(): DrType =
-        ObjectType("ExclusiveRange")
+    override fun type(): ParserType =
+        ObjectType("InclusiveRange")
 }

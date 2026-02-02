@@ -23,7 +23,7 @@ package drift.runtime
  * types, like null, void, any, last, unknown, classes, and
  * united, optional types.
  */
-sealed interface DrType {
+sealed interface ParserType {
     /** @return A prepared string version of the type */
     fun asString() : String
 }
@@ -41,9 +41,9 @@ sealed interface DrType {
  * It is used for variables or expressions that do not
  * reference any object or value.
  *
- * @see DrType
+ * @see ParserType
  */
-data object NullType : DrType {
+data object NullType : ParserType {
     override fun asString(): String = "Null"
 }
 
@@ -52,9 +52,9 @@ data object NullType : DrType {
 /**
  * VOID type represents the absence of return for a function.
  *
- * @see DrType
+ * @see ParserType
  */
-data object VoidType : DrType {
+data object VoidType : ParserType {
     override fun asString(): String = "Void"
 }
 
@@ -67,9 +67,9 @@ data object VoidType : DrType {
  * ANY is applied to any variable, function without explicit
  * type.
  *
- * @see DrType
+ * @see ParserType
  */
-data object AnyType : DrType {
+data object AnyType : ParserType {
     override fun asString(): String = "Any"
 }
 
@@ -86,9 +86,9 @@ data object AnyType : DrType {
  * }
  * ```
  *
- * @see DrType
+ * @see ParserType
  */
-data object LastType : DrType {
+data object LastType : ParserType {
     override fun asString(): String = "Last"
 }
 
@@ -98,11 +98,11 @@ data object LastType : DrType {
  * UNKNOWN special type represents a variable which does not
  * have a value.
  *
- * It is linked to [drift.runtime.values.specials.DrNotAssigned].
+ * It is linked to [drift.runtime.values.specials.ParserNotAssigned].
  *
- * @see DrType
+ * @see ParserType
  */
-data object UnknownType : DrType {
+data object UnknownType : ParserType {
     override fun asString(): String = "Unknown"
 }
 
@@ -114,8 +114,8 @@ data object UnknownType : DrType {
 
 
 /**
- * This type container add the optional behavior
- * to inner type. It allows to use NULL as value.
+ * This type container adds the optional behavior
+ * to the inner type. It allows using NULL as a value.
  *
  * By default, an entity is non-nullable.
  *
@@ -127,16 +127,16 @@ data object UnknownType : DrType {
  * ```
  *
  * @param inner Inner type to make optional
- * @see DrType
+ * @see ParserType
  */
-data class OptionalType(val inner: DrType) : DrType {
+data class OptionalType(val inner: ParserType) : ParserType {
     override fun asString() = "${inner.asString()}?"
 }
 
 
 /**
- * This type container permits to unite provided
- * types. It allows to type an entity with many types.
+ * This type container permits uniting provided
+ * types. It allows typing an entity with many types.
  *
  * Many types can be united using the `|` character between
  * them.
@@ -147,9 +147,9 @@ data class OptionalType(val inner: DrType) : DrType {
  * ```
  *
  * @param options United types (inner)
- * @see DrType
+ * @see ParserType
  */
-data class UnionType(val options: List<DrType>) : DrType {
+data class UnionType(val options: List<ParserType>) : ParserType {
     override fun asString() = options.joinToString(" | ") { it.asString() }
 }
 
@@ -170,7 +170,7 @@ data class UnionType(val options: List<DrType>) : DrType {
  * @param className Object's class name
  * @param args Object arguments
  */
-data class ObjectType(val className: String, val args: Map<String, TypeArgument> = emptyMap()) : DrType {
+data class ObjectType(val className: String, val args: Map<String, TypeArgument> = emptyMap()) : ParserType {
     override fun asString() = className
 }
 
@@ -178,15 +178,15 @@ data class ObjectType(val className: String, val args: Map<String, TypeArgument>
 
 /**
  * Verify if the provided value type could be used
- * with expected one.
+ * with the expected one.
  *
- * This function should be used before any entity assign.
+ * This function should be used before any entity is assigned.
  *
  * @param valueType Type of the value to assign
  * @param expected Expected type from entity
  * @return If both types can cooperate on assign
  */
-fun isAssignable(valueType: DrType, expected: DrType): Boolean {
+fun isAssignable(valueType: ParserType, expected: ParserType): Boolean {
     if (valueType == UnknownType
         || expected == AnyType
         || expected == VoidType && valueType == VoidType) {

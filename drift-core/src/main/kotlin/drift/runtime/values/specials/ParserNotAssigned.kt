@@ -6,29 +6,28 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
 package drift.runtime.values.specials
 
-import drift.runtime.DrValue
-import drift.runtime.VoidType
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
+import drift.runtime.UnknownType
 
 
 /******************************************************************************
- * DRIFT VOID RUNTIME SPECIAL TYPE
+ * DRIFT NOT ASSIGNED RUNTIME SPECIAL TYPE
  *
- * Runtime class for Void special type.
+ * Runtime class for NotAssigned special type.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of the VOID type, which represents
- * the absence of return for a function.
+ * Runtime representation of the NotAssigned type, which represents
+ * a variable which does not have a value.
  *
- * @see drift.runtime.VoidType
+ * It is linked to [UnknownType].
  */
-data object DrVoid : DrValue {
-    override fun asString() = "void"
-
-    override fun type() = VoidType
+data object ParserNotAssigned : ParserValue {
+    override fun asString(): String = UnknownType.asString()
+    override fun type(): ParserType = UnknownType
 }

@@ -7,33 +7,28 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.runtime.values.primaries
+package drift.runtime.values.specials
 
-import drift.runtime.DrValue
-import drift.runtime.ObjectType
+import drift.runtime.ParserValue
+import drift.runtime.VoidType
 
 
 /******************************************************************************
- * DRIFT STRING RUNTIME TYPE
+ * DRIFT VOID RUNTIME SPECIAL TYPE
  *
- * Runtime class for String type.
+ * Runtime class for Void special type.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a string.
+ * Runtime representation of the VOID type, which represents
+ * the absence of return for a function.
  *
- * @see DrPrimary
+ * @see drift.runtime.VoidType
  */
-data class DrString(
-    /** String value (unquoted) */
-    override val value: String) : DrValue, DrPrimary<String> {
+data object ParserVoid : ParserValue {
+    override fun asString() = "void"
 
-
-    /** @return A prepared string version of the type */
-    override fun asString() = value
-
-    /** @return The object representation of the type */
-    override fun type() = ObjectType("String")
+    override fun type() = VoidType
 }

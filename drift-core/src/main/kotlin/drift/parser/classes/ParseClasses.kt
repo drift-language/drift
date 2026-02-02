@@ -12,7 +12,7 @@ package drift.parser.classes
 import drift.ast.expressions.Literal
 import drift.ast.statements.Class
 import drift.ast.statements.Function
-import drift.ast.statements.FunctionParameter
+import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Let
 import drift.parser.Parser
 import drift.lexer.Token
@@ -24,7 +24,7 @@ import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
 import drift.parser.statements.parseLet
 import drift.parser.types.parseType
 import drift.runtime.VoidType
-import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.specials.ParserNotAssigned
 
 
 /******************************************************************************
@@ -81,7 +81,7 @@ internal fun Parser.parseClass() : Class {
                 fields.add(Let(
                     param.name,
                     param.type,
-                    Literal(DrNotAssigned),
+                    Literal(ParserNotAssigned),
                     isMutable = false))
             }
 

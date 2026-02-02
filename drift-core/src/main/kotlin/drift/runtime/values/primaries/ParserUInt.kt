@@ -9,26 +9,26 @@
 
 package drift.runtime.values.primaries
 
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 import drift.runtime.ObjectType
 
 
 /******************************************************************************
- * DRIFT INTEGER RUNTIME TYPE
+ * DRIFT UNSIGNED INTEGER RUNTIME TYPE
  *
- * Runtime class for Int type.
+ * Runtime class for Unsigned Integer type.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a 32-bits integer.
+ * Runtime representation of a 32-bits unsigned integer.
  *
  * @see DrPrimary
  */
-data class DrInt(
+data class ParserUInt(
     /** Integer value */
-    override val value: Int) : DrPrimary<Int>, DrValue, DrInteger<Int> {
+    override val value: UInt) : DrPrimary<UInt>, ParserValue, DrNumeric {
 
 
 
@@ -36,10 +36,14 @@ data class DrInt(
     override fun asString() = value.toString()
 
     /** @return The object representation of the type */
-    override fun type() = ObjectType("Int")
+    override fun type() = ObjectType("UInt")
 
 
-    override fun asInt(): Int = value
+    override fun asInt(): Int = try {
+        value.toInt()
+    } catch (_: NumberFormatException) {
+        0
+    }
 
     override fun asLong(): Long = try {
         value.toLong()
@@ -47,9 +51,5 @@ data class DrInt(
         0L
     }
 
-    override fun asUInt(): UInt = try {
-        value.toUInt()
-    } catch (_: NumberFormatException) {
-        0U
-    }
+    override fun asUInt(): UInt = value
 }

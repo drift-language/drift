@@ -11,10 +11,10 @@ package drift.runtime.values.oop
 
 import drift.ast.statements.Let
 import drift.runtime.DrEnv
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.ObjectType
-import drift.runtime.values.callables.DrMethod
+import drift.runtime.values.callables.ParserMethod
 import drift.sslot.StaticSlot
 
 
@@ -32,7 +32,7 @@ const val constructorName: String = "init"
 /**
  * Runtime representation of a class.
  */
-data class DrClass(
+data class ParserClass(
     /** Class name */
     val name: String,
 
@@ -40,23 +40,23 @@ data class DrClass(
     val fields: MutableMap<String, Let> = mutableMapOf(),
 
     /** Class methods */
-    val methods: MutableMap<String, DrMethod> = mutableMapOf(),
+    val methods: MutableMap<String, ParserMethod> = mutableMapOf(),
 
     /** Class static fields, attributes */
     val staticFields: MutableMap<String, StaticSlot> = mutableMapOf(),
 
     /** Class static methods */
-    val staticMethods: MutableMap<String, DrMethod> = mutableMapOf(),
+    val staticMethods: MutableMap<String, ParserMethod> = mutableMapOf(),
 
     /** Class initialization environment */
     val closure: DrEnv,
 
     /** Class Constructor type (primary or standard) */
-    val constructorType: ConstructorType? = null) : DrValue {
+    val constructorType: ConstructorType? = null) : ParserValue {
 
 
     /** Constructor if existing, else NULL */
-    val constructor : DrMethod?
+    val constructor : ParserMethod?
         get() = methods[constructorName]
 
 
@@ -64,7 +64,7 @@ data class DrClass(
     override fun asString() = "<[class#${hashCode()}] $name>"
 
     /** @return The object representation of the type */
-    override fun type(): DrType = ObjectType(name)
+    override fun type(): ParserType = ObjectType(name)
 
 
     enum class ConstructorType {

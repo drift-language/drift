@@ -6,19 +6,35 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.runtime.values.containers.range
 
-package drift.runtime.values.callables
+import drift.runtime.ParserValue
+import drift.runtime.values.primaries.DrInteger
 
 
 /******************************************************************************
- * DRIFT CALLABLE RUNTIME TYPES
+ * DRIFT RANGE RUNTIME TYPES
  *
- * Interface for all Drift Callable types.
+ * Interface for all Drift Range types.
  ******************************************************************************/
 
 
 
 /**
- * This interface represents all callable value types.
+ * Interface representing all Drift Range types.
+ *
+ * At this moment, it exists two variants:
+ * - [ParserInclusiveRange] `a..b`
+ * - [ParserExclusiveRange] `a..<b`
+ *
+ * @see ParserInclusiveRange
+ * @see ParserExclusiveRange
  */
-interface DrCallable
+sealed interface ParserRange : ParserValue {
+
+    /** From value, start of the range */
+    val from: DrInteger<*>
+
+    /** To value, end of the range, included */
+    val to: DrInteger<*>
+}

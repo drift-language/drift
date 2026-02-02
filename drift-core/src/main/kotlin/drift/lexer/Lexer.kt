@@ -126,7 +126,7 @@ sealed class Token {
     /**
      * Symbol token type.
      *
-     * A symbol is a single or multi characters operator,
+     * A symbol is a single or multi-character operator,
      * used to compute an expression like boolean comparison
      * or arithmetical equation, for example.
      *

@@ -9,8 +9,7 @@
 
 package drift.runtime.values.specials
 
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
 import drift.runtime.NullType
 
 
@@ -31,8 +30,8 @@ import drift.runtime.NullType
  *
  * @see drift.runtime.NullType
  */
-data object DrNull : DrSpecial {
+data object ParserNull : ParserSpecial {
     override fun asString() = "null"
 
-    override fun type(): DrType = NullType
+    override fun type(): ParserType = NullType
 }

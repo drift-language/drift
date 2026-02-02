@@ -11,51 +11,63 @@ package drift.runtime.values.callables
 
 import drift.ast.statements.Function
 import drift.runtime.DrEnv
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.MultiTypes
 import drift.runtime.ObjectType
 import drift.runtime.SingleType
+import drift.runtime.values.oop.ParserInstance
 
 
 /******************************************************************************
- * DRIFT FUNCTION RUNTIME TYPE
+ * DRIFT CLASS METHOD RUNTIME TYPE
  *
- * Runtime class to represent Function statements.
+ * Runtime class to represent Class Method statements.
  ******************************************************************************/
 
 
 
 /**
- * Runtime representation of a function.
+ * Runtime representation of a class method.
  *
- * It does not represent [DrLambda], [DrNativeFunction]
- * and [DrMethod].
+ * It does not represent [ParserFunction], [ParserNativeFunction]
+ * and [ParserLambda].
  *
- * ```
- * fun test(arg) {
- *      // Body
- * }
- * ```
- *
- * @see DrCallable
+ * @see ParserCallable
  */
-data class DrFunction(
-    /** Function structure */
+data class ParserMethod(
+    /** Method structure */
     val let: Function,
 
-    /** Function closure, environment instance */
-    val closure: DrEnv
-) : DrValue, DrCallable {
+    /** Method closure, environment instance */
+    val closure: DrEnv,
+
+    /** Method's class instance if existing; else NULL */
+    val instance: ParserValue? = null,
+
+    /**
+     *   **Only for native methods**
+     *
+     * Drift native method structure
+     */
+    val nativeImpl: ParserNativeFunction? = null) : ParserValue, ParserCallable {
 
 
 
     /** @return A prepared string version of the type */
-    override fun asString(): String =
-        "<[function@${hashCode()}] ${let.name} ${type().asString()}>"
+    override fun asString(): String {
+        val i: ParserInstance? = instance as? ParserInstance
+        var sourceString = "#"
+
+        if (i is ParserInstance) {
+            sourceString = "${i.klass.name}#${i.hashCode()}"
+        }
+
+        return "<[function#${hashCode()}] $sourceString.${let.name} ${type().asString()}>"
+    }
 
     /** @return The object representation of the type */
-    override fun type(): DrType = ObjectType(
+    override fun type(): ParserType = ObjectType(
         "Function", mapOf(
             "paramTypes" to MultiTypes(let.parameters.map { it.type }),
             "returnType" to SingleType(let.returnType)

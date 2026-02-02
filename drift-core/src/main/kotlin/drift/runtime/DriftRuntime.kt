@@ -16,12 +16,12 @@ import drift.lexer.lex
 import drift.parser.Parser
 import drift.runtime.evaluators.eval
 import drift.runtime.exceptions.DRUnsuccessfulCastException
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.callables.ParserMethod
+import drift.runtime.values.callables.ParserNativeFunction
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserVoid
 import project.ProjectConfig
 import java.io.File
 
@@ -42,17 +42,17 @@ object DriftRuntime {
         val ast = Parser(tokens).parse()
 
         env.run {
-            define("print", DrNativeFunction(
+            define("print", ParserNativeFunction(
                 impl = { _, args ->
                     println(args.joinToString(" ") { it.second.asString() })
-                    DrVoid
+                    ParserVoid
                 },
                 paramTypes = listOf(AnyType),
                 returnType = NullType))
 
-            defineClass("String", DrClass(
+            defineClass("String", ParserClass(
                 "String", mutableMapOf(), mutableMapOf(
-                    "length" to DrMethod(
+                    "length" to ParserMethod(
                         let = Function(
                             name = "length",
                             parameters = emptyList(),
@@ -60,23 +60,23 @@ object DriftRuntime {
                             body = emptyList()
                         ),
                         closure = env,
-                        nativeImpl = DrNativeFunction(
+                        nativeImpl = ParserNativeFunction(
                             name = "length",
                             paramTypes = emptyList(),
                             returnType = ObjectType("Int"),
                             impl = { receiver, _ ->
-                                val instance = receiver as? DrString
+                                val instance = receiver as? ParserString
                                     ?: throw DRUnsuccessfulCastException(
                                         valueType = receiver?.type() ?: AnyType,
                                         expectedType = ObjectType("String"))
 
-                                DrInt(instance.value.length)
+                                ParserInt(instance.value.length)
                             }))), closure = env))
 
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int64", ParserClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
         }
 
         SymbolCollector(env).collect(ast)

@@ -9,8 +9,7 @@
 package drift.runtime.exceptions
 
 import drift.exceptions.DriftException
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -49,7 +48,7 @@ open class DriftRuntimeException(
  * @property pos The character position where the error is
  */
 open class DRNotSupportedTypeException(
-    type: DrType,
+    type: ParserType,
     message: String = "${type.asString()} is not supported in the current context.",
     sourceName: String? = null,
     line: Int = 0,
@@ -73,7 +72,7 @@ open class DRNotSupportedTypeException(
  * @property pos The character position where the error is
  */
 class DRNotSupportedTypeInRangeException(
-    type: DrType,
+    type: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -97,7 +96,7 @@ class DRNotSupportedTypeInRangeException(
  * @property pos The character position where the error is
  */
 class DRNotSupportedTypeInBooleanExpressionException(
-    type: DrType,
+    type: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -197,8 +196,8 @@ class DRCannotUseVoidAsValueException(
  * @property pos The character position where the error is
  */
 class DRUnsuccessfulCastException(
-    valueType: DrType,
-    expectedType: DrType,
+    valueType: ParserType,
+    expectedType: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -642,7 +641,7 @@ class DRNonCallableInvocationException(
  */
 class DRUnsupportedOperatorException(
     operator: String,
-    types: Pair<DrType, DrType>,
+    types: Pair<ParserType, ParserType>,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -715,7 +714,7 @@ class DRUnknownOperatorException(
  * @property pos The character position where the error is
  */
 class DRCannotNegateException(
-    type: DrType,
+    type: ParserType,
     operator: String,
     sourceName: String? = null,
     line: Int = 0,
@@ -824,7 +823,7 @@ class DRUnknownClassStaticMemberException(
  * @property pos The character position where the error is
  */
 class DRNotAnObjectException(
-    valueType: DrType,
+    valueType: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -847,7 +846,7 @@ class DRNotAnObjectException(
  * @property pos The character position where the error is
  */
 class DRCannotSetObjectException(
-    type: DrType,
+    type: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -933,7 +932,7 @@ class DRMissingReturnStatementException(
  * @property pos The character position where the error is
  */
 class DRCannotIterateException(
-    type: DrType,
+    type: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
@@ -961,7 +960,7 @@ class DRCannotIterateException(
  * @property pos The character position where the error is
  */
 class DRCannotDestructureException(
-    type: DrType,
+    type: ParserType,
     variablesCount: Int,
     sourceName: String? = null,
     line: Int = 0,
@@ -987,8 +986,8 @@ class DRCannotDestructureException(
  * @property pos The character position where the error is
  */
 class DRUnassignableException(
-    newValueType: DrType,
-    type: DrType,
+    newValueType: ParserType,
+    type: ParserType,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0

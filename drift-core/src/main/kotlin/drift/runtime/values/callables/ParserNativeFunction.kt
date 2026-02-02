@@ -7,61 +7,58 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.runtime.values.containers.list
+package drift.runtime.values.callables
 
 import drift.runtime.AnyType
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
+import drift.runtime.MultiTypes
 import drift.runtime.ObjectType
 import drift.runtime.SingleType
-import drift.runtime.UnionType
 
 
 /******************************************************************************
- * DRIFT LIST RUNTIME TYPE
+ * DRIFT NATIVE FUNCTION RUNTIME TYPE
  *
- * Runtime class to represent List type.
+ * Runtime class to represent Native Function structures.
  ******************************************************************************/
 
 
 
 /**
- * Runtime List structure.
+ * Runtime representation of a native function.
  *
- * A List is an auto-incremented index-based container.
+ * It does not represent [ParserFunction], [ParserLambda]
+ * and [ParserMethod].
  *
- * ### Syntax
- * Type: ```[Type]```
- * ```drift
- * let names: [String] = [ ... ]
- * ```
+ * @see ParserCallable
  */
-data class DrList(
-    /** List values */
-    val items: List<DrValue>) : DrValue {
+data class ParserNativeFunction(
+    /** Function optional name */
+    val name: String? = null,
+
+    /** Kotlin function source code callback */
+    val impl: (receiver: ParserValue?, args: List<Pair<String?, ParserValue>>) -> ParserValue,
+
+    /** Types of [impl] arguments, in same order */
+    val paramTypes: List<ParserType>,
+
+    /** Function return type */
+    val returnType: ParserType = AnyType
+) : ParserValue, ParserCallable {
+
 
 
     /** @return A prepared string version of the type */
     override fun asString(): String =
-        "[ ${items.joinToString(", ") { it.asString() }} ]"
+        "<[native#${hashCode()}] ${type().asString()}>"
 
 
     /** @return The object representation of the type */
-    override fun type(): DrType {
-        val types = items.map { it.type() }.toSet()
-
-        return ObjectType(
-            "List", mapOf(
-                Pair(
-                    "type", SingleType(
-                        when {
-                            types.isEmpty() -> AnyType
-                            types.size == 1 -> types.first()
-                            else -> UnionType(types.toList())
-                        }
-                    )
-                )
-            )
+    override fun type(): ParserType = ObjectType(
+        "Function", mapOf(
+            "paramTypes" to MultiTypes(paramTypes),
+            "returnType" to SingleType(returnType)
         )
-    }
+    )
 }

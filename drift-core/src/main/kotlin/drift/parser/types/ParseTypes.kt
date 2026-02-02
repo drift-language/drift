@@ -37,11 +37,11 @@ import drift.runtime.*
  * @throws DPWrongOptionalUnionTypeException
  * @throws DPSpecialInUnionTypeException
  */
-internal fun Parser.parseType() : DrType {
-    val types = mutableListOf<DrType>()
+internal fun Parser.parseType() : ParserType {
+    val types = mutableListOf<ParserType>()
     var foundOptional = false
     val token = expect<Token.Identifier>("type name")
-    var type: DrType = when (token.value) {
+    var type: ParserType = when (token.value) {
         "Null"      -> NullType
         "Void"      -> VoidType
         "Any"       -> AnyType

@@ -8,12 +8,12 @@
  ******************************************************************************/
 package drift.runtime.values.variables
 
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.exceptions.DRCannotAssignToImmutableException
 import drift.runtime.exceptions.DRUnassignableException
 import drift.runtime.isAssignable
-import drift.runtime.values.specials.DrNotAssigned
+import drift.runtime.values.specials.ParserNotAssigned
 
 
 /******************************************************************************
@@ -29,18 +29,18 @@ import drift.runtime.values.specials.DrNotAssigned
  *
  * This class represents all variables.
  */
-data class DrVariable(
+data class ParserVariable(
     /** Variable name */
     val name: String,
 
     /** Variable type */
-    val type: DrType,
+    val type: ParserType,
 
     /** Variable value */
-    var value: DrValue,
+    var value: ParserValue,
 
     /** If the variable can be changed */
-    val isMutable: Boolean) : DrValue {
+    val isMutable: Boolean) : ParserValue {
 
 
 
@@ -57,13 +57,13 @@ data class DrVariable(
      *
      * @param newValue New value to apply
      */
-    fun set(newValue: DrValue) {
+    fun set(newValue: ParserValue) {
         if (!isAssignable(newValue.type(), type))
             throw DRUnassignableException(
                 newValueType = newValue.type(),
                 type = type)
 
-        if (value != DrNotAssigned && !isMutable)
+        if (value != ParserNotAssigned && !isMutable)
             throw DRCannotAssignToImmutableException(name = name)
 
         value = newValue

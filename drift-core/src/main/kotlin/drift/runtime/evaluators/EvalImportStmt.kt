@@ -9,10 +9,9 @@
 package drift.runtime.evaluators
 
 import drift.ast.statements.Import
-import drift.runtime.DrEnv
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 import drift.runtime.ModuleLoader
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.specials.ParserVoid
 
 
 /******************************************************************************
@@ -23,8 +22,8 @@ import drift.runtime.values.specials.DrVoid
 
 
 
-fun Import.eval(loader: ModuleLoader) : DrValue {
+fun Import.eval(loader: ModuleLoader) : ParserValue {
     loader.importModule(this)
 
-    return DrVoid
+    return ParserVoid
 }
