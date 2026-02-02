@@ -1,8 +1,8 @@
 package drift.parser
 
 import drift.runtime.exceptions.DRMissingReturnStatementException
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.specials.ParserVoid
 import drift.utils.evalProgram
 import drift.utils.evalWithOutput
 import drift.utils.evalWithOutputs
@@ -23,7 +23,7 @@ class FunctionTest {
             double(x = 5)
         """.trimIndent())
 
-        assertEquals(DrInt(10), result)
+        assertEquals(ParserInt(10), result)
     }
 
     @Test
@@ -34,7 +34,7 @@ class FunctionTest {
             test()
         """.trimIndent())
 
-        assertEquals(DrVoid, result)
+        assertEquals(ParserVoid, result)
     }
 
     @Test
@@ -45,7 +45,7 @@ class FunctionTest {
             test(x = 1)
         """.trimIndent())
 
-        assertEquals(DrVoid, result)
+        assertEquals(ParserVoid, result)
     }
 
     @Test
@@ -56,7 +56,7 @@ class FunctionTest {
             test(x = 1, y = 2)
         """.trimIndent())
 
-        assertEquals(DrVoid, result)
+        assertEquals(ParserVoid, result)
     }
 
     @Test
@@ -69,7 +69,7 @@ class FunctionTest {
             test()
         """.trimIndent())
 
-        assertEquals(DrInt(1), result)
+        assertEquals(ParserInt(1), result)
     }
 
     @Test

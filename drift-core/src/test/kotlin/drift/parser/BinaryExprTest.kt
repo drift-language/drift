@@ -16,14 +16,14 @@ import drift.lexer.lex
 import drift.runtime.*
 import drift.runtime.exceptions.DRDivisionByZeroException
 import drift.runtime.exceptions.DRUnsupportedOperatorException
-import drift.runtime.values.containers.range.DrExclusiveRange
-import drift.runtime.values.containers.range.DrInclusiveRange
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.containers.range.ParserExclusiveRange
+import drift.runtime.values.containers.range.ParserInclusiveRange
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.primaries.ParserBool
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserInt64
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserNull
 import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -32,14 +32,14 @@ import kotlin.test.assertEquals
 
 class BinaryExprTest {
 
-    private fun evalExpr(input: String) : DrValue {
+    private fun evalExpr(input: String) : ParserValue {
         val env = DrEnv()
         env.apply {
-            defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("Int64", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
-            defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Int64", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("String", ParserClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+            defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
         }
         val ast = Parser(lex(input)).parse()
 
@@ -47,7 +47,7 @@ class BinaryExprTest {
         SymbolCollector(env).collect(ast)
         TypeChecker(env).check(ast)
 
-        var result: DrValue = DrNull
+        var result: ParserValue = ParserNull
 
         ast.forEach {
             result = it.eval(env)
@@ -60,35 +60,35 @@ class BinaryExprTest {
     fun `Test simple addition`() {
         val result = evalExpr("1 + 2")
 
-        assertEquals(DrInt(3), result)
+        assertEquals(ParserInt(3), result)
     }
 
     @Test
     fun `Test simple concatenation`() {
         val result = evalExpr("\"a\" + \"b\"")
 
-        assertEquals(DrString("ab"), result)
+        assertEquals(ParserString("ab"), result)
     }
 
     @Test
     fun `Test mixed precedence 1 ADD 2 MUL 3`() {
         val result = evalExpr("1 + 2 * 3")
 
-        assertEquals(DrInt(7), result)
+        assertEquals(ParserInt(7), result)
     }
 
     @Test
     fun `Test parenthesized expression`() {
         val result = evalExpr("(1 + 2) * 3")
 
-        assertEquals(DrInt(9), result)
+        assertEquals(ParserInt(9), result)
     }
 
     @Test
     fun `Test equality true`() {
         val result = evalExpr("1 + 1 == 2")
 
-        assertEquals(DrBool(true), result)
+        assertEquals(ParserBool(true), result)
     }
 
     @Test
@@ -105,7 +105,7 @@ class BinaryExprTest {
         assertDoesNotThrow {
             val range = evalExpr("1..3")
 
-            assertEquals(range, DrInclusiveRange(DrInt(1), DrInt(3)))
+            assertEquals(range, ParserInclusiveRange(ParserInt(1), ParserInt(3)))
         }
     }
 
@@ -119,7 +119,7 @@ class BinaryExprTest {
                 a..b
             """.trimIndent())
 
-            assertEquals(range, DrInclusiveRange(DrInt64(1), DrInt64(3)))
+            assertEquals(range, ParserInclusiveRange(ParserInt64(1), ParserInt64(3)))
         }
     }
 
@@ -153,7 +153,7 @@ class BinaryExprTest {
         assertDoesNotThrow {
             val range = evalExpr("1..<3")
 
-            assertEquals(range, DrExclusiveRange(DrInt(1), DrInt(3)))
+            assertEquals(range, ParserExclusiveRange(ParserInt(1), ParserInt(3)))
         }
     }
 
@@ -167,7 +167,7 @@ class BinaryExprTest {
                 a..<b
             """.trimIndent())
 
-            assertEquals(range, DrExclusiveRange(DrInt64(1), DrInt64(3)))
+            assertEquals(range, ParserExclusiveRange(ParserInt64(1), ParserInt64(3)))
         }
     }
 

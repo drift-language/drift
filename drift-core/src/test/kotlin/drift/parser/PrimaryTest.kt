@@ -10,9 +10,9 @@ package drift.parser
 
 import drift.parser.exceptions.DPNumericSizeOverflowException
 import drift.runtime.exceptions.DRCannotNegateUnsignedException
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
-import drift.runtime.values.primaries.DrUInt
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserInt64
+import drift.runtime.values.primaries.ParserUInt
 import drift.utils.evalProgram
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -28,7 +28,7 @@ class PrimaryTest {
                 let a = 100
             """.trimIndent())
 
-            assertEquals(result, DrInt(100))
+            assertEquals(result, ParserInt(100))
         }
     }
 
@@ -39,7 +39,7 @@ class PrimaryTest {
                 let a = 10000000000000
             """.trimIndent())
 
-            assertEquals(result, DrInt64(10000000000000))
+            assertEquals(result, ParserInt64(10000000000000))
         }
     }
 
@@ -68,7 +68,7 @@ class PrimaryTest {
                 let a: UInt = 2
             """.trimIndent())
 
-            assertEquals(result, DrUInt(2u))
+            assertEquals(result, ParserUInt(2u))
         }
     }
 }

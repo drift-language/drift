@@ -1,33 +1,33 @@
 package drift.parser
 
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.runtime.evaluators.eval
 import drift.lexer.lex
 import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
 import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.runtime.*
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.callables.ParserNativeFunction
+import drift.runtime.values.specials.ParserNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
 class ParserTest {
 
-    private fun parse(code: String): DrValue {
-        val statements: List<DrStmt> = Parser(lex(code)).parse()
+    private fun parse(code: String): ParserValue {
+        val statements: List<ParserStatement> = Parser(lex(code)).parse()
         val env = DrEnv().apply {
             define(
-                "test", DrNativeFunction(
+                "test", ParserNativeFunction(
                     impl = { _, args ->
-                        DrNull
+                        ParserNull
                     },
                     paramTypes = listOf(AnyType),
                     returnType = NullType
                 )
             )
         }
-        var output: DrValue = DrNull
+        var output: ParserValue = ParserNull
 
         for (statement in statements) {
             output = statement.eval(env)

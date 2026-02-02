@@ -3,21 +3,21 @@ package drift.parser
 import drift.lexer.lex
 import drift.runtime.evaluators.eval
 import drift.runtime.*
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.primaries.ParserBool
+import drift.runtime.values.specials.ParserNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 
 class BoolTest {
 
-    private fun evalExpr(input: String) : DrValue {
+    private fun evalExpr(input: String) : ParserValue {
         val tokens = lex(input)
         val parser = Parser(tokens)
         val expression = parser.parse()
         val env = DrEnv()
 
-        var result: DrValue = DrNull
+        var result: ParserValue = ParserNull
 
         expression.forEach {
             result = it.eval(env)
@@ -31,7 +31,7 @@ class BoolTest {
         val exp = evalExpr("1 == 1")
 
         assertEquals(exp.type(), ObjectType("Bool"))
-        assertEquals(exp, DrBool(true))
+        assertEquals(exp, ParserBool(true))
     }
 
     @Test
@@ -39,7 +39,7 @@ class BoolTest {
         val exp = evalExpr("1 == 2")
 
         assertEquals(exp.type(), ObjectType("Bool"))
-        assertEquals(exp, DrBool(false))
+        assertEquals(exp, ParserBool(false))
     }
 
     @Test
@@ -47,7 +47,7 @@ class BoolTest {
         val exp = evalExpr("1 != 1")
 
         assertEquals(exp.type(), ObjectType("Bool"))
-        assertEquals(exp, DrBool(false))
+        assertEquals(exp, ParserBool(false))
     }
 
     @Test
@@ -55,7 +55,7 @@ class BoolTest {
         val exp = evalExpr("1 != 2")
 
         assertEquals(exp.type(), ObjectType("Bool"))
-        assertEquals(exp, DrBool(true))
+        assertEquals(exp, ParserBool(true))
     }
 
     @Test
@@ -64,7 +64,7 @@ class BoolTest {
             val exp = evalExpr("true && true")
 
             assertEquals(exp.type(), ObjectType("Bool"))
-            assertEquals(exp, DrBool(true))
+            assertEquals(exp, ParserBool(true))
         }
     }
 
@@ -74,7 +74,7 @@ class BoolTest {
             val exp = evalExpr("true || true")
 
             assertEquals(exp.type(), ObjectType("Bool"))
-            assertEquals(exp, DrBool(true))
+            assertEquals(exp, ParserBool(true))
         }
     }
 }

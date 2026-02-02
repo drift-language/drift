@@ -9,11 +9,11 @@ import drift.ast.statements.Block
 import drift.ast.statements.ExprStmt
 import drift.ast.statements.If
 import drift.runtime.*
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.callables.ParserNativeFunction
+import drift.runtime.values.primaries.ParserBool
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserNull
 import drift.runtime.evaluators.eval
 import org.junit.jupiter.api.Test
 
@@ -26,19 +26,19 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction(
+        env.define("print", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
         ))
 
         val stmt = If(
-            condition = Literal(DrBool(true)),
+            condition = Literal(ParserBool(true)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
+                Call(Variable("print"), listOf(Argument(null, Literal(ParserString("yes")))))
             ),
             elseBranch = null
         )
@@ -53,10 +53,10 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction(
+        env.define("print", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
@@ -64,12 +64,12 @@ class EvalStmtKtTest {
         )
 
         val stmt = If(
-            condition = Literal(DrBool(true)),
+            condition = Literal(ParserBool(true)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
+                Call(Variable("print"), listOf(Argument(null, Literal(ParserString("yes")))))
             ),
             elseBranch = ExprStmt(
-                Call(Variable("print"), listOf(Argument(null, Literal(DrString("no")))))
+                Call(Variable("print"), listOf(Argument(null, Literal(ParserString("no")))))
             )
         )
 
@@ -83,22 +83,22 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction(
+        env.define("print", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
         ))
 
         val stmt = If(
-            condition = Literal(DrBool(false)),
+            condition = Literal(ParserBool(false)),
             thenBranch = ExprStmt(
-                Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))
+                Call(Variable("print"), listOf(Argument(null, Literal(ParserString("yes")))))
             ),
             elseBranch = ExprStmt(
-                Call(Variable("print"), listOf(Argument(null, Literal(DrString("no")))))
+                Call(Variable("print"), listOf(Argument(null, Literal(ParserString("no")))))
             )
         )
 
@@ -113,10 +113,10 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction(
+        env.define("print", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
@@ -124,8 +124,8 @@ class EvalStmtKtTest {
 
         val block = Block(
             listOf(
-                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("yes")))))),
-                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(DrString("no"))))))
+                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(ParserString("yes")))))),
+                ExprStmt(Call(Variable("print"), listOf(Argument(null, Literal(ParserString("no"))))))
             )
         )
 
@@ -137,27 +137,27 @@ class EvalStmtKtTest {
     @Test
     fun `Binary addition of integers`() {
         val expr = Binary(
-            left = Literal(DrInt(1)),
+            left = Literal(ParserInt(1)),
             operator = "+",
-            right = Literal(DrInt(2))
+            right = Literal(ParserInt(2))
         )
 
         val result = expr.eval(DrEnv())
 
-        assertEquals(DrInt(3), result)
+        assertEquals(ParserInt(3), result)
     }
 
     @Test
     fun `Binary addition of strings`() {
         val expr = Binary(
-            left = Literal(DrString("ab")),
+            left = Literal(ParserString("ab")),
             operator = "+",
-            right = Literal(DrString("c"))
+            right = Literal(ParserString("c"))
         )
 
         val result = expr.eval(DrEnv())
 
-        assertEquals(DrString("abc"), result)
+        assertEquals(ParserString("abc"), result)
     }
 
     @Test
@@ -165,10 +165,10 @@ class EvalStmtKtTest {
         val output = mutableListOf<String>()
 
         val env = DrEnv()
-        env.define("print", DrNativeFunction(
+        env.define("print", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType
@@ -176,12 +176,12 @@ class EvalStmtKtTest {
 
         val call = Call(
             callee = Variable("print"),
-            args = listOf(Argument(null, Literal(DrString("hello"))))
+            args = listOf(Argument(null, Literal(ParserString("hello"))))
         )
 
         val result = call.eval(env)
 
-        assertEquals(DrNull, result)
+        assertEquals(ParserNull, result)
         assertEquals(listOf("hello"), output)
     }
 }

@@ -5,8 +5,6 @@ import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
 import drift.runtime.exceptions.DRCannotUseVoidAsValueException
 import drift.runtime.exceptions.DRUnassignableException
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.variables.DrVariable
 import drift.utils.evalProgram
 import drift.utils.evalWithOutputs
 import org.junit.jupiter.api.Test
