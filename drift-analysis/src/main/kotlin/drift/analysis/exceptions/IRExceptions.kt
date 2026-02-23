@@ -6,7 +6,7 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.exceptions
+package drift.analysis.exceptions
 
 import drift.exceptions.DriftException
 import drift.runtime.ParserType
@@ -57,6 +57,18 @@ class DIRUnexpectedTypeException(
 )
 
 
+class DIRMissingTypeException(
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : IRException(
+    message = "Missing type",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)
+
+
 class DIRUnknownRegistryException(
     registry: String,
     sourceName: String? = null,
@@ -64,6 +76,19 @@ class DIRUnknownRegistryException(
     pos: Int = 0
 ) : IRException(
     message = "Unknown registry '$registry'",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)
+
+
+class DIRNotDefinedLambdaCaptureException(
+    name: String,
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : IRException(
+    message = "Capture of the Lambda '$name' is not defined",
     sourceName = sourceName,
     line = line,
     pos = pos

@@ -6,7 +6,7 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.symbols
+package drift.analysis.symbols
 
 import drift.runtime.ParserType
 
@@ -33,8 +33,8 @@ data class ClassSymbol(
 
     data class ClassSignature(
         val name: String,
-        val fields: Map<String, ParserType>,
-        val staticFields: Map<String, ParserType>,
-        val methods: Map<String, CallableSymbol.CallableSignature>,
-        val staticMethods: Map<String, CallableSymbol.CallableSignature>)
+        val fields: LinkedHashMap<String, ParserType>,
+        val staticFields: LinkedHashMap<String, ParserType>,
+        val methods: LinkedHashMap<String, CallableSymbol.CallableSignature>,
+        val staticMethods: LinkedHashMap<String, CallableSymbol.CallableSignature>)
 }

@@ -6,9 +6,8 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.inference
+package drift.analysis.inference
 
-import drift.ir.exceptions.DIRUnexpectedTypeException
 import drift.runtime.ObjectType
 import drift.runtime.ParserType
 import kotlin.math.max

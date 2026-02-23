@@ -6,14 +6,17 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.symbols
+package drift.analysis.symbols
 
 import drift.ir.exceptions.DIRNotDefinedSymbolException
-import drift.ir.exceptions.DIRNotDefinedVariableException
 import drift.runtime.ParserType
 
 class SymbolTable {
 
+    // Global symbol storage - symbols persist after scope pop
+    private val allSymbols = mutableMapOf<Int, Symbol>()
+
+    // Scopes for name binding resolution
     private val scopes = mutableListOf<Scope>()
 
 
@@ -37,10 +40,10 @@ class SymbolTable {
         type: ParserType,
         isMutable: Boolean) {
 
-        scopes.last().apply {
-            symbols[nodeId] = VariableSymbol(type, isMutable)
-            bindings[name] = nodeId
-        }
+        val symbol = VariableSymbol(type, isMutable)
+        allSymbols[nodeId] = symbol
+
+        scopes.last().bindings[name] = nodeId
     }
 
     fun addCallable(
@@ -48,11 +51,10 @@ class SymbolTable {
         name: String? = null,
         signature: CallableSymbol.CallableSignature) {
 
-        scopes.last().apply {
-            symbols[nodeId] = CallableSymbol(signature)
+        val symbol = CallableSymbol(signature)
+        allSymbols[nodeId] = symbol
 
-            if (name != null) bindings[name] = nodeId
-        }
+        if (name != null) scopes.last().bindings[name] = nodeId
     }
 
     fun addClass(
@@ -60,21 +62,18 @@ class SymbolTable {
         signature: ClassSymbol.ClassSignature,
         hasPrimaryConstructor: Boolean) {
 
-        scopes.last().apply {
-            symbols[nodeId] = ClassSymbol(
-                signature = signature,
-                hasPrimaryConstructor = hasPrimaryConstructor)
+        val symbol = ClassSymbol(
+            signature = signature,
+            hasPrimaryConstructor = hasPrimaryConstructor)
+        allSymbols[nodeId] = symbol
 
-            bindings[signature.name] = nodeId
-        }
+        scopes.last().bindings[signature.name] = nodeId
     }
 
 
     fun getSymbol(nodeId: Int) : Symbol {
-        for (scope in scopes.asReversed())
-            scope.symbols[nodeId]?.let { return it }
-
-        throw DIRNotDefinedSymbolException("nodeId#$nodeId")
+        return allSymbols[nodeId]
+            ?: throw DIRNotDefinedSymbolException("nodeId#$nodeId")
     }
 
 
@@ -87,8 +86,6 @@ class SymbolTable {
 
 
     private class Scope {
-
-        val symbols = mutableMapOf<Int, Symbol>()
         val bindings = mutableMapOf<String, Int>()
     }
 }

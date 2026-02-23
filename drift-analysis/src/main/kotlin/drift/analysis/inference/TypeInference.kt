@@ -6,49 +6,18 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.inference
+package drift.analysis.inference
 
-import drift.ast.expressions.Assign
-import drift.ast.expressions.Binary
-import drift.ast.expressions.Call
-import drift.ast.expressions.Conditional
-import drift.ast.expressions.Get
-import drift.ast.expressions.Lambda
-import drift.ast.expressions.Literal
-import drift.ast.expressions.ParserExpression
+import drift.analysis.exceptions.*
+import drift.analysis.symbols.CallableSymbol
+import drift.analysis.symbols.ClassSymbol
+import drift.analysis.symbols.SymbolTable
+import drift.analysis.symbols.VariableSymbol
+import drift.ast.expressions.*
 import drift.ast.expressions.Set
-import drift.ast.expressions.Unary
-import drift.ast.expressions.Variable
-import drift.ast.statements.Block
-import drift.ast.statements.Class
-import drift.ast.statements.ExprStmt
-import drift.ast.statements.For
-import drift.ast.statements.Function
-import drift.ast.statements.If
-import drift.ast.statements.Let
-import drift.ast.statements.ParserStatement
-import drift.ast.statements.Return
-import drift.ir.exceptions.DIRNotDefinedClassException
-import drift.ir.exceptions.DIRNotDefinedSymbolException
-import drift.ir.exceptions.DIRNotDefinedVariableException
-import drift.ir.exceptions.DIRUnexpectedExpressionException
-import drift.ir.exceptions.DIRUnexpectedTypeException
-import drift.ir.exceptions.DIRUnexpectedUnknownTypeException
-import drift.ir.exceptions.DIRUnexpectedVoidTypeException
-import drift.ir.exceptions.DIRUnsupportedOperationException
-import drift.ir.symbols.CallableSymbol
-import drift.ir.symbols.ClassSymbol
-import drift.ir.symbols.SymbolTable
-import drift.ir.symbols.VariableSymbol
-import drift.runtime.AnyType
-import drift.runtime.NullType
-import drift.runtime.ObjectType
-import drift.runtime.OptionalType
-import drift.runtime.ParserType
-import drift.runtime.UnionType
-import drift.runtime.UnknownType
-import drift.runtime.VoidType
-import drift.runtime.isAssignable
+import drift.ast.statements.*
+import drift.exceptions.*
+import drift.runtime.*
 
 class TypeInference(
     val ast: List<ParserStatement>,
@@ -77,7 +46,7 @@ class TypeInference(
             is Return   -> inferReturn(statement)
             is Block    -> inferBlock(statement)
             is For      -> inferFor(statement)
-            is Function -> inferFunction(statement)
+            is Func     -> inferFunction(statement)
             is Class    -> inferClass(statement)
             is ExprStmt -> inferExprStmt(statement)
 
@@ -132,8 +101,8 @@ class TypeInference(
         return VoidType
     }
 
-    private fun inferFunction(function: Function) : ParserType {
-        function.run {
+    private fun inferFunction(func: Func) : ParserType {
+        func.run {
             parameters.forEach { parameter ->
                 parameter.defaultValue?.let { inferExpression(it) }
             }
@@ -172,6 +141,8 @@ class TypeInference(
             is Call -> inferCall(expression)
             is Get -> inferGet(expression)
             is Set -> inferSet(expression)
+            is Lambda -> inferLambda(expression)
+            is ListLiteral -> inferListLiteral(expression)
 
             else -> UnknownType // TODO: throw?
         }
@@ -182,9 +153,15 @@ class TypeInference(
         val definitionNodeId = refResolutions[referenceNodeId]
             ?: return UnknownType // TODO: throw
 
-        val symbol = symbolTable.getSymbol(definitionNodeId) as VariableSymbol
-        val type = typeResolutions[definitionNodeId]
-            ?: symbol.typeVariable
+        val type: ParserType = when (val symbol = symbolTable.getSymbol(definitionNodeId)) {
+            is ClassSymbol -> ClassType(symbol.signature.name)
+            is VariableSymbol -> {
+                typeResolutions[definitionNodeId]
+                    ?: symbol.typeVariable
+            }
+
+            else -> throw DIRUnexpectedExpressionException()
+        }
 
         typeResolutions[referenceNodeId] = type
 
@@ -218,14 +195,16 @@ class TypeInference(
                 if (isNumericType) exprType
                 else throw DIRUnsupportedOperationException(
                     operator = unary.operator,
-                    types = Pair(exprType, null))
+                    types = Pair(exprType, null)
+                )
             }
 
             "!" -> {
                 if (isBooleanType) exprType
                 else throw DIRUnsupportedOperationException(
                     operator = unary.operator,
-                    types = Pair(exprType, null))
+                    types = Pair(exprType, null)
+                )
             }
 
             else -> TODO("Unexpected operator?")
@@ -268,7 +247,8 @@ class TypeInference(
                 } else {
                     throw DIRUnsupportedOperationException(
                         operator = binary.operator,
-                        types = Pair(leftType, rightType))
+                        types = Pair(leftType, rightType)
+                    )
                 }
             }
 
@@ -278,7 +258,8 @@ class TypeInference(
                 } else {
                     throw DIRUnsupportedOperationException(
                         operator = binary.operator,
-                        types = Pair(leftType, rightType))
+                        types = Pair(leftType, rightType)
+                    )
                 }
             }
 
@@ -288,7 +269,8 @@ class TypeInference(
                 } else {
                     throw DIRUnsupportedOperationException(
                         operator = binary.operator,
-                        types = Pair(leftType, rightType))
+                        types = Pair(leftType, rightType)
+                    )
                 }
             }
 
@@ -298,13 +280,41 @@ class TypeInference(
                 } else {
                     throw DIRUnsupportedOperationException(
                         operator = binary.operator,
-                        types = Pair(leftType, rightType))
+                        types = Pair(leftType, rightType)
+                    )
                 }
             }
 
             "==", "!=" -> ObjectType("Bool")
 
-            else -> TODO("ranges, etc")
+            ".." -> {
+                if (!isNumericType) {
+                    throw DIRUnsupportedOperationException(
+                        operator = binary.operator,
+                        types = Pair(leftType, rightType)
+                    )
+                }
+
+                ObjectType("InclusiveRange", mapOf(
+                    "limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
+            }
+
+            "..<" -> {
+                if (!isNumericType) {
+                    throw DIRUnsupportedOperationException(
+                        operator = binary.operator,
+                        types = Pair(leftType, rightType)
+                    )
+                }
+
+                ObjectType("ExclusiveRange", mapOf(
+                    "limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
+            }
+
+            else -> throw DIRUnsupportedOperationException(
+                operator = binary.operator,
+                types = Pair(leftType, rightType)
+            )
         }
 
         typeResolutions[binary.nodeId] = type
@@ -366,6 +376,11 @@ class TypeInference(
             val type: ParserType = when (val symbol = symbolTable.getSymbol(defId)) {
                 is CallableSymbol -> symbol.signature.returnType
                 is ClassSymbol -> ObjectType(symbol.signature.name)
+                is VariableSymbol -> {
+                    val varType = typeResolutions[defId] ?: symbol.typeVariable
+                    if (varType is FunctionType) varType.returnType
+                    else throw DIRUnexpectedExpressionException()
+                }
 
                 else -> throw DIRUnexpectedExpressionException()
             }
@@ -391,8 +406,12 @@ class TypeInference(
 
         val type = classRef.signature.fields[get.name]
             ?: classRef.signature.staticFields[get.name]
-            ?: classRef.signature.methods[get.name]?.returnType
-            ?: classRef.signature.staticMethods[get.name]?.returnType
+            ?: classRef.signature.methods[get.name]?.let {
+                FunctionType(it.parameterTypes, it.returnType)
+            }
+            ?: classRef.signature.staticMethods[get.name]?.let {
+                FunctionType(it.parameterTypes, it.returnType)
+            }
             ?: throw DIRNotDefinedSymbolException(name = get.name)
 
         typeResolutions[get.nodeId] = type
@@ -426,7 +445,47 @@ class TypeInference(
     }
 
     private fun inferLambda(lambda: Lambda) : ParserType {
+        lambda.parameters.forEach { parameter ->
+            parameter.defaultValue?.let { defValue -> inferExpression(defValue) }
+        }
 
+        val paramTypes = lambda.parameters.map { it.type }
+
+        var lastStatementType: ParserType = AnyType
+
+        lambda.body.forEach { lastStatementType = inferStatement(it) }
+
+        val returnType: ParserType = when (lambda.returnType) {
+            is LastType -> lastStatementType
+
+            else -> lambda.returnType
+        }
+
+        val type = FunctionType(paramTypes, returnType)
+
+        typeResolutions[lambda.nodeId] = type
+
+        return type
+    }
+
+    private fun inferListLiteral(list: ListLiteral) : ParserType {
+        val elementTypes = list.values
+            .map { inferExpression(it) }
+            .distinct()
+
+        val listType: ParserType = when {
+            elementTypes.isEmpty() -> AnyType
+            elementTypes.size == 1 -> elementTypes.first()
+
+            else -> UnionType(elementTypes)
+        }
+
+        val type = ObjectType("List", mapOf(
+            "type" to SingleType(listType)))
+
+        typeResolutions[list.nodeId] = type
+
+        return type
     }
 
 

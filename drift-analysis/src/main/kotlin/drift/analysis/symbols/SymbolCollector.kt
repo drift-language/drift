@@ -6,24 +6,25 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.ir.symbols
+package drift.analysis.symbols
 
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.runtime.AnyType
 
 class SymbolCollector {
 
     private val symbolTable = SymbolTable()
     private val refResolutions = mutableMapOf<Int, Int>()
+    private val lambdaClosures = mutableMapOf<Int, Map<String, Int>>()
 
 
     fun collect(statements: List<ParserStatement>): CollectionResult {
         statements.forEach { collectStatement(it) }
 
-        return CollectionResult(symbolTable, refResolutions)
+        return CollectionResult(symbolTable, refResolutions, lambdaClosures)
     }
 
 
@@ -37,7 +38,7 @@ class SymbolCollector {
     private fun collectStatement(statement: ParserStatement) {
         when (statement) {
             is Let      -> collectLet(statement)
-            is Function -> collectFunction(statement)
+            is Func -> collectFunction(statement)
             is Block    -> collectBlock(statement)
             is If       -> collectIf(statement)
             is Return   -> collectReturn(statement)
@@ -52,45 +53,36 @@ class SymbolCollector {
     /**
      * # Variable Definition Collector
      *
-     * Allocate a slot `S*` and save the variable in the [symbolTable].
+     * Save the variable in the [symbolTable].
      */
-    private fun collectLet(statement: Let) : String {
-        val sSlot = tempAlloc.allocate()
-
+    private fun collectLet(statement: Let) {
         collectExpression(statement.value)
 
         symbolTable.addVariable(
             nodeId = statement.nodeId,
             name = statement.name,
-            slot = sSlot,
             type = statement.type,
             isMutable = statement.isMutable)
-
-        return sSlot
     }
 
     /**
      * # Function Definition Collector
      *
-     * 1. Allocate a `F*` slot for the function structure
-     * 2. Save the function in the [symbolTable]
-     * 3. Open a new [SymbolTable.Scope]
-     * 4. Allocate `S*` slots for the parameters
-     * 5. Collect the function's body
-     * 6. Close the scope
+     * 1. Save the function in the [symbolTable]
+     * 2. Open a new [SymbolTable.Scope]
+     * 3. Add parameters to scope
+     * 4. Collect the function's body
+     * 5. Close the scope
      */
-    private fun collectFunction(function: Function) : String {
-        val fSlot = fAllocator.allocate()
-
-        val parameterTypes = function.parameters.map { it.type }
+    private fun collectFunction(func: Func) {
+        val parameterTypes = func.parameters.map { it.type }
         val signature = CallableSymbol.CallableSignature(
             parameterTypes,
-            function.returnType)
+            func.returnType)
 
         symbolTable.addCallable(
-            nodeId = function.nodeId,
-            name = function.name,
-            slot = fSlot,
+            nodeId = func.nodeId,
+            name = func.name,
             signature = signature)
 
 
@@ -98,24 +90,19 @@ class SymbolCollector {
 
         symbolTable.pushScope()
 
-        function.parameters.forEach { parameter ->
-            val paramSSlot = tempAlloc.allocate()
-
+        func.parameters.forEach { parameter ->
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,
                 name = parameter.name,
-                slot = paramSSlot,
                 type = parameter.type,
                 isMutable = false)      // NOTE: Callable Parameters are immutable!
 
             parameter.defaultValue?.let { collectExpression(it) }
         }
 
-        function.body.forEach { collectStatement(it) }
+        func.body.forEach { collectStatement(it) }
 
         symbolTable.popScope()
-
-        return fSlot
     }
 
     /**
@@ -169,12 +156,9 @@ class SymbolCollector {
 
         /* Iteration variables collection */
         `for`.variables.forEach { variable ->
-            val variableSSlot = tempAlloc.allocate()
-
             symbolTable.addVariable(
                 nodeId = variable.nodeId,
                 name = variable.name,
-                slot = variableSSlot,
                 type = AnyType,
                 isMutable = false)
         }
@@ -186,21 +170,50 @@ class SymbolCollector {
     }
 
     private fun collectClass(`class`: Class) {
-        val cSlot = cAllocator.allocate()
+        val fields = `class`.fields.associate { field ->
+            collectLet(field)
+            field.name to field.type
+        }.toMap(linkedMapOf())
 
-        val fields: List<String> = `class`.fields.map { collectLet(it) }
-        val staticFields: List<String> = `class`.staticFields.map { collectLet(it) }
-        val methods: List<String> = `class`.methods.map { collectFunction(it) }
-        val staticMethods: List<String> = `class`.staticMethods.map { collectFunction(it) }
+        val staticFields = `class`.staticFields.associate { field ->
+            collectLet(field)
+            field.name to field.type
+        }.toMap(linkedMapOf())
 
-        symbolTable.addClass(
-            nodeId = `class`.nodeId,
+        val methods =
+            `class`.methods.associate { method ->
+
+                collectFunction(method)
+
+                val signature = CallableSymbol.CallableSignature(
+                    parameterTypes = method.parameters.map { it.type },
+                    returnType = method.returnType)
+
+                method.name to signature
+            }.toMap(linkedMapOf())
+
+        val staticMethods =
+            `class`.staticMethods.associate { method ->
+
+                collectFunction(method)
+
+                val signature = CallableSymbol.CallableSignature(
+                    parameterTypes = method.parameters.map { it.type },
+                    returnType = method.returnType)
+
+                method.name to signature
+            }.toMap(linkedMapOf())
+
+        val signature = ClassSymbol.ClassSignature(
             name = `class`.name,
-            slot = cSlot,
             fields = fields,
             staticFields = staticFields,
             methods = methods,
-            staticMethods = staticMethods,
+            staticMethods = staticMethods)
+
+        symbolTable.addClass(
+            nodeId = `class`.nodeId,
+            signature = signature,
             hasPrimaryConstructor = `class`.hasPrimaryConstructor)
     }
 
@@ -278,39 +291,106 @@ class SymbolCollector {
     }
 
     private fun collectLambda(lambda: Lambda) {
-        val lambdaFSlot = fAllocator.allocate()
-        val parameterTypes = lambda.parameters.map { it.type }
-        val lambdaSignature = CallableSymbol.CallableSignature(
-            parameterTypes = parameterTypes,
-            returnType = lambda.returnType)
+        val parameterNames = lambda.parameters.map { it.name }.toSet()
 
-        symbolTable.addCallable(
-            nodeId = lambda.nodeId,
-            slot = lambdaFSlot,
-            signature = lambdaSignature)
-
-        /* Lambda's Scope */
         symbolTable.pushScope()
 
         lambda.parameters.forEach { parameter ->
-            val paramSSlot = tempAlloc.allocate()
-
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,
                 name = parameter.name,
-                slot = paramSSlot,
                 type = parameter.type,
                 isMutable = false)
         }
 
-        // NOTE: If in the future, Lambda can take expression as value (no block), change for collectExpression(body)?
         lambda.body.forEach { collectStatement(it) }
 
+        val capturedVars = mutableMapOf<String, Int>()
+        val varNamesInLambda = findVariableNamesInLambda(lambda)
+
+        for (varName in varNamesInLambda) {
+            val defId = symbolTable.lookupNodeId(varName) ?: continue
+
+            if (!parameterNames.contains(varName)) {
+                capturedVars[varName] = defId
+            }
+        }
+
+        lambdaClosures[lambda.nodeId] = capturedVars
+
         symbolTable.popScope()
+    }
+
+    private fun findVariableNamesInLambda(lambda: Lambda): kotlin.collections.Set<String> {
+        val names = mutableSetOf<String>()
+        lambda.body.forEach { statement ->
+            collectVariableNamesInStatement(statement, names)
+        }
+        return names
+    }
+
+    private fun collectVariableNamesInStatement(
+        statement: ParserStatement,
+        names: MutableSet<String>) {
+
+        when (statement) {
+            is Let -> collectVariableNamesInExpression(statement.value, names)
+            is ExprStmt -> collectVariableNamesInExpression(statement.expr, names)
+            is If -> {
+                collectVariableNamesInExpression(statement.condition, names)
+                collectVariableNamesInStatement(statement.thenBranch, names)
+                statement.elseBranch?.let { collectVariableNamesInStatement(it, names) }
+            }
+            is Block -> statement.statements.forEach { collectVariableNamesInStatement(it, names) }
+            is Return -> collectVariableNamesInExpression(statement.value, names)
+            is For -> {
+                collectVariableNamesInExpression(statement.iterable, names)
+                collectVariableNamesInStatement(statement.body, names)
+            }
+            else -> {}
+        }
+    }
+
+    private fun collectVariableNamesInExpression(
+        expression: ParserExpression,
+        names: MutableSet<String>) {
+
+        when (expression) {
+            is Variable -> names.add(expression.name)
+            is Binary -> {
+                collectVariableNamesInExpression(expression.left, names)
+                collectVariableNamesInExpression(expression.right, names)
+            }
+            is Unary -> collectVariableNamesInExpression(expression.expr, names)
+            is Call -> {
+                collectVariableNamesInExpression(expression.callee, names)
+                for (arg in expression.args) {
+                    collectVariableNamesInExpression(arg.expr, names)
+                }
+            }
+            is Get -> collectVariableNamesInExpression(expression.receiver, names)
+            is Set -> {
+                collectVariableNamesInExpression(expression.receiver, names)
+                collectVariableNamesInExpression(expression.value, names)
+            }
+            is Assign -> collectVariableNamesInExpression(expression.value, names)
+            is Lambda -> {
+                for (stmt in expression.body) {
+                    collectVariableNamesInStatement(stmt, names)
+                }
+            }
+            is ListLiteral -> {
+                for (value in expression.values) {
+                    collectVariableNamesInExpression(value, names)
+                }
+            }
+            else -> {}
+        }
     }
 
 
     data class CollectionResult(
         val symbolTable: SymbolTable,
-        val resolutions: Map<Int, Int>)
+        val resolutions: Map<Int, Int>,
+        val lambdaClosures: Map<Int, Map<String, Int>>)
 }
