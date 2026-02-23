@@ -10,10 +10,12 @@
 package drift.runtime.values.oop
 
 import drift.ast.statements.Let
+import drift.runtime.ClassType
 import drift.runtime.DrEnv
 import drift.runtime.ParserType
 import drift.runtime.ParserValue
 import drift.runtime.ObjectType
+import drift.runtime.TypeArgument
 import drift.runtime.values.callables.ParserMethod
 import drift.sslot.StaticSlot
 
@@ -64,7 +66,7 @@ data class ParserClass(
     override fun asString() = "<[class#${hashCode()}] $name>"
 
     /** @return The object representation of the type */
-    override fun type(): ParserType = ObjectType(name)
+    override fun type(): ParserType = ClassType(name)
 
 
     enum class ConstructorType {

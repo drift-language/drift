@@ -30,7 +30,6 @@ data class ParserString(
     /** String value (unquoted) */
     override val value: String) : ParserValue, DrPrimary<String> {
 
-
     /** @return A prepared string version of the type */
     override fun asString() = value
 
