@@ -50,18 +50,15 @@ data class ParserList(
     override fun type(): ParserType {
         val types = items.map { it.type() }.toSet()
 
+        val type: ParserType = when {
+            types.isEmpty() -> AnyType
+            types.size == 1 -> types.first()
+            
+            else -> UnionType(types.toList())
+        }
+
         return ObjectType(
             "List", mapOf(
-                Pair(
-                    "type", SingleType(
-                        when {
-                            types.isEmpty() -> AnyType
-                            types.size == 1 -> types.first()
-                            else -> UnionType(types.toList())
-                        }
-                    )
-                )
-            )
-        )
+                "type" to SingleType(type)))
     }
 }
