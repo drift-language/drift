@@ -84,6 +84,7 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
                 ?: throw DRVariableNotDefinedException(name = name)
 
             validateValue(unwrap(value))
+            value
         }
 
         // Callable call
@@ -647,8 +648,9 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
             val obj = unwrap(receiver.eval(env))
             val v = validateValue(value.eval(env))
 
-            if (obj.type() !is ObjectType)
-                throw DRNotAnObjectException(valueType = obj.type())
+            val objType = obj.type()
+            if (objType !is ObjectType && objType !is ClassType)
+                throw DRNotAnObjectException(valueType = objType)
 
             when (obj) {
                 is ParserModule -> throw DRCannotSetViaModuleAccessException()

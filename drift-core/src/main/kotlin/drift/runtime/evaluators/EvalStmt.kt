@@ -134,12 +134,12 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
                 if (variables.isEmpty()) {
                     loopEnv.forceDefine("_", item)
                 } else if (variables.size == 1) {
-                    val name = variables[0]
+                    val name = variables[0].name
 
                     loopEnv.forceDefine(name, ParserVariable(name, AnyType, item, isMutable = true))
                 } else if (iterable is ParserList && variables.size == 2) {
-                    val valueVariable = variables[0]
-                    val indexVariable = variables[1]
+                    val valueVariable = variables[0].name
+                    val indexVariable = variables[1].name
 
                     loopEnv.run {
                         forceDefine(indexVariable, ParserVariable(
@@ -155,8 +155,8 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
                             isMutable = true))
                     }
                 } else if (item is ParserList && item.items.size == variables.size) {
-                    variables.zip(item.items).forEach { (name, value) ->
-                        loopEnv.assign(name, ParserVariable(name, AnyType, value, isMutable = true))
+                    variables.zip(item.items).forEach { (variable, value) ->
+                        loopEnv.assign(variable.name, ParserVariable(variable.name, AnyType, value, isMutable = true))
                     }
                 } else {
                     throw DRCannotDestructureException(
