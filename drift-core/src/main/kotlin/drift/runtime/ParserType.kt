@@ -171,7 +171,53 @@ data class UnionType(val options: List<ParserType>) : ParserType {
  * @param args Object arguments
  */
 data class ObjectType(val className: String, val args: Map<String, TypeArgument> = emptyMap()) : ParserType {
+
     override fun asString() = className
+}
+
+
+/**
+ * This type represents a Drift function or lambda type.
+ *
+ * It carries the parameter types and return type explicitly,
+ * making the structure self-describing for backends and type checks.
+ *
+ * @param paramTypes Types of the function parameters
+ * @param returnType Type of the return value
+ */
+data class FunctionType(
+    val paramTypes: List<ParserType>,
+    val returnType: ParserType) : ParserType {
+    
+    override fun asString() : String {
+        val params = paramTypes.joinToString(", ") { it.asString() }
+        
+        return "($params) -> ${returnType.asString()}"
+    }
+}
+
+
+/**
+ * This type represents a Drift class.
+ *
+ * Drift represents all classes using this parser type.
+ *
+ * @param className
+ * @param generics
+ */
+data class ClassType(
+    val className: String,
+    val generics: Map<String, ParserType> = emptyMap()) : ParserType {
+
+    override fun asString(): String {
+        return if (generics.isEmpty()) "Class<$className>"
+               else {
+                   val genericsAsString = generics.values
+                       .joinToString(", ") { it.asString() }
+
+                   "Class<$className<$genericsAsString>>"
+               }
+    }
 }
 
 
@@ -196,6 +242,10 @@ fun isAssignable(valueType: ParserType, expected: ParserType): Boolean {
 
     if (expected is ObjectType && valueType is ObjectType)
         return expected.className == valueType.className
+
+    if (expected is FunctionType && valueType is FunctionType)
+        return expected.paramTypes == valueType.paramTypes && 
+               expected.returnType == valueType.returnType
 
     return when (expected) {
         is OptionalType -> valueType == NullType || isAssignable(valueType, expected.inner)
