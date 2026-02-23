@@ -1,0 +1,106 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+
+package drift.hir
+
+/**
+ * Function declaration in HIR.
+ */
+data class HIRFunction(
+    override val hirId: Int,
+    val name: String,
+    val parameters: List<HIRParameter>,
+    val returnType: HIRType,
+    val body: List<HIRStatement>
+) : HIRStatement
+
+/**
+ * Function parameter.
+ */
+data class HIRParameter(
+    val name: String,
+    val type: HIRType,
+    val defaultValue: HIRExpression? = null
+)
+
+/**
+ * Variable declaration (let/var).
+ */
+data class HIRVariable(
+    override val hirId: Int,
+    val name: String,
+    val type: HIRType,
+    val initialValue: HIRExpression,
+    val isMutable: Boolean
+) : HIRStatement
+
+/**
+ * Class declaration.
+ */
+data class HIRClass(
+    override val hirId: Int,
+    val name: String,
+    val fields: List<HIRField>,
+    val methods: List<HIRFunction>,
+    val staticFields: List<HIRField>,
+    val staticMethods: List<HIRFunction>
+) : HIRStatement
+
+/**
+ * Class field definition.
+ */
+data class HIRField(
+    val name: String,
+    val type: HIRType,
+    val isStatic: Boolean
+)
+
+/**
+ * Code block (scoped statements).
+ */
+data class HIRBlock(
+    override val hirId: Int,
+    val statements: List<HIRStatement>
+) : HIRStatement
+
+/**
+ * Return statement.
+ */
+data class HIRReturn(
+    override val hirId: Int,
+    val value: HIRExpression
+) : HIRStatement
+
+/**
+ * Expression as a statement.
+ */
+data class HIRExpressionStmt(
+    override val hirId: Int,
+    val expression: HIRExpression
+) : HIRStatement
+
+/**
+ * Module import statement.
+ */
+data class HIRImport(
+    override val hirId: Int,
+    val namespace: String,
+    val steps: List<String>,
+    val alias: String? = null,
+    val parts: List<HIRImportPart>? = null,
+    val wildcard: Boolean = false
+) : HIRStatement
+
+/**
+ * Part of an import statement (for selective imports).
+ */
+data class HIRImportPart(
+    val source: String,
+    val alias: String? = null
+)
