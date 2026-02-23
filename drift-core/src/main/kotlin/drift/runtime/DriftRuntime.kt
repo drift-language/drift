@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.runtime
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.statements.Import
 import drift.checkers.TypeChecker
 import drift.checkers.collectors.SymbolCollector
@@ -53,7 +53,7 @@ object DriftRuntime {
             defineClass("String", ParserClass(
                 "String", mutableMapOf(), mutableMapOf(
                     "length" to ParserMethod(
-                        let = Function(
+                        let = Func(
                             name = "length",
                             parameters = emptyList(),
                             returnType = ObjectType("Int"),

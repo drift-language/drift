@@ -9,7 +9,7 @@
 
 package drift.runtime.values.callables
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.runtime.DrEnv
 import drift.runtime.ParserType
 import drift.runtime.ParserValue
@@ -42,7 +42,7 @@ import drift.runtime.SingleType
  */
 data class ParserFunction(
     /** Function structure */
-    val let: Function,
+    val let: Func,
 
     /** Function closure, environment instance */
     val closure: DrEnv

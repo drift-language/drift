@@ -9,7 +9,7 @@
 package drift.runtime.evaluators
 
 import drift.ast.statements.*
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.helper.evalCondition
 import drift.helper.rangeToList
 import drift.helper.validateValue
@@ -79,7 +79,7 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
         }
 
         // Function computing
-        is Function -> {
+        is Func -> {
             val f = ParserFunction(this, env.copy())
 
             env.assign(name, f)

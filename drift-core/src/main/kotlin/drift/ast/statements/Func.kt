@@ -32,7 +32,7 @@ import drift.runtime.ParserType
  * @see drift.runtime.values.callables.ParserMethod
  * @see drift.runtime.values.callables.ParserLambda
  */
-data class Function(
+data class Func(
     val name: String,
     val parameters: List<FunctionParameter>,
     val body: List<ParserStatement>,

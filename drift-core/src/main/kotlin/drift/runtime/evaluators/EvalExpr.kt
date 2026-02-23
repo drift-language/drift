@@ -11,7 +11,7 @@ package drift.runtime.evaluators
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.ParserStatement
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.helper.evalCondition
 import drift.helper.unwrap
@@ -168,7 +168,7 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
 
 
             fun applyFunction(
-                fn: Function,
+                fn: Func,
                 closure: DrEnv,
                 boundArgs: Map<String, ParserValue>) {
 
@@ -189,15 +189,15 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
 
 
             fun evalFunction(
-                function: Function,
+                func: Func,
                 env: DrEnv,
                 boundArgs: Map<String, ParserValue>): ParserValue {
 
                 val newEnv = DrEnv(parent = env.copy())
 
-                applyFunction(function, newEnv, boundArgs)
+                applyFunction(func, newEnv, boundArgs)
 
-                return evalBlock(function.returnType, function.body, newEnv)
+                return evalBlock(func.returnType, func.body, newEnv)
             }
 
 
@@ -510,9 +510,8 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
 
         // Lambda computing
         is Lambda -> {
-            val f = Function("", this.parameters, this.body, this.returnType)
+            val f = Func("", this.parameters, this.body, this.returnType)
             val capture = env.all()
-                .filterKeys { it != this.name }
                 .mapValues { (_, v) -> unwrap(v) }
                 .toMap()
 

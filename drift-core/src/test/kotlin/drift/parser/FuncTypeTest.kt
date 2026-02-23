@@ -1,6 +1,6 @@
 package drift.parser
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.lexer.lex
 import drift.parser.exceptions.DPSpecialInUnionTypeException
 import drift.runtime.*
@@ -11,16 +11,16 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
-class FunctionTypeTest {
+class FuncTypeTest {
 
-    private fun parseFunctionFromSource(src: String) : Function {
+    private fun parseFunctionFromSource(src: String) : Func {
         val tokens = lex(src)
         val statements = Parser(tokens).parse()
-        val function = statements.first() as? Function
+        val func = statements.first() as? Func
 
-        assertNotNull(function)
+        assertNotNull(func)
 
-        return function!!
+        return func!!
     }
 
     @Test

@@ -11,7 +11,7 @@ package drift.parser.classes
 
 import drift.ast.expressions.Literal
 import drift.ast.statements.Class
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Let
 import drift.parser.Parser
@@ -51,9 +51,9 @@ internal fun Parser.parseClass() : Class {
     val nameToken = expect<Token.Identifier>("class name")
     val name = nameToken.value
     val fields = mutableListOf<Let>()
-    val methods = mutableListOf<Function>()
+    val methods = mutableListOf<Func>()
     val staticFields = mutableListOf<Let>()
-    val staticMethods = mutableListOf<Function>()
+    val staticMethods = mutableListOf<Func>()
     val constructorParameters = mutableListOf<FunctionParameter>()
     var hasPrimaryConstructor = false
 
@@ -85,7 +85,7 @@ internal fun Parser.parseClass() : Class {
                     isMutable = false))
             }
 
-            methods.add(Function(
+            methods.add(Func(
                 Token.Keyword.INIT.value,
                 constructorParameters,
                 listOf(),

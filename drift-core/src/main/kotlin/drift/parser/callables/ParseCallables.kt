@@ -11,7 +11,7 @@ package drift.parser.callables
 
 import drift.ast.expressions.ParserExpression
 import drift.ast.expressions.Lambda
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.parser.Parser
 import drift.lexer.Token
@@ -47,7 +47,7 @@ import drift.runtime.ParserType
  * - If none name is provided for a parameter `fun test(*)`
  * for example
  */
-internal fun Parser.parseFunction() : Function {
+internal fun Parser.parseFunction() : Func {
     val nameToken = expect<Token.Identifier>("function name")
     val name = nameToken.value
     val parameters = mutableListOf<FunctionParameter>()
@@ -72,7 +72,7 @@ internal fun Parser.parseFunction() : Function {
 
     val body = parseBlock().statements
 
-    return Function(name, parameters, body, returnType)
+    return Func(name, parameters, body, returnType)
 }
 
 

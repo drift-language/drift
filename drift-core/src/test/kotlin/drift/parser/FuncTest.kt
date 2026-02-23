@@ -11,7 +11,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
-class FunctionTest {
+class FuncTest {
 
     @Test
     fun `Function returns value correctly`() {

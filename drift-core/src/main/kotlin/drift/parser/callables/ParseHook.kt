@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.parser.callables
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.parser.Parser
 import drift.lexer.Token
@@ -48,7 +48,7 @@ import drift.runtime.VoidType
  */
 internal fun Parser.parseHook(
     forceParameters: Boolean = false,
-    disableReturnStatement: Boolean = false) : Function {
+    disableReturnStatement: Boolean = false) : Func {
 
     val name = expect<Token.Identifier>("hook name").value
 
@@ -96,7 +96,7 @@ internal fun Parser.parseHook(
 
     val body = parseBlock()
 
-    return Function(
+    return Func(
         name,
         parameters,
         body.statements,

@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.parser.classes
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.statements.Let
 import drift.parser.Parser
 import drift.lexer.Token
@@ -28,7 +28,7 @@ import drift.parser.statements.parseLet
 
 internal fun Parser.parseClassStaticBlock(
     staticFields: MutableList<Let>,
-    staticMethods: MutableList<Function>) {
+    staticMethods: MutableList<Func>) {
 
     val c = current()
 

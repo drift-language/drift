@@ -9,7 +9,7 @@
 
 package drift.utils
 
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.checkers.TypeChecker
 import drift.checkers.collectors.SymbolCollector
 import drift.lexer.lex
@@ -114,7 +114,7 @@ fun evalWithOutputs(source: String) : MutableList<String> {
         defineClass("String", ParserClass(
             "String", mutableMapOf(), mutableMapOf(
                 "length" to ParserMethod(
-                    let = Function(
+                    let = Func(
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),
@@ -175,7 +175,7 @@ fun evalAndGetEnv(source: String) : DrEnv {
         defineClass("String", ParserClass(
             "String", mutableMapOf(), mutableMapOf(
                 "length" to ParserMethod(
-                    let = Function(
+                    let = Func(
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),

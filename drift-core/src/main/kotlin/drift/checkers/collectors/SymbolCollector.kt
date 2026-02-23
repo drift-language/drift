@@ -11,7 +11,7 @@ package drift.checkers.collectors
 
 import drift.ast.statements.Class
 import drift.ast.statements.ParserStatement
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.ast.statements.Let
 import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
 import drift.helper.validateValue
@@ -42,7 +42,6 @@ import drift.sslot.StaticSlot
  */
 class SymbolCollector(private val env: DrEnv) {
 
-
     /**
      * Start to collect from the provided AST
      * by checking each statement
@@ -67,7 +66,7 @@ class SymbolCollector(private val env: DrEnv) {
             is Class ->
                 ClassCollector().collectClass(stmt)
 
-            is Function -> {
+            is Func -> {
                 val functionVar = ParserVariable(
                     name = stmt.name,
                     type = AnyType,         // TODO: FunctionType ?
