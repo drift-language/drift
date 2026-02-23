@@ -1,0 +1,394 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+package drift.ir.qbe
+
+import drift.ast.bindings.FunctionParameter
+import drift.ast.expressions.*
+import drift.ast.statements.ExprStmt
+import drift.ast.statements.Func
+import drift.ast.statements.Let
+import drift.ast.statements.Return
+import drift.ir.inference.TypeInference
+import drift.ir.symbols.SymbolCollector
+import drift.qbe.structure.*
+import drift.runtime.ObjectType
+import drift.runtime.values.primaries.ParserInt
+import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+/**
+ * Integration tests for lambda and call functionality in QBE IR
+ *
+ * These tests verify the complete pipeline:
+ * Drift code -> Parser -> SymbolCollector -> TypeInference -> QBEEmitter -> QBE IR
+ */
+class QBEEmitterIntegrationTest {
+
+    /**
+     * Helper to run the full pipeline and get the QBE module
+     */
+    private fun emitModule(vararg statements: drift.ast.statements.ParserStatement): QBEModule {
+        val stmtList = statements.toList()
+
+        val collector = SymbolCollector()
+        val collectionResult = collector.collect(stmtList)
+
+        val inference = TypeInference(
+            stmtList,
+            collectionResult.symbolTable,
+            collectionResult.resolutions)
+        val inferenceResult = inference.infer()
+
+        val emitter = QBEEmitter(
+            inferenceResult.typeResolutions,
+            collectionResult.lambdaClosures,
+            collectionResult.symbolTable)
+
+        return emitter.emit(stmtList)
+    }
+
+
+    @Test
+    fun `test simple lambda creation and call`() {
+        // Drift code:
+        //   let add = (a: Int, b: Int) -> a + b
+        //   let result = add(5, 3)
+        //
+        // Expected behavior:
+        // 1. Parser creates Lambda and Call AST nodes
+        // 2. SymbolCollector identifies (no captures in this case)
+        // 3. TypeInference determines types
+        // 4. QBEEmitter generates:
+        //    - Closure structs (env + skeleton)
+        //    - malloc for environment
+        //    - Lambda function definition
+        //    - Call instruction that extracts funptr/envptr
+
+        val paramA = FunctionParameter(name = "a", type = ObjectType("Int"))
+        val paramB = FunctionParameter(name = "b", type = ObjectType("Int"))
+
+        val varA = Variable("a")
+        val varB = Variable("b")
+        val body = ExprStmt(Binary(varA, "+", varB))
+
+        val lambda = Lambda(
+            parameters = listOf(paramA, paramB),
+            body = listOf(body),
+            returnType = ObjectType("Int"))
+
+        val letAdd = Let(
+            name = "add",
+            type = ObjectType("Function"),
+            value = lambda,
+            isMutable = false)
+
+        // let result = add(5, 3)
+        val varAdd = Variable("add")
+        val arg5 = Argument(name = null, expr = Literal(ParserInt(5)))
+        val arg3 = Argument(name = null, expr = Literal(ParserInt(3)))
+        val call = Call(callee = varAdd, args = listOf(arg5, arg3))
+        val letResult = Let(
+            name = "result",
+            type = ObjectType("Int"),
+            value = call,
+            isMutable = false)
+
+        val module = emitModule(letAdd, letResult)
+
+        // Verify complete pipeline results
+        assertTrue(module.functions.isNotEmpty(), "Functions should be generated")
+        assertTrue(module.types.isNotEmpty(), "Type definitions should be generated")
+
+        val lambdaFunc = module.functions.find { it.name.contains("lfun::") }
+        assertNotNull(lambdaFunc, "Lambda function should be generated")
+
+        // Lambda has env param + 2 explicit params
+        assertEquals(3, lambdaFunc.parameters.size)
+    }
+
+    @Test
+    fun `test lambda with captured variable`() {
+        // Drift code:
+        //   let x = 10
+        //   let addX = (y: Int) -> x + y
+        //   let result = addX(5)
+        //
+        // Expected behavior:
+        // 1. SymbolCollector identifies x as captured
+        // 2. Environment struct includes x field
+        // 3. malloc environment, initialize x field with value 10
+        // 4. Lambda function receives environment parameter
+        // 5. Variable x is loaded from environment when accessed
+
+        val literal10 = Literal(ParserInt(10))
+        val letX = Let(
+            name = "x",
+            type = ObjectType("Int"),
+            value = literal10,
+            isMutable = false)
+
+        val paramY = FunctionParameter(name = "y", type = ObjectType("Int"))
+        val varX = Variable("x")
+        val varY = Variable("y")
+        val body = ExprStmt(Binary(varX, "+", varY))
+
+        val lambda = Lambda(
+            parameters = listOf(paramY),
+            body = listOf(body),
+            returnType = ObjectType("Int"))
+
+        val letAddX = Let(
+            name = "addX",
+            type = ObjectType("Function"),
+            value = lambda,
+            isMutable = false)
+
+        // let result = addX(5)
+        val varAddX = Variable("addX")
+        val arg5 = Argument(name = null, expr = Literal(ParserInt(5)))
+        val call = Call(callee = varAddX, args = listOf(arg5))
+        val letResult = Let(
+            name = "result",
+            type = ObjectType("Int"),
+            value = call,
+            isMutable = false)
+
+        val module = emitModule(letX, letAddX, letResult)
+
+        // Verify captured variable is in environment struct
+        val envType = module.types.find { it.name.contains(".env") }
+        assertNotNull(envType, "Environment struct should exist")
+        assertTrue(envType.fields.isNotEmpty(), "Environment should contain captured variable x")
+
+        // Lambda has env param + 1 explicit param
+        val lambdaFunc = module.functions.find { it.name.contains("lfun::") }
+        assertNotNull(lambdaFunc)
+        assertEquals(2, lambdaFunc.parameters.size)
+    }
+
+    @Test
+    fun `test lambda stored in variable and called later`() {
+        // Drift code:
+        //   let multiply = (a: Int, b: Int) -> a * b
+        //   let op = multiply
+        //   let result = op(4, 5)
+        //
+        // Expected behavior:
+        // 1. Closure is stored in multiply variable
+        // 2. op is assigned the same closure
+        // 3. op is called indirectly
+
+        val paramA = FunctionParameter(name = "a", type = ObjectType("Int"))
+        val paramB = FunctionParameter(name = "b", type = ObjectType("Int"))
+
+        val varA = Variable("a")
+        val varB = Variable("b")
+        val body = ExprStmt(Binary(varA, "*", varB))
+
+        val lambda = Lambda(
+            parameters = listOf(paramA, paramB),
+            body = listOf(body),
+            returnType = ObjectType("Int"))
+
+        val letMultiply = Let(
+            name = "multiply",
+            type = ObjectType("Function"),
+            value = lambda,
+            isMutable = false)
+
+        // let op = multiply
+        val varMultiply = Variable("multiply")
+        val letOp = Let(
+            name = "op",
+            type = ObjectType("Function"),
+            value = varMultiply,
+            isMutable = false)
+
+        // let result = op(4, 5)
+        val varOp = Variable("op")
+        val arg4 = Argument(name = null, expr = Literal(ParserInt(4)))
+        val arg5 = Argument(name = null, expr = Literal(ParserInt(5)))
+        val call = Call(callee = varOp, args = listOf(arg4, arg5))
+        val letResult = Let(
+            name = "result",
+            type = ObjectType("Int"),
+            value = call,
+            isMutable = false)
+
+        val module = emitModule(letMultiply, letOp, letResult)
+
+        // Verify lambda was created
+        val lambdaFunc = module.functions.find { it.name.contains("lfun::") }
+        assertNotNull(lambdaFunc, "Lambda function should be generated")
+    }
+
+    @Test
+    fun `test multiple lambdas with different captures`() {
+        // Drift code:
+        //   let x = 10
+        //   let y = 20
+        //   let f1 = (a: Int) -> x + a
+        //   let f2 = (b: Int) -> y + b
+        //
+        // Expected behavior:
+        // 1. Each lambda has its own environment struct
+        // 2. f1 environment contains x
+        // 3. f2 environment contains y
+        // 4. Both can be called independently
+
+        val literal10 = Literal(ParserInt(10))
+        val letX = Let(name = "x", type = ObjectType("Int"), value = literal10, isMutable = false)
+
+        val literal20 = Literal(ParserInt(20))
+        val letY = Let(name = "y", type = ObjectType("Int"), value = literal20, isMutable = false)
+
+        // f1 = (a: Int) -> x + a
+        val paramA = FunctionParameter(name = "a", type = ObjectType("Int"))
+        val varX = Variable("x")
+        val varA = Variable("a")
+        val body1 = ExprStmt(Binary(varX, "+", varA))
+        val lambda1 = Lambda(parameters = listOf(paramA), body = listOf(body1), returnType = ObjectType("Int"))
+        val letF1 = Let(name = "f1", type = ObjectType("Function"), value = lambda1, isMutable = false)
+
+        // f2 = (b: Int) -> y + b
+        val paramB = FunctionParameter(name = "b", type = ObjectType("Int"))
+        val varY = Variable("y")
+        val varB = Variable("b")
+        val body2 = ExprStmt(Binary(varY, "+", varB))
+        val lambda2 = Lambda(parameters = listOf(paramB), body = listOf(body2), returnType = ObjectType("Int"))
+        val letF2 = Let(name = "f2", type = ObjectType("Function"), value = lambda2, isMutable = false)
+
+        val module = emitModule(letX, letY, letF1, letF2)
+
+        // Both lambdas should create functions
+        val lambdaFuncs = module.functions.filter { it.name.contains("lfun::") }
+        assertEquals(2, lambdaFuncs.size, "Two lambda functions should be generated")
+
+        // Each lambda should have its own environment struct
+        val envTypes = module.types.filter { it.name.contains(".env") }
+        assertEquals(2, envTypes.size, "Two environment structs should be generated")
+    }
+
+    @Test
+    fun `test lambda returning value is correctly typed`() {
+        // Drift code:
+        //   let getInt = () -> 42
+        //   let result: Int = getInt()
+        //
+        // Expected behavior:
+        // 1. Lambda return type is Int
+        // 2. Call result is typed as Int
+        // 3. Result can be assigned to Int variable
+
+        val literal42 = Literal(ParserInt(42))
+        val body = ExprStmt(literal42)
+
+        val lambda = Lambda(
+            parameters = emptyList(),
+            body = listOf(body),
+            returnType = ObjectType("Int"))
+
+        val letGetInt = Let(
+            name = "getInt",
+            type = ObjectType("Function"),
+            value = lambda,
+            isMutable = false)
+
+        // let result: Int = getInt()
+        val varGetInt = Variable("getInt")
+        val call = Call(callee = varGetInt, args = emptyList())
+        val letResult = Let(
+            name = "result",
+            type = ObjectType("Int"),
+            value = call,
+            isMutable = false)
+
+        val module = emitModule(letGetInt, letResult)
+
+        val lambdaFunc = module.functions.find { it.name.contains("lfun::") }
+        assertNotNull(lambdaFunc, "Lambda function should be generated")
+
+        // Return type for Int is QBEWord
+        assertEquals(QBEWord, lambdaFunc.returnType,
+            "Lambda return type should be QBEWord for Int")
+    }
+
+    @Test
+    fun `test direct function call vs indirect lambda call`() {
+        // Drift code:
+        //   fun add(a: Int, b: Int): Int { return a + b }
+        //   let f = (a: Int, b: Int) -> a + b
+        //   let r1 = add(5, 3)      // direct
+        //   let r2 = f(5, 3)        // indirect
+        //
+        // Expected behavior:
+        // 1. add call uses QBEGlobal reference
+        // 2. f call extracts funptr from closure
+        // 3. f call passes environment as first arg
+        // 4. Both produce same result
+
+        // Function definition
+        val paramA = FunctionParameter(name = "a", type = ObjectType("Int"))
+        val paramB = FunctionParameter(name = "b", type = ObjectType("Int"))
+        val varA = Variable("a")
+        val varB = Variable("b")
+        val returnStmt = Return(Binary(varA, "+", varB))
+
+        val func = Func(
+            name = "add",
+            parameters = listOf(paramA, paramB),
+            returnType = ObjectType("Int"),
+            body = listOf(returnStmt))
+
+        // Lambda definition
+        val paramA2 = FunctionParameter(name = "a", type = ObjectType("Int"))
+        val paramB2 = FunctionParameter(name = "b", type = ObjectType("Int"))
+        val varA2 = Variable("a")
+        val varB2 = Variable("b")
+        val body = ExprStmt(Binary(varA2, "+", varB2))
+
+        val lambda = Lambda(
+            parameters = listOf(paramA2, paramB2),
+            body = listOf(body),
+            returnType = ObjectType("Int"))
+
+        val letF = Let(
+            name = "f",
+            type = ObjectType("Function"),
+            value = lambda,
+            isMutable = false)
+
+        // let r1 = add(5, 3)
+        val varAdd = Variable("add")
+        val arg5_1 = Argument(name = null, expr = Literal(ParserInt(5)))
+        val arg3_1 = Argument(name = null, expr = Literal(ParserInt(3)))
+        val call1 = Call(callee = varAdd, args = listOf(arg5_1, arg3_1))
+        val letR1 = Let(name = "r1", type = ObjectType("Int"), value = call1, isMutable = false)
+
+        // let r2 = f(5, 3)
+        val varF = Variable("f")
+        val arg5_2 = Argument(name = null, expr = Literal(ParserInt(5)))
+        val arg3_2 = Argument(name = null, expr = Literal(ParserInt(3)))
+        val call2 = Call(callee = varF, args = listOf(arg5_2, arg3_2))
+        val letR2 = Let(name = "r2", type = ObjectType("Int"), value = call2, isMutable = false)
+
+        val module = emitModule(func, letF, letR1, letR2)
+
+        // Verify both functions exist
+        val addFunc = module.functions.find { it.name == "add" }
+        assertNotNull(addFunc, "Named function 'add' should be generated")
+        assertEquals(2, addFunc.parameters.size, "Named function has 2 params")
+
+        val lambdaFunc = module.functions.find { it.name.contains("lfun::") }
+        assertNotNull(lambdaFunc, "Lambda function should be generated")
+        assertEquals(3, lambdaFunc.parameters.size, "Lambda has env + 2 params")
+    }
+}
