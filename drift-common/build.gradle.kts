@@ -2,12 +2,12 @@ import java.io.ByteArrayOutputStream
 import java.time.Year
 
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.2.0"
 
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
-group = "dev.drift"
+group = "fr.belic.drift"
 version = "2026.0"
 
 kotlin {
@@ -33,10 +33,10 @@ tasks.test {
 fun String.runCommand() : String {
     val stdout = ByteArrayOutputStream()
 
-    project.exec {
+    providers.exec {
         commandLine = this@runCommand.split(" ")
         standardOutput = stdout
-    }
+    }.standardOutput.asText.get()
 
     return stdout.toString().trim()
 }

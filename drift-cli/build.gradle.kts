@@ -1,12 +1,12 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.2.0"
 
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.6"
 
     application
 }
 
-group = "dev.drift"
+group = "fr.belic.drift"
 version = "2026.0"
 
 repositories {
@@ -24,6 +24,8 @@ dependencies {
 
     implementation(project(":drift-common"))
     implementation(project(":drift-core"))
+    implementation(project(":drift-hir"))
+    implementation(project(":drift-ir"))
 
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
     implementation("com.github.ajalt.clikt:clikt-markdown:5.0.3")
