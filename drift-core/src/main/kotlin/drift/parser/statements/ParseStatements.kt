@@ -144,10 +144,6 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
         Literal(ParserNotAssigned)
     }
 
-    if (expr is Lambda) {
-        expr = expr.copy(name = name)
-    }
-
     return Let(name, type, expr, isMutable)
 }
 
