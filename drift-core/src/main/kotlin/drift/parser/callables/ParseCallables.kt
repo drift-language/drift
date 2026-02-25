@@ -68,12 +68,12 @@ internal fun Parser.parseFunction() : Func {
         if (matchSymbol(":")) parseType()
         else AnyType
 
+    val annotations = storedAnnotations.toMutableList()
+    storedAnnotations.clear()
+
     expectSymbol("{")
 
     val body = parseBlock().statements
-
-    val annotations = storedAnnotations.toMutableList()
-    storedAnnotations.clear()
 
     return Func(
         name = name,
