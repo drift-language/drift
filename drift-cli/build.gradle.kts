@@ -24,6 +24,7 @@ dependencies {
 
     implementation(project(":drift-common"))
     implementation(project(":drift-core"))
+    implementation(project(":drift-analysis"))
     implementation(project(":drift-hir"))
     implementation(project(":drift-ir"))
 
@@ -42,6 +43,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("runDebugger") {
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("drift.cli.DriftRunnerTestKt")
+    workingDir = rootProject.projectDir
+    args = listOf("/Users/jonathan/Documents/Development/drift/examples/src/main.drift")
 }
 
 application {
