@@ -31,32 +31,34 @@ tasks.test {
 }
 
 fun String.runCommand() : String {
-    val stdout = ByteArrayOutputStream()
-
-    providers.exec {
-        commandLine = this@runCommand.split(" ")
-        standardOutput = stdout
-    }.standardOutput.asText.get()
-
-    return stdout.toString().trim()
+    return ProcessBuilder(this.split(" "))
+        .redirectErrorStream(true)
+        .start()
+        .inputStream
+        .bufferedReader()
+        .readText()
+        .trim()
 }
 
 tasks.register("generateVersion") {
     val outputDir = layout.buildDirectory.dir("generated/sources/version/kotlin").get().asFile
-    val versionFile = File(outputDir, "drift/DriftVersion.kt")
-    versionFile.parentFile.mkdirs()
-
-    val gitHash = "git rev-parse --short HEAD".runCommand()
     val projectVersion = project.version.toString()
 
-    versionFile.writeText(
-        """
-            package drift
+    doLast {
+        val versionFile = File(outputDir, "drift/DriftVersion.kt")
+        versionFile.parentFile.mkdirs()
 
-            object DriftVersion {
-                val fullVersion = "$projectVersion.$gitHash"
-            }
-        """.trimIndent())
+        val gitHash = "git rev-parse --short HEAD".runCommand()
+
+        versionFile.writeText(
+            """
+                package drift
+
+                object DriftVersion {
+                    val fullVersion = "$projectVersion.$gitHash"
+                }
+            """.trimIndent())
+    }
 }
 
 sourceSets["main"].java.srcDir(layout.buildDirectory.dir("generated/sources/version/kotlin"))
