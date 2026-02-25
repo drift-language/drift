@@ -9,6 +9,9 @@
 
 package drift.hir
 
+import drift.ast.metadata.Annotation
+import drift.hir.metadata.HIRAnnotation
+
 /**
  * Base interface for all HIR (High-level Intermediate Representation) nodes.
  * 
@@ -18,6 +21,7 @@ sealed interface HIRNode {
     val hirId: Int
 }
 
+
 /**
  * Base interface for all statement nodes in HIR.
  * 
@@ -25,6 +29,12 @@ sealed interface HIRNode {
  * (except ExprStmt which wraps expressions).
  */
 sealed interface HIRStatement : HIRNode
+
+sealed interface HIRAnnotatable {
+
+    val annotations: MutableList<HIRAnnotation>
+}
+
 
 /**
  * Base interface for all expression nodes in HIR.

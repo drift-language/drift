@@ -9,16 +9,20 @@
 
 package drift.hir
 
+import drift.ast.metadata.Annotation
+import drift.hir.metadata.HIRAnnotation
+
 /**
  * Function declaration in HIR.
  */
 data class HIRFunction(
     override val hirId: Int,
+    override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val parameters: List<HIRParameter>,
     val returnType: HIRType,
     val body: List<HIRStatement>
-) : HIRStatement
+) : HIRStatement, HIRAnnotatable
 
 /**
  * Function parameter.
@@ -34,32 +38,35 @@ data class HIRParameter(
  */
 data class HIRVariable(
     override val hirId: Int,
+    override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val type: HIRType,
     val initialValue: HIRExpression,
     val isMutable: Boolean
-) : HIRStatement
+) : HIRStatement, HIRAnnotatable
 
 /**
  * Class declaration.
  */
 data class HIRClass(
     override val hirId: Int,
+    override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val fields: List<HIRField>,
     val methods: List<HIRFunction>,
     val staticFields: List<HIRField>,
     val staticMethods: List<HIRFunction>
-) : HIRStatement
+) : HIRStatement, HIRAnnotatable
 
 /**
  * Class field definition.
  */
 data class HIRField(
     val name: String,
+    override val annotations: MutableList<HIRAnnotation>,
     val type: HIRType,
-    val isStatic: Boolean
-)
+    val isStatic: Boolean,
+) : HIRAnnotatable
 
 /**
  * Code block (scoped statements).
