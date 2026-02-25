@@ -260,6 +260,14 @@ internal fun Parser.parseVariable() : ParserExpression {
 internal fun Parser.parseCallArguments(target: ParserExpression) : ParserExpression {
     expectSymbol("(")
 
+    val args = parseArguments()
+
+    return Call(target, args)
+}
+
+
+
+internal fun Parser.parseArguments() : List<Argument> {
     val args = mutableListOf<Argument>()
 
     if (!checkSymbol(")")) {
@@ -277,7 +285,7 @@ internal fun Parser.parseCallArguments(target: ParserExpression) : ParserExpress
 
     expectSymbol(")")
 
-    return Call(target, args)
+    return args
 }
 
 
