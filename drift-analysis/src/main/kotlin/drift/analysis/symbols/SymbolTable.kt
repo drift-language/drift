@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
-import drift.ir.exceptions.DIRNotDefinedSymbolException
+import drift.analysis.exceptions.DIRNotDefinedSymbolException
 import drift.runtime.ParserType
 
 class SymbolTable {
