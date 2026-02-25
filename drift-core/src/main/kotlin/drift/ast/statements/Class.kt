@@ -9,6 +9,8 @@
 
 package drift.ast.statements
 
+import drift.ast.metadata.Annotation
+
 
 /******************************************************************************
  * DRIFT CLASS DECLARATION STATEMENT AST NODE
@@ -27,6 +29,7 @@ package drift.ast.statements
  */
 data class Class(
     val name: String,
+    val annotations: MutableList<Annotation> = mutableListOf(),
     val fields: MutableList<Let> = mutableListOf(),
     val methods: MutableList<Func> = mutableListOf(),
     val staticFields: MutableList<Let> = mutableListOf(),

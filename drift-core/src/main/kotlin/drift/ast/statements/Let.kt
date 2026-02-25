@@ -10,6 +10,7 @@
 package drift.ast.statements
 
 import drift.ast.expressions.ParserExpression
+import drift.ast.metadata.Annotation
 import drift.runtime.ParserType
 
 
@@ -31,6 +32,7 @@ import drift.runtime.ParserType
  */
 data class Let(
     val name: String,
+    val annotations: MutableList<Annotation> = mutableListOf(),
     val type: ParserType,
     val value: ParserExpression,
     val isMutable: Boolean) : ParserStatement()
