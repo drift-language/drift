@@ -13,8 +13,10 @@ import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
+import drift.ast.metadata.Annotation
 import drift.ast.statements.*
 import drift.hir.*
+import drift.hir.metadata.HIRAnnotation
 import drift.runtime.ParserType
 import drift.runtime.AnyType
 import drift.runtime.ObjectType
@@ -75,13 +77,20 @@ class HIRConverter(
         }
     }
 
-    private fun convertLet(let: Let) : HIRStatement {
+    private fun convertLet(let: Let) : HIRVariable {
         val hirId = allocateHirId()
+
+        val annotations = let.annotations
+            .map(this::convertAnnotation)
+            .toMutableList()
+
         val type = convertType(typeResolution[let.nodeId] ?: let.type)
+
         val initialValue = convertExpression(let.value)
 
         val hirVar = HIRVariable(
             hirId = hirId,
+            annotations = annotations,
             name = let.name,
             type = type,
             initialValue = initialValue,
@@ -93,8 +102,13 @@ class HIRConverter(
         return hirVar
     }
 
-    private fun convertFunction(function: Func) : HIRStatement {
+    private fun convertFunction(function: Func) : HIRFunction {
         val hirId = allocateHirId()
+
+        val annotations = function.annotations
+            .map(this::convertAnnotation)
+            .toMutableList()
+
         val returnType = convertType(function.returnType)
         
         val parameters = function.parameters.map { param ->
@@ -108,6 +122,7 @@ class HIRConverter(
 
         val hirFunc = HIRFunction(
             hirId = hirId,
+            annotations = annotations,
             name = function.name,
             parameters = parameters,
             returnType = returnType,
@@ -119,29 +134,21 @@ class HIRConverter(
         return hirFunc
     }
 
-    private fun convertClass(clazz: Class) : HIRStatement {
+    private fun convertClass(clazz: Class) : HIRClass {
         val hirId = allocateHirId()
 
-        val fields = clazz.fields.map { field ->
-            HIRField(
-                name = field.name,
-                type = convertType(field.type),
-                isStatic = false)
-        }
+        val annotations = clazz.annotations
+            .map(this::convertAnnotation)
+            .toMutableList()
 
-        val methods = clazz.methods.map { convertFunction(it) as HIRFunction }
-
-        val staticFields = clazz.staticFields.map { field ->
-            HIRField(
-                name = field.name,
-                type = convertType(field.type),
-                isStatic = true)
-        }
-
-        val staticMethods = clazz.staticMethods.map { convertFunction(it) as HIRFunction }
+        val staticFields = clazz.staticFields.map { convertClassField(it) }
+        val fields = clazz.fields.map { convertClassField(it) }
+        val staticMethods = clazz.staticMethods.map { convertFunction(it) }
+        val methods = clazz.methods.map { convertFunction(it) }
 
         val hirClass = HIRClass(
             hirId = hirId,
+            annotations = annotations,
             name = clazz.name,
             fields = fields,
             methods = methods,
@@ -154,7 +161,19 @@ class HIRConverter(
         return hirClass
     }
 
-    private fun convertIfStmt(ifStmt: If) : HIRStatement {
+    private fun convertClassField(field: Let) : HIRField {
+        val fieldAnnotations = field.annotations
+            .map(this::convertAnnotation)
+            .toMutableList()
+
+        return HIRField(
+            name = field.name,
+            annotations = fieldAnnotations,
+            type = convertType(field.type),
+            isStatic = false)
+    }
+
+    private fun convertIfStmt(ifStmt: If) : HIRExpressionStmt {
         val hirId = allocateHirId()
         val condition = convertExpression(ifStmt.condition)
         val thenBranch = HIRBlock(allocateHirId(), listOf(convertStatement(ifStmt.thenBranch)))
@@ -171,7 +190,7 @@ class HIRConverter(
         return HIRExpressionStmt(allocateHirId(), hirConditional)
     }
 
-    private fun convertFor(forLoop: For) : HIRStatement {
+    private fun convertFor(forLoop: For) : HIRExpressionStmt {
         val hirId = allocateHirId()
         val iterable = convertExpression(forLoop.iterable)
 
@@ -191,7 +210,7 @@ class HIRConverter(
         return HIRExpressionStmt(allocateHirId(), hirLoop)
     }
 
-    private fun convertReturn(returnStmt: Return) : HIRStatement {
+    private fun convertReturn(returnStmt: Return) : HIRReturn {
         val hirId = allocateHirId()
         val value = convertExpression(returnStmt.value)
 
@@ -203,7 +222,7 @@ class HIRConverter(
         return hirReturn
     }
 
-    private fun convertBlock(block: Block) : HIRStatement {
+    private fun convertBlock(block: Block) : HIRBlock {
         val hirId = allocateHirId()
         val statements = block.statements.map { convertStatement(it) }
 
@@ -215,7 +234,7 @@ class HIRConverter(
         return hirBlock
     }
 
-    private fun convertExprStmt(exprStmt: ExprStmt) : HIRStatement {
+    private fun convertExprStmt(exprStmt: ExprStmt) : HIRExpressionStmt {
         val hirId = allocateHirId()
         val expression = convertExpression(exprStmt.expr)
 
@@ -227,7 +246,7 @@ class HIRConverter(
         return hirExprStmt
     }
 
-    private fun convertImport(importStmt: Import) : HIRStatement {
+    private fun convertImport(importStmt: Import) : HIRImport {
         val hirId = allocateHirId()
 
         val hirImportParts = importStmt.parts?.map { part ->
@@ -274,7 +293,7 @@ class HIRConverter(
         }
     }
 
-    private fun convertLiteral(literal: Literal, type: HIRType) : HIRExpression {
+    private fun convertLiteral(literal: Literal, type: HIRType) : HIRLiteral {
         val hirId = allocateHirId()
         val value = when (val v = literal.value) {
             is ParserInt -> v.value
@@ -297,7 +316,7 @@ class HIRConverter(
         return hirLiteral
     }
 
-    private fun convertVariable(variable: Variable, type: HIRType) : HIRExpression {
+    private fun convertVariable(variable: Variable, type: HIRType) : HIRVariableRef {
         val hirId = allocateHirId()
         val definitionHirId = definitionHirIds[variable.name] ?: -1
 
@@ -312,7 +331,7 @@ class HIRConverter(
         return hirVar
     }
 
-    private fun convertBinary(binary: Binary, type: HIRType) : HIRExpression {
+    private fun convertBinary(binary: Binary, type: HIRType) : HIRBinaryOp {
         val hirId = allocateHirId()
         val operator = when (binary.operator) {
             "+" -> BinaryOperator.ADD
@@ -348,7 +367,7 @@ class HIRConverter(
         return hirBinary
     }
 
-    private fun convertUnary(unary: Unary, type: HIRType) : HIRExpression {
+    private fun convertUnary(unary: Unary, type: HIRType) : HIRUnaryOp {
         val hirId = allocateHirId()
         val operator = when (unary.operator) {
             "-" -> UnaryOperator.NEGATE
@@ -369,7 +388,7 @@ class HIRConverter(
         return hirUnary
     }
 
-    private fun convertCall(call: Call, type: HIRType) : HIRExpression {
+    private fun convertCall(call: Call, type: HIRType) : HIRCall {
         val hirId = allocateHirId()
         val callee = convertExpression(call.callee)
         val arguments = call.args.map { arg ->
@@ -389,7 +408,7 @@ class HIRConverter(
         return hirCall
     }
 
-    private fun convertGet(get: Get, type: HIRType) : HIRExpression {
+    private fun convertGet(get: Get, type: HIRType) : HIRFieldAccess {
         val hirId = allocateHirId()
         val receiver = convertExpression(get.receiver)
         val receiverClassName = extractClassName(typeResolution[get.receiver.nodeId])
@@ -408,7 +427,7 @@ class HIRConverter(
         return hirGet
     }
 
-    private fun convertSet(set: Set, type: HIRType) : HIRExpression {
+    private fun convertSet(set: Set, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
         val receiver = convertExpression(set.receiver)
         val receiverClassName = extractClassName(typeResolution[set.receiver.nodeId])
@@ -426,7 +445,7 @@ class HIRConverter(
         return hirSet
     }
 
-    private fun convertAssign(assign: Assign, type: HIRType) : HIRExpression {
+    private fun convertAssign(assign: Assign, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
         val value = convertExpression(assign.value)
 
@@ -441,7 +460,7 @@ class HIRConverter(
         return hirAssign
     }
 
-    private fun convertConditional(conditional: Conditional, type: HIRType) : HIRExpression {
+    private fun convertConditional(conditional: Conditional, type: HIRType) : HIRConditional {
         val hirId = allocateHirId()
         val condition = convertExpression(conditional.condition)
         val thenBranch = HIRBlock(allocateHirId(), listOf(convertStatement(conditional.thenBranch)))
@@ -459,7 +478,7 @@ class HIRConverter(
         return hirConditional
     }
 
-    private fun convertLambda(lambda: Lambda, type: HIRType) : HIRExpression {
+    private fun convertLambda(lambda: Lambda, type: HIRType) : HIRLambda {
         val hirId = allocateHirId()
 
         val parameters = lambda.parameters.map { param ->
@@ -491,6 +510,21 @@ class HIRConverter(
         astToHirMap[lambda.nodeId] = hirId
 
         return hirLambda
+    }
+
+
+    // ========================================================================
+    // EXPRESSIONS
+    // ========================================================================
+
+    private fun convertAnnotation(annotation: Annotation) : HIRAnnotation {
+        return HIRAnnotation(
+            name = annotation.name,
+            args = annotation.args.map { argument ->
+                HIRArgument(
+                    name = argument.name,
+                    value = convertExpression(argument.expr))
+            })
     }
 
 
