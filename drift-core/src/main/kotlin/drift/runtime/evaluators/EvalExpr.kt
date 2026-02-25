@@ -511,7 +511,7 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
 
         // Lambda computing
         is Lambda -> {
-            val f = Func("", this.parameters, this.body, this.returnType)
+            val f = Func(name = "", parameters = this.parameters, body = this.body, returnType = this.returnType)
             val capture = env.all()
                 .mapValues { (_, v) -> unwrap(v) }
                 .toMap()

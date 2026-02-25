@@ -97,8 +97,8 @@ internal fun Parser.parseHook(
     val body = parseBlock()
 
     return Func(
-        name,
-        parameters,
-        body.statements,
-        hookReturnType)
+        name = name,
+        parameters = parameters,
+        body = body.statements,
+        returnType = hookReturnType)
 }
