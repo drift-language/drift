@@ -11,27 +11,14 @@ package drift.cli
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
-import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.rendering.TextStyles.bold
+import com.github.ajalt.mordant.rendering.TextStyles.italic
 import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
-import drift.ast.statements.Func
-import drift.checkers.TypeChecker
-import drift.checkers.collectors.SymbolCollector
-import drift.hir.converter.ASTToHIRConverter
-import drift.ir.symbols.SymbolTable
+import drift.analysis.symbols.SymbolTable
+import drift.hir.HIRConverter
 import drift.lexer.lex
 import drift.parser.Parser
-import drift.runtime.AnyType
-import drift.runtime.DrEnv
-import drift.runtime.NullType
-import drift.runtime.ObjectType
-import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.ParserMethod
-import drift.runtime.values.callables.ParserNativeFunction
-import drift.runtime.values.oop.ParserClass
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserString
-import drift.runtime.values.specials.ParserVoid
 import project.loadConfig
 import java.io.File
 
@@ -65,7 +52,7 @@ fun main(args: Array<String>) {
     }
 
     val source = file.readText()
-    val env = DrEnv()
+//    val env = DrEnv()
     val config = loadConfig(File("examples"))
 
     val tokens = lex(source)
@@ -74,7 +61,7 @@ fun main(args: Array<String>) {
     val ast = Parser(tokens).parse()
     t.println(bold(red("[AST]\t\t")) + italic(ast.toString()))
 
-    val hir = ASTToHIRConverter(
+    val hir = HIRConverter(
         ast = ast,
         symbolTable = SymbolTable(),
         emptyMap(),
