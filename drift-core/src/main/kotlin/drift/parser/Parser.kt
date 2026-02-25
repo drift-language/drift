@@ -9,6 +9,7 @@
 
 package drift.parser
 
+import drift.ast.metadata.Annotation
 import drift.ast.statements.ParserStatement
 import drift.ast.statements.Import
 import drift.lexer.Token
@@ -16,6 +17,7 @@ import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsExcepti
 import drift.parser.exceptions.DPImportsStatementsMustPrecedeAllOtherStatementsException
 import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.parser.statements.parseStatement
+import java.util.LinkedList
 
 
 /******************************************************************************
@@ -36,11 +38,11 @@ class Parser(
     /** Provided lexer tokens */
     private val tokens: List<Token>) {
 
-
+    /** Stored annotations until next non-annotated statement. */
+    internal val storedAnnotations: MutableList<Annotation> = mutableListOf()
 
     /** Current token index */
     private var i = 0
-
 
     /**
      * Current depth level.

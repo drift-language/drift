@@ -72,7 +72,15 @@ internal fun Parser.parseFunction() : Func {
 
     val body = parseBlock().statements
 
-    return Func(name, parameters, body, returnType)
+    val annotations = storedAnnotations.toMutableList()
+    storedAnnotations.clear()
+
+    return Func(
+        name = name,
+        annotations = annotations,
+        parameters = parameters,
+        body = body,
+        returnType = returnType)
 }
 
 

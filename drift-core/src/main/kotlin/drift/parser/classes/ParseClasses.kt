@@ -13,15 +13,20 @@ import drift.ast.expressions.Literal
 import drift.ast.statements.Class
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
+import drift.ast.metadata.Annotation
 import drift.ast.statements.Let
+import drift.ast.statements.ParserStatement
 import drift.parser.Parser
 import drift.lexer.Token
+import drift.parser.annotations.parseAnnotation
 import drift.parser.callables.parseFunction
 import drift.parser.callables.parseHook
 import drift.parser.exceptions.DPOnlyOneConstructorPerClassException
 import drift.parser.exceptions.DPOnlyOneStaticBlockPerClassException
 import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
+import drift.parser.exceptions.DPUnsupportedAnnotationException
 import drift.parser.statements.parseLet
+import drift.parser.statements.parseStatement
 import drift.parser.types.parseType
 import drift.runtime.VoidType
 import drift.runtime.values.specials.ParserNotAssigned
@@ -49,13 +54,81 @@ import drift.runtime.values.specials.ParserNotAssigned
  */
 internal fun Parser.parseClass() : Class {
     val nameToken = expect<Token.Identifier>("class name")
+
+    val annotations = storedAnnotations.toMutableList()
+    storedAnnotations.clear()
+
     val name = nameToken.value
     val fields = mutableListOf<Let>()
     val methods = mutableListOf<Func>()
     val staticFields = mutableListOf<Let>()
     val staticMethods = mutableListOf<Func>()
     val constructorParameters = mutableListOf<FunctionParameter>()
+
     var hasPrimaryConstructor = false
+    var isStaticBlockAlreadyDefined = false
+
+
+    fun parseClassStatement() {
+        when (val c = current()) {
+            is Token.Identifier -> when {
+                c.isKeyword(Token.Keyword.INIT) -> {
+                    if (hasPrimaryConstructor)
+                        throw DPOnlyOneConstructorPerClassException()
+
+                    methods.add(parseHook(
+                        forceParameters = true,
+                        disableReturnStatement = true))
+                }
+                c.isKeyword(Token.Keyword.IMMUTLET) ||
+                c.isKeyword(Token.Keyword.MUTLET) -> {
+
+                    advance(false)
+
+                    fields += parseLet(
+                        isMutable = c.isKeyword(Token.Keyword.MUTLET),
+                        acceptUnassigned = true)
+                }
+                c.isKeyword(Token.Keyword.FUNCTION) -> {
+                    advance()
+
+                    methods.add(parseFunction())
+                }
+                c.isKeyword(Token.Keyword.STATIC) -> {
+                    if (isStaticBlockAlreadyDefined)
+                        throw DPOnlyOneStaticBlockPerClassException()
+
+                    isStaticBlockAlreadyDefined = true
+
+                    advance()
+
+                    expectSymbol("{", advanceOnSuccess = true)
+
+                    while (!matchSymbol("}")) {
+                        skip(Token.NewLine)
+
+                        parseClassStaticBlock(staticFields, staticMethods)
+                    }
+                }
+
+                else -> throw DPUnexpectedStatementInClassBodyException()
+            }
+            is Token.Annotation -> {
+                val annotation = parseAnnotation()
+                storedAnnotations.add(annotation)
+
+                advance()
+
+                parseClassStatement()
+            }
+
+            else -> throw DPUnexpectedStatementInClassBodyException()
+        }
+
+        if (storedAnnotations.isNotEmpty())
+            throw DPUnsupportedAnnotationException(annotationName = storedAnnotations.last().name)
+    }
+
 
     advance(false)
 
@@ -79,80 +152,38 @@ internal fun Parser.parseClass() : Class {
 
             for (param in constructorParameters) {
                 fields.add(Let(
-                    param.name,
-                    param.type,
-                    Literal(ParserNotAssigned),
+                    name = param.name,
+                    type = param.type,
+                    value = Literal(ParserNotAssigned),
                     isMutable = false))
             }
 
             methods.add(Func(
-                Token.Keyword.INIT.value,
-                constructorParameters,
-                listOf(),
-                VoidType))
+                name = Token.Keyword.INIT.value,
+                parameters = constructorParameters,
+                body = listOf(),
+                returnType = VoidType))
         }
 
         expectSymbol(")")
     }
 
-    var isStaticBlockAlreadyDefined = false
-
     if (matchSymbol("{")) {
         while (!matchSymbol("}")) {
             skip(Token.NewLine)
 
-            val c = current()
+            parseClassStatement()
 
-            if (c is Token.Identifier) {
-                when {
-                    c.isKeyword(Token.Keyword.INIT) -> {
-                        if (hasPrimaryConstructor) {
-                            throw DPOnlyOneConstructorPerClassException()
-                        }
-
-                        methods.add(parseHook(
-                            forceParameters = true,
-                            disableReturnStatement = true))
-                    }
-                    c.isKeyword(Token.Keyword.IMMUTLET) ||
-                    c.isKeyword(Token.Keyword.MUTLET) -> {
-
-                        advance(false)
-
-                        fields += parseLet(
-                            isMutable = c.isKeyword(Token.Keyword.MUTLET),
-                            acceptUnassigned = true)
-                    }
-                    c.isKeyword(Token.Keyword.FUNCTION) -> {
-                        advance()
-
-                        methods.add(parseFunction())
-                    }
-                    c.isKeyword(Token.Keyword.STATIC) -> {
-                        if (isStaticBlockAlreadyDefined)
-                            throw DPOnlyOneStaticBlockPerClassException()
-
-                        isStaticBlockAlreadyDefined = true
-
-                        advance()
-
-                        expectSymbol("{", advanceOnSuccess = true)
-
-                        while (!matchSymbol("}")) {
-                            skip(Token.NewLine)
-
-                            parseClassStaticBlock(staticFields, staticMethods)
-                        }
-                    }
-                    else -> throw DPUnexpectedStatementInClassBodyException()
-                }
-            } else {
-                throw DPUnexpectedStatementInClassBodyException()
-            }
-
-            if (current() is Token.NewLine) advance()
+            advance()
         }
     }
 
-    return Class(name, fields, methods, staticFields, staticMethods, hasPrimaryConstructor = hasPrimaryConstructor)
+    return Class(
+        name = name,
+        annotations = annotations,
+        fields = fields,
+        methods = methods,
+        staticFields = staticFields,
+        staticMethods = staticMethods,
+        hasPrimaryConstructor = hasPrimaryConstructor)
 }

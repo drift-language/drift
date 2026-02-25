@@ -15,11 +15,13 @@ import drift.ast.expressions.Literal
 import drift.ast.statements.*
 import drift.lexer.Token
 import drift.parser.Parser
+import drift.parser.annotations.parseAnnotation
 import drift.parser.callables.parseFunction
 import drift.parser.classes.parseClass
 import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.parser.exceptions.DPStaticFieldMustBeInitializedException
 import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
+import drift.parser.exceptions.DPUnsupportedAnnotationException
 import drift.parser.exceptions.DPUnterminatedBlockException
 import drift.parser.expressions.parseExpression
 import drift.parser.types.parseType
@@ -46,12 +48,13 @@ import drift.runtime.values.specials.ParserVoid
  * @return Constructed statement AST object
  */
 internal fun Parser.parseStatement() : ParserStatement {
-    return when (val token = current()) {
+    val statement: ParserStatement = when (val token = current()) {
         is Token.Symbol -> when (token.value) {
             "{" -> {
                 advance(false)
                 parseBlock()
             }
+
             else -> ExprStmt(parseExpression())
         }
         is Token.Identifier -> when {
@@ -93,8 +96,22 @@ internal fun Parser.parseStatement() : ParserStatement {
             }
             else -> ExprStmt(parseExpression())
         }
+        is Token.Annotation -> {
+            val annotation = parseAnnotation()
+            storedAnnotations.add(annotation)
+
+            advance()
+
+            parseStatement()
+        }
+
         else -> ExprStmt(parseExpression())
     }
+
+    if (storedAnnotations.isNotEmpty())
+        throw DPUnsupportedAnnotationException(annotationName = storedAnnotations.last().name)
+
+    return statement
 }
 
 
@@ -135,16 +152,25 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
         advance()
 
     // Value initialization
-    var expr = if (matchSymbol("=")) {
-        parseExpression()
-    } else if (!acceptUnassigned) {
-        throw DPStaticFieldMustBeInitializedException(
-            fieldName = name)
-    } else {
-        Literal(ParserNotAssigned)
-    }
+    val expr =
+        if (matchSymbol("=")) {
+            parseExpression()
+        } else if (!acceptUnassigned) {
+            throw DPStaticFieldMustBeInitializedException(
+                fieldName = name)
+        } else {
+            Literal(ParserNotAssigned)
+        }
 
-    return Let(name, type, expr, isMutable)
+    val annotations = storedAnnotations.toMutableList()
+    storedAnnotations.clear()
+
+    return Let(
+        name = name,
+        annotations = annotations,
+        type = type,
+        value = expr,
+        isMutable = isMutable)
 }
 
 
