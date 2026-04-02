@@ -10,7 +10,6 @@
 package drift.parser.statements
 
 import drift.ast.bindings.ForVariable
-import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
 import drift.ast.statements.*
 import drift.lexer.Token
@@ -18,12 +17,9 @@ import drift.parser.Parser
 import drift.parser.annotations.parseAnnotation
 import drift.parser.callables.parseFunction
 import drift.parser.classes.parseClass
-import drift.parser.exceptions.DPMissingExpectedTokenException
-import drift.parser.exceptions.DPStaticFieldMustBeInitializedException
-import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
-import drift.parser.exceptions.DPUnsupportedAnnotationException
-import drift.parser.exceptions.DPUnterminatedBlockException
+import drift.parser.exceptions.*
 import drift.parser.expressions.parseExpression
+import drift.parser.modifiers.parseNativeModifier
 import drift.parser.types.parseType
 import drift.runtime.AnyType
 import drift.runtime.ParserType
