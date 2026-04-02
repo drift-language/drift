@@ -221,6 +221,17 @@ data class ClassType(
 }
 
 
+/**
+ * This type represents a Drift array.
+ *
+ * Drift represents all arrays using this parser type.
+ */
+data class ArrayType(
+    val type: ParserType) : ParserType {
+
+    override fun asString(): String =
+        "($type[])"
+}
 
 /**
  * Verify if the provided value type could be used
