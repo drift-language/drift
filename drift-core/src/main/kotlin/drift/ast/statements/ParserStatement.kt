@@ -8,8 +8,8 @@
  ******************************************************************************/
 package drift.ast.statements
 
-import drift.ast.AstNodeId
 import drift.ast.ParserNode
+import drift.ast.statements.modifiers.ParserModifier
 
 
 /******************************************************************************
@@ -24,4 +24,6 @@ import drift.ast.ParserNode
  * This interface represents all statement
  * structures.
  */
-abstract class ParserStatement : ParserNode()
+abstract class ParserStatement(
+    val modifiers: MutableSet<ParserModifier> = mutableSetOf<ParserModifier>())
+    : ParserNode()
