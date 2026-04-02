@@ -14,7 +14,9 @@ import drift.ast.bindings.ForVariable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
+import drift.ast.metadata.Annotation
 import drift.ast.statements.*
+import drift.hir.metadata.HIRAnnotation
 import drift.runtime.*
 import drift.runtime.values.primaries.*
 import drift.runtime.values.specials.ParserNull
@@ -27,7 +29,7 @@ class HIRConverterTest {
         ast: List<ParserStatement>,
         symbolTable: SymbolTable = SymbolTable(),
         typeResolution: Map<Int, ParserType> = emptyMap(),
-        lambdaClosures: Map<Int, Map<String, Int>> = emptyMap()): HIRConverter {
+        lambdaClosures: Map<Int, Map<String, Int>> = emptyMap()) : HIRConverter {
 
         HIRConverter.resetIds()
 
@@ -131,7 +133,11 @@ class HIRConverterTest {
     fun `convert variable reference`() {
         // First define a variable
         val initialValue = Literal(ParserInt(5))
-        val let = Let(name = "y", type = ObjectType("Int"), value = initialValue, isMutable = true)
+        val let = Let(
+            name = "y",
+            type = ObjectType("Int"),
+            value = initialValue,
+            isMutable = true)
 
         // Then reference it
         val varRef = Variable("y")
@@ -373,8 +379,18 @@ class HIRConverterTest {
 
     @Test
     fun `convert block statement`() {
-        val let1 = Let("x", ObjectType("Int"), Literal(ParserInt(1)), false)
-        val let2 = Let("y", ObjectType("Int"), Literal(ParserInt(2)), false)
+        val let1 = Let(
+            name ="x",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(1)),
+            isMutable = false)
+
+        val let2 = Let(
+            name ="y",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(2)),
+            isMutable = false)
+
         val block = Block(listOf(let1, let2))
         val ast = listOf(block)
 
@@ -474,9 +490,24 @@ class HIRConverterTest {
 
     @Test
     fun `convert multiple statements`() {
-        val let1 = Let("a", ObjectType("Int"), Literal(ParserInt(10)), false)
-        val let2 = Let("b", ObjectType("String"), Literal(ParserString("hi")), false)
-        val let3 = Let("c", ObjectType("Bool"), Literal(ParserBool(true)), false)
+        val let1 = Let(
+            name = "a",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(10)),
+            isMutable = false)
+
+        val let2 = Let(
+            name = "b",
+            type = ObjectType("String"),
+            value = Literal(ParserString("hi")),
+            isMutable = false)
+
+        val let3 = Let(
+            name = "c",
+            type = ObjectType("Bool"),
+            value = Literal(ParserBool(true)),
+            isMutable = false)
+
         val ast = listOf(let1, let2, let3)
 
         val converter = createConverter(ast, typeResolution = emptyMap())
@@ -492,8 +523,18 @@ class HIRConverterTest {
 
     @Test
     fun `convert simple class`() {
-        val field1 = Let("id", ObjectType("Int"), Literal(ParserInt(0)), false)
-        val field2 = Let("name", ObjectType("String"), Literal(ParserString("")), false)
+        val field1 = Let(
+            name = "id",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(0)),
+            isMutable = false)
+
+        val field2 = Let(
+            name = "name",
+            type = ObjectType("String"),
+            value = Literal(ParserString("")),
+            isMutable = false)
+
         val klass = Class(
             name = "User",
             fields = mutableListOf(field1, field2),
@@ -502,6 +543,7 @@ class HIRConverterTest {
             staticMethods = mutableListOf(),
             hasPrimaryConstructor = false
         )
+
         val ast = listOf(klass)
 
         val converter = createConverter(ast, typeResolution = emptyMap())
@@ -541,7 +583,12 @@ class HIRConverterTest {
 
     @Test
     fun `convert class with static fields and methods`() {
-        val staticField = Let("count", ObjectType("Int"), Literal(ParserInt(0)), false)
+        val staticField = Let(
+            name = "count",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(0)),
+            isMutable = false)
+
         val staticMethod = Func(
             name = "getCount",
             parameters = emptyList(),
@@ -658,7 +705,12 @@ class HIRConverterTest {
 
     @Test
     fun `convert lambda with captured variables`() {
-        val letStmt = Let("y", ObjectType("Int"), Literal(ParserInt(5)), false)
+        val letStmt = Let(
+            name = "y",
+            type = ObjectType("Int"),
+            value = Literal(ParserInt(5)),
+            isMutable = false)
+
         val body = listOf(ExprStmt(Variable("y")))
         val lambda = Lambda(
             parameters = emptyList(),
@@ -868,8 +920,22 @@ class HIRConverterTest {
 
     @Test
     fun `convert multiple classes`() {
-        val class1 = Class("User", mutableListOf(), mutableListOf(), mutableListOf(), mutableListOf(), false)
-        val class2 = Class("Admin", mutableListOf(), mutableListOf(), mutableListOf(), mutableListOf(), false)
+        val class1 = Class(
+            name = "User",
+            fields = mutableListOf(),
+            staticFields = mutableListOf(),
+            methods = mutableListOf(),
+            staticMethods =  mutableListOf(),
+            hasPrimaryConstructor = false)
+
+        val class2 = Class(
+            name = "Admin",
+            fields = mutableListOf(),
+            staticFields = mutableListOf(),
+            methods = mutableListOf(),
+            staticMethods =  mutableListOf(),
+            hasPrimaryConstructor = false)
+
         val ast = listOf(class1, class2)
 
         val converter = createConverter(ast, typeResolution = emptyMap())
@@ -1060,5 +1126,245 @@ class HIRConverterTest {
         assertNull(hirImport.parts!![0].alias)
         assertEquals("MyFunction", hirImport.parts!![1].source)
         assertEquals("fn", hirImport.parts!![1].alias)
+    }
+
+    // ========================================================================
+    // ANNOTATION TESTS
+    // ========================================================================
+
+    @Test
+    fun `convert let with single annotation no args`() {
+        val annotation = Annotation(name = "Deprecated", args = emptyList())
+        val initialValue = Literal(ParserInt(0))
+        val let = Let(
+            name = "x",
+            annotations = mutableListOf(annotation),
+            type = ObjectType("Int"),
+            value = initialValue,
+            isMutable = false
+        )
+        val ast = listOf(let)
+        val typeResolution = mapOf(initialValue.nodeId to ObjectType("Int"))
+
+        val converter = createConverter(ast, typeResolution = typeResolution)
+        val hir = converter.convert()
+
+        val hirVar = hir[0] as HIRVariable
+        assertEquals(1, hirVar.annotations.size)
+        assertEquals("Deprecated", hirVar.annotations[0].name)
+        assertEquals(0, hirVar.annotations[0].args.size)
+    }
+
+    @Test
+    fun `convert let with annotation with positional arg`() {
+        val argExpr = Literal(ParserString("use newFn instead"))
+        val annotation = Annotation(
+            name = "Deprecated",
+            args = listOf(Argument(null, argExpr))
+        )
+        val initialValue = Literal(ParserInt(0))
+        val let = Let(
+            name = "x",
+            annotations = mutableListOf(annotation),
+            type = ObjectType("Int"),
+            value = initialValue,
+            isMutable = false
+        )
+        val ast = listOf(let)
+        val typeResolution = mapOf(
+            initialValue.nodeId to ObjectType("Int"),
+            argExpr.nodeId to ObjectType("String")
+        )
+
+        val converter = createConverter(ast, typeResolution = typeResolution)
+        val hir = converter.convert()
+
+        val hirVar = hir[0] as HIRVariable
+        assertEquals(1, hirVar.annotations.size)
+        val hirAnnotation = hirVar.annotations[0]
+        assertEquals("Deprecated", hirAnnotation.name)
+        assertEquals(1, hirAnnotation.args.size)
+        assertNull(hirAnnotation.args[0].name)
+        assertEquals("use newFn instead", (hirAnnotation.args[0].value as HIRLiteral).value)
+    }
+
+    @Test
+    fun `convert let with annotation with named arg`() {
+        val argExpr = Literal(ParserString("reason"))
+        val annotation = Annotation(
+            name = "Suppress",
+            args = listOf(Argument("message", argExpr))
+        )
+        val initialValue = Literal(ParserInt(1))
+        val let = Let(
+            name = "y",
+            annotations = mutableListOf(annotation),
+            type = ObjectType("Int"),
+            value = initialValue,
+            isMutable = false
+        )
+        val ast = listOf(let)
+        val typeResolution = mapOf(
+            initialValue.nodeId to ObjectType("Int"),
+            argExpr.nodeId to ObjectType("String")
+        )
+
+        val converter = createConverter(ast, typeResolution = typeResolution)
+        val hir = converter.convert()
+
+        val hirVar = hir[0] as HIRVariable
+        val hirAnnotation = hirVar.annotations[0]
+        assertEquals("message", hirAnnotation.args[0].name)
+    }
+
+    @Test
+    fun `convert let with multiple annotations`() {
+        val ann1 = Annotation(name = "Deprecated", args = emptyList())
+        val ann2 = Annotation(name = "Internal", args = emptyList())
+        val initialValue = Literal(ParserInt(0))
+        val let = Let(
+            name = "z",
+            annotations = mutableListOf(ann1, ann2),
+            type = ObjectType("Int"),
+            value = initialValue,
+            isMutable = false
+        )
+        val ast = listOf(let)
+        val typeResolution = mapOf(initialValue.nodeId to ObjectType("Int"))
+
+        val converter = createConverter(ast, typeResolution = typeResolution)
+        val hir = converter.convert()
+
+        val hirVar = hir[0] as HIRVariable
+        assertEquals(2, hirVar.annotations.size)
+        assertEquals("Deprecated", hirVar.annotations[0].name)
+        assertEquals("Internal", hirVar.annotations[1].name)
+    }
+
+    @Test
+    fun `convert function with annotation`() {
+        val annotation = Annotation(name = "Override", args = emptyList())
+        val function = Func(
+            name = "compute",
+            annotations = mutableListOf(annotation),
+            parameters = emptyList(),
+            body = emptyList(),
+            returnType = ObjectType("Void")
+        )
+        val ast = listOf(function)
+
+        val converter = createConverter(ast, typeResolution = emptyMap())
+        val hir = converter.convert()
+
+        val hirFunc = hir[0] as HIRFunction
+        assertEquals(1, hirFunc.annotations.size)
+        assertEquals("Override", hirFunc.annotations[0].name)
+    }
+
+    @Test
+    fun `convert function with no annotations produces empty list`() {
+        val function = Func(
+            name = "noop",
+            parameters = emptyList(),
+            body = emptyList(),
+            returnType = ObjectType("Void")
+        )
+        val ast = listOf(function)
+
+        val converter = createConverter(ast, typeResolution = emptyMap())
+        val hir = converter.convert()
+
+        val hirFunc = hir[0] as HIRFunction
+        assertEquals(0, hirFunc.annotations.size)
+    }
+
+    @Test
+    fun `convert class with annotation`() {
+        val annotation = Annotation(name = "Serializable", args = emptyList())
+        val klass = Class(
+            name = "Config",
+            annotations = mutableListOf(annotation),
+            fields = mutableListOf(),
+            methods = mutableListOf(),
+            staticFields = mutableListOf(),
+            staticMethods = mutableListOf(),
+            hasPrimaryConstructor = false
+        )
+        val ast = listOf(klass)
+
+        val converter = createConverter(ast, typeResolution = emptyMap())
+        val hir = converter.convert()
+
+        val hirClass = hir[0] as HIRClass
+        assertEquals(1, hirClass.annotations.size)
+        assertEquals("Serializable", hirClass.annotations[0].name)
+    }
+
+    @Test
+    fun `convert class field with annotation`() {
+        val annotation = Annotation(name = "Transient", args = emptyList())
+        val field = Let(
+            name = "password",
+            annotations = mutableListOf(annotation),
+            type = ObjectType("String"),
+            value = Literal(ParserString("")),
+            isMutable = false
+        )
+        val klass = Class(
+            name = "User",
+            fields = mutableListOf(field),
+            methods = mutableListOf(),
+            staticFields = mutableListOf(),
+            staticMethods = mutableListOf(),
+            hasPrimaryConstructor = false
+        )
+        val ast = listOf(klass)
+
+        val converter = createConverter(ast, typeResolution = emptyMap())
+        val hir = converter.convert()
+
+        val hirClass = hir[0] as HIRClass
+        assertEquals(1, hirClass.fields.size)
+        val hirField = hirClass.fields[0]
+        assertEquals(1, hirField.annotations.size)
+        assertEquals("Transient", hirField.annotations[0].name)
+    }
+
+    @Test
+    fun `convert annotation with multiple args`() {
+        val arg1 = Literal(ParserString("message"))
+        val arg2 = Literal(ParserInt(42))
+        val annotation = Annotation(
+            name = "Meta",
+            args = listOf(
+                Argument("label", arg1),
+                Argument("code", arg2)
+            )
+        )
+        val initialValue = Literal(ParserBool(true))
+        val let = Let(
+            name = "flag",
+            annotations = mutableListOf(annotation),
+            type = ObjectType("Bool"),
+            value = initialValue,
+            isMutable = false
+        )
+        val ast = listOf(let)
+        val typeResolution = mapOf(
+            initialValue.nodeId to ObjectType("Bool"),
+            arg1.nodeId to ObjectType("String"),
+            arg2.nodeId to ObjectType("Int")
+        )
+
+        val converter = createConverter(ast, typeResolution = typeResolution)
+        val hir = converter.convert()
+
+        val hirVar = hir[0] as HIRVariable
+        val hirAnnotation = hirVar.annotations[0]
+        assertEquals(2, hirAnnotation.args.size)
+        assertEquals("label", hirAnnotation.args[0].name)
+        assertEquals("code", hirAnnotation.args[1].name)
+        assertEquals("message", (hirAnnotation.args[0].value as HIRLiteral).value)
+        assertEquals(42, (hirAnnotation.args[1].value as HIRLiteral).value)
     }
 }
