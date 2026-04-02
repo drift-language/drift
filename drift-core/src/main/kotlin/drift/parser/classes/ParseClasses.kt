@@ -16,6 +16,8 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.ast.statements.Let
 import drift.ast.statements.ParserStatement
+import drift.ast.statements.hooks.ParserHook
+import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.annotations.parseAnnotation
@@ -61,6 +63,7 @@ internal fun Parser.parseClass() : Class {
     val name = nameToken.value
     val fields = mutableListOf<Let>()
     val methods = mutableListOf<Func>()
+    val hooks = mutableListOf<ParserHook>()
     val staticFields = mutableListOf<Let>()
     val staticMethods = mutableListOf<Func>()
     val constructorParameters = mutableListOf<FunctionParameter>()
@@ -76,7 +79,7 @@ internal fun Parser.parseClass() : Class {
                     if (hasPrimaryConstructor)
                         throw DPOnlyOneConstructorPerClassException()
 
-                    methods.add(parseHook(
+                    hooks.add(parseHook(
                         forceParameters = true,
                         disableReturnStatement = true))
                 }
@@ -158,11 +161,9 @@ internal fun Parser.parseClass() : Class {
                     isMutable = false))
             }
 
-            methods.add(Func(
+            hooks.add(UnreturnableHook(
                 name = Token.Keyword.INIT.value,
-                parameters = constructorParameters,
-                body = listOf(),
-                returnType = VoidType))
+                parameters = constructorParameters))
         }
 
         expectSymbol(")")
@@ -178,11 +179,17 @@ internal fun Parser.parseClass() : Class {
         }
     }
 
+    if (hooks.firstOrNull { it.name == Token.Keyword.INIT.value } == null) {
+        hooks.add(UnreturnableHook(
+            name = Token.Keyword.INIT.value,))
+    }
+
     return Class(
         name = name,
         annotations = annotations,
         fields = fields,
         methods = methods,
+        hooks = hooks,
         staticFields = staticFields,
         staticMethods = staticMethods,
         hasPrimaryConstructor = hasPrimaryConstructor)
