@@ -15,6 +15,7 @@ import drift.runtime.ParserType
 import drift.runtime.ParserValue
 import drift.runtime.MultiTypes
 import drift.runtime.ObjectType
+import drift.runtime.ParserObject
 import drift.runtime.SingleType
 
 
@@ -46,8 +47,9 @@ data class ParserFunction(
 
     /** Function closure, environment instance */
     val closure: DrEnv
-) : ParserValue, ParserCallable {
+) : ParserObject, ParserCallable {
 
+    override val className = "Function"
 
 
     /** @return A prepared string version of the type */
@@ -56,9 +58,8 @@ data class ParserFunction(
 
     /** @return The object representation of the type */
     override fun type(): ParserType = ObjectType(
-        "Function", mapOf(
+        className, mapOf(
             "paramTypes" to MultiTypes(let.parameters.map { it.type }),
             "returnType" to SingleType(let.returnType)
-        )
-    )
+        ))
 }

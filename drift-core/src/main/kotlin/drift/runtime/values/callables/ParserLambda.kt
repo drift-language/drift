@@ -15,6 +15,7 @@ import drift.runtime.ParserType
 import drift.runtime.ParserValue
 import drift.runtime.MultiTypes
 import drift.runtime.ObjectType
+import drift.runtime.ParserObject
 import drift.runtime.SingleType
 
 
@@ -56,8 +57,9 @@ data class ParserLambda(
     val closure: DrEnv,
 
     /** Captured parent environment entities */
-    val captures: Map<String, ParserValue>) : ParserValue, ParserCallable {
+    val captures: Map<String, ParserValue>) : ParserObject, ParserCallable {
 
+    override val className = "Function"
 
 
     /** @return A prepared string version of the type */
