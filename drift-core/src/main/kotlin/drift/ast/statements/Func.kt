@@ -8,6 +8,8 @@
  ******************************************************************************/
 package drift.ast.statements
 
+import drift.ast.ParserCallable
+import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.runtime.AnyType
@@ -36,6 +38,8 @@ import drift.runtime.ParserType
 data class Func(
     val name: String,
     val annotations: MutableList<Annotation> = mutableListOf(),
-    val parameters: List<FunctionParameter> = mutableListOf(),
-    val body: List<ParserStatement> = mutableListOf(),
-    val returnType: ParserType = AnyType) : ParserStatement()
+    override val parameters: List<FunctionParameter> = mutableListOf(),
+    override val body: Block = Block.empty(),
+    override val returnType: ParserType = AnyType)
+    : ParserStatement(),
+    ParserReturnable
