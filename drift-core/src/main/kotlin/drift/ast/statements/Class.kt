@@ -10,6 +10,7 @@
 package drift.ast.statements
 
 import drift.ast.metadata.Annotation
+import drift.ast.statements.hooks.ParserHook
 
 
 /******************************************************************************
@@ -32,6 +33,11 @@ data class Class(
     val annotations: MutableList<Annotation> = mutableListOf(),
     val fields: MutableList<Let> = mutableListOf(),
     val methods: MutableList<Func> = mutableListOf(),
+    val hooks: MutableList<ParserHook> = mutableListOf(),
     val staticFields: MutableList<Let> = mutableListOf(),
     val staticMethods: MutableList<Func> = mutableListOf(),
-    val hasPrimaryConstructor: Boolean = false) : ParserStatement()
+    val hasPrimaryConstructor: Boolean = false) : ParserStatement() {
+
+    fun hookExists(name: String) =
+        hooks.firstOrNull { it.name == name } != null
+}
