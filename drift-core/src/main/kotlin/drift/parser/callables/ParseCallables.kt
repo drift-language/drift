@@ -13,6 +13,9 @@ import drift.ast.expressions.ParserExpression
 import drift.ast.expressions.Lambda
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
+import drift.ast.statements.Block
+import drift.ast.statements.ParserStatement
+import drift.ast.statements.modifiers.ParserNativeModifier
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.*
@@ -51,8 +54,9 @@ internal fun Parser.parseFunction() : Func {
     val nameToken = expect<Token.Identifier>("function name")
     val name = nameToken.value
     val parameters = mutableListOf<FunctionParameter>()
+    val isNative = storedModifiers.contains(ParserNativeModifier)
 
-    advance()
+    advance(ignoreNewLines = !isNative)     // NOTE: native context directly has NL
 
     if (matchSymbol("(")) {
         if (!checkSymbol(")")) {
@@ -71,9 +75,19 @@ internal fun Parser.parseFunction() : Func {
     val annotations = storedAnnotations.toMutableList()
     storedAnnotations.clear()
 
-    expectSymbol("{")
+    var body = Block(emptyList())
 
-    val body = parseBlock().statements
+    if (!storedModifiers.contains(ParserNativeModifier)) {
+        expectSymbol("{")
+
+        body = parseBlock()
+    } else if (checkSymbol("{")) {
+        throw DPUnexpectedSymbolException(
+            unexpected = current()!! as Token.Symbol,
+            context = "with native modifier")
+    } else {
+        storedModifiers.remove(ParserNativeModifier)
+    }
 
     return Func(
         name = name,
@@ -139,7 +153,7 @@ internal fun Parser.parseLambda() : Lambda {
 
     expectSymbol("->"); expectSymbol("{")
 
-    val body = parseBlock().statements
+    val body = parseBlock()
 
     return Lambda(parameters, body, returnType)
 }
