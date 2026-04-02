@@ -54,7 +54,7 @@ data class ParserInstance(
 
         var result: ParserValue? = null
 
-        for (statement in method.let.body) {
+        for (statement in method.let.body.statements) {
             val evalResult = statement.eval(local)
 
             if (evalResult is ParserReturn) {
