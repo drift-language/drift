@@ -179,6 +179,7 @@ sealed class Token {
         STATIC("static"),
         IMPORT("import"),
         INIT("init"),
+        NATIVE("native"),
     }
 
 
