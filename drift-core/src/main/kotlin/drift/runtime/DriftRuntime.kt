@@ -8,6 +8,7 @@
  ******************************************************************************/
 package drift.runtime
 
+import drift.ast.statements.Block
 import drift.ast.statements.Func
 import drift.ast.statements.Import
 import drift.checkers.TypeChecker
@@ -57,7 +58,6 @@ object DriftRuntime {
                             name = "length",
                             parameters = emptyList(),
                             returnType = ObjectType("Int"),
-                            body = emptyList()
                         ),
                         closure = env,
                         nativeImpl = ParserNativeFunction(
