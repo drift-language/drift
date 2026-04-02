@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":drift-analysis"))
     implementation(project(":drift-hir"))
     implementation(project(":drift-ir"))
+    implementation(project(":drift-bootstrap"))
 
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
     implementation("com.github.ajalt.clikt:clikt-markdown:5.0.3")
