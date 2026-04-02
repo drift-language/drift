@@ -24,10 +24,10 @@ package drift.runtime
  * callables, etc.
  */
 interface ParserValue {
-    /** @return A prepared string version of the value */
+
     fun asString() : String
 
-    /** @return The type corresponding to the value */
+    @Deprecated("To delete with old interpreter")
     fun type() : ParserType
 }
 

@@ -23,6 +23,7 @@ import drift.runtime.*
  * Runtime representation of a callable return statement.
  */
 data class ParserReturn(val value: ParserValue) : ParserValue {
+
     /** @return A prepared string version of the type */
     override fun asString(): String = value.asString()
 
