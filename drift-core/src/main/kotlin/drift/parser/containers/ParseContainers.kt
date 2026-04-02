@@ -9,7 +9,7 @@
 package drift.parser.containers
 
 import drift.ast.expressions.ParserExpression
-import drift.ast.expressions.ListLiteral
+import drift.ast.expressions.Array
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.expressions.parseExpression
@@ -29,7 +29,7 @@ import drift.parser.expressions.parseExpression
  *
  * @return List AST node
  */
-internal fun Parser.parseList() : ListLiteral {
+internal fun Parser.parseList() : Array {
     expectSymbol("[")
 
     val values = mutableListOf<ParserExpression>()
@@ -46,5 +46,5 @@ internal fun Parser.parseList() : ListLiteral {
 
     expectSymbol("]")
 
-    return ListLiteral(values)
+    return Array(values)
 }
