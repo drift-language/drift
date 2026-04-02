@@ -26,34 +26,34 @@ import drift.runtime.UnionType
 
 
 /**
- * Runtime List structure.
+ * Runtime Array structure.
  *
- * A List is an auto-incremented index-based container.
+ * An Array is a fixedly sized container storing
+ * one type of value.
  *
  * ### Syntax
- * Type: ```[Type]```
+ * Type: ```Type[]```
  * ```drift
- * let names: [String] = [ ... ]
+ * let names: String[] = [ ... ]
  * ```
  */
-data class ParserList(
-    /** List values */
+data class ParserArray(
+    /** Array values */
     val items: List<ParserValue>) : ParserValue {
 
 
-    /** @return A prepared string version of the type */
     override fun asString(): String =
         "[ ${items.joinToString(", ") { it.asString() }} ]"
 
 
-    /** @return The object representation of the type */
+    @Deprecated("To delete with old interpreter")
     override fun type(): ParserType {
         val types = items.map { it.type() }.toSet()
 
         val type: ParserType = when {
             types.isEmpty() -> AnyType
             types.size == 1 -> types.first()
-            
+
             else -> UnionType(types.toList())
         }
 
