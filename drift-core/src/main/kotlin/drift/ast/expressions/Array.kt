@@ -23,5 +23,5 @@ package drift.ast.expressions
  *
  * @property values List values
  */
-data class ListLiteral(
-    val values: MutableList<ParserExpression>) : ParserExpression()
+data class Array(
+    val values: List<ParserExpression> = emptyList()) : ParserExpression()
