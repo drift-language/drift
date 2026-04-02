@@ -105,7 +105,7 @@ internal fun Parser.parseStatement() : ParserStatement {
             val annotation = parseAnnotation()
             storedAnnotations.add(annotation)
 
-            advance()
+            skip(Token.NewLine)
 
             parseStatement()
         }
