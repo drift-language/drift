@@ -11,17 +11,19 @@ package drift.analysis.symbols
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
-import drift.ast.statements.Func
 import drift.runtime.AnyType
+import drift.runtime.ParserType
+import drift.runtime.VoidType
 
-class SymbolCollector {
+class SymbolCollector(
+    val symbolTable: SymbolTable,
+    val statements: List<ParserStatement>) {
 
-    private val symbolTable = SymbolTable()
     private val refResolutions = mutableMapOf<Int, Int>()
     private val lambdaClosures = mutableMapOf<Int, Map<String, Int>>()
 
 
-    fun collect(statements: List<ParserStatement>): CollectionResult {
+    fun collect(): CollectionResult {
         statements.forEach { collectStatement(it) }
 
         return CollectionResult(symbolTable, refResolutions, lambdaClosures)
@@ -38,7 +40,7 @@ class SymbolCollector {
     private fun collectStatement(statement: ParserStatement) {
         when (statement) {
             is Let      -> collectLet(statement)
-            is Func -> collectFunction(statement)
+            is Func     -> collectFunction(statement)
             is Block    -> collectBlock(statement)
             is If       -> collectIf(statement)
             is Return   -> collectReturn(statement)
@@ -58,11 +60,14 @@ class SymbolCollector {
     private fun collectLet(statement: Let) {
         collectExpression(statement.value)
 
+        val signature = VariableSymbol.VariableSignature(
+            type = statement.type,
+            isMutable = statement.isMutable)
+
         symbolTable.addVariable(
             nodeId = statement.nodeId,
             name = statement.name,
-            type = statement.type,
-            isMutable = statement.isMutable)
+            signature = signature)
     }
 
     /**
@@ -75,7 +80,11 @@ class SymbolCollector {
      * 5. Close the scope
      */
     private fun collectFunction(func: Func) {
-        val parameterTypes = func.parameters.map { it.type }
+        val parameterTypes = func.parameters.map {
+            CallableSymbol.CallableSignature.ParameterType(
+                type = it.type,
+                isRequired = it.defaultValue != null)
+        }
         val signature = CallableSymbol.CallableSignature(
             parameterTypes,
             func.returnType)
@@ -91,16 +100,22 @@ class SymbolCollector {
         symbolTable.pushScope()
 
         func.parameters.forEach { parameter ->
+            val signature = VariableSymbol.VariableSignature(
+                type = parameter.type,
+                isMutable = false)
+
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,
                 name = parameter.name,
-                type = parameter.type,
-                isMutable = false)      // NOTE: Callable Parameters are immutable!
+                signature = signature)      // NOTE: Callable Parameters are immutable!
 
             parameter.defaultValue?.let { collectExpression(it) }
         }
 
-        func.body.forEach { collectStatement(it) }
+        func
+            .body
+            .statements
+            .forEach { collectStatement(it) }
 
         symbolTable.popScope()
     }
@@ -156,11 +171,14 @@ class SymbolCollector {
 
         /* Iteration variables collection */
         `for`.variables.forEach { variable ->
+            val signature = VariableSymbol.VariableSignature(
+                type = AnyType,
+                isMutable = false)
+
             symbolTable.addVariable(
                 nodeId = variable.nodeId,
                 name = variable.name,
-                type = AnyType,
-                isMutable = false)
+                signature = signature)
         }
 
         /* Iteration body collection */
@@ -170,42 +188,53 @@ class SymbolCollector {
     }
 
     private fun collectClass(`class`: Class) {
-        val fields = `class`.fields.associate { field ->
-            collectLet(field)
-            field.name to field.type
-        }.toMap(linkedMapOf())
+        fun prepareFields(source: List<Let>): LinkedHashMap<String, ParserType> {
+            return source
+                .associate { field ->
+                    collectLet(field)
+                    field.name to field.type
+                }
+                .toMap(linkedMapOf())
+        }
+        fun prepareMethods(source: List<Func>) : LinkedHashMap<String, CallableSymbol.CallableSignature> {
+            return source
+                .associate { method ->
+                    collectFunction(method)
 
-        val staticFields = `class`.staticFields.associate { field ->
-            collectLet(field)
-            field.name to field.type
-        }.toMap(linkedMapOf())
+                    val parameterTypes = method.parameters.map {
+                        CallableSymbol.CallableSignature.ParameterType(
+                            type = it.type,
+                            isRequired = it.defaultValue != null)
+                    }
+                    val signature = CallableSymbol.CallableSignature(
+                        parameterTypes = parameterTypes,
+                        returnType = method.returnType)
 
-        val methods =
-            `class`.methods.associate { method ->
+                    method.name to signature
+                }
+                .toMap(linkedMapOf())
+        }
 
-                collectFunction(method)
+        val fields = prepareFields(`class`.fields)
+        val staticFields = prepareFields(`class`.staticFields)
 
-                val signature = CallableSymbol.CallableSignature(
-                    parameterTypes = method.parameters.map { it.type },
-                    returnType = method.returnType)
+        val methods = prepareMethods(`class`.methods)
+        val staticMethods = prepareMethods(`class`.staticMethods)
+        val constructorMethod = `class`.hooks
+            .first { it.name == "init" }
 
-                method.name to signature
-            }.toMap(linkedMapOf())
-
-        val staticMethods =
-            `class`.staticMethods.associate { method ->
-
-                collectFunction(method)
-
-                val signature = CallableSymbol.CallableSignature(
-                    parameterTypes = method.parameters.map { it.type },
-                    returnType = method.returnType)
-
-                method.name to signature
-            }.toMap(linkedMapOf())
-
+        val ctorParameterTypes = constructorMethod.parameters.map {
+            CallableSymbol.CallableSignature.ParameterType(
+                type = it.type,
+                isRequired = it.defaultValue != null)
+        }
+        val constructorSignature = CallableSymbol.CallableSignature(
+            parameterTypes = ctorParameterTypes,
+            returnType = VoidType)
+        val constructorSymbol = CallableSymbol(constructorSignature)
         val signature = ClassSymbol.ClassSignature(
             name = `class`.name,
+            constructorMethod = constructorSymbol,
             fields = fields,
             staticFields = staticFields,
             methods = methods,
@@ -276,7 +305,7 @@ class SymbolCollector {
                 collectExpression(expression.value)
             }
 
-            is ListLiteral -> {
+            is drift.ast.expressions.Array -> {
                 expression.values.forEach { collectExpression(it) }
             }
 
@@ -296,14 +325,20 @@ class SymbolCollector {
         symbolTable.pushScope()
 
         lambda.parameters.forEach { parameter ->
+            val signature = VariableSymbol.VariableSignature(
+                type = parameter.type,
+                isMutable = false)
+
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,
                 name = parameter.name,
-                type = parameter.type,
-                isMutable = false)
+                signature = signature)
         }
 
-        lambda.body.forEach { collectStatement(it) }
+        lambda
+            .body
+            .statements
+            .forEach { collectStatement(it) }
 
         val capturedVars = mutableMapOf<String, Int>()
         val varNamesInLambda = findVariableNamesInLambda(lambda)
@@ -323,9 +358,11 @@ class SymbolCollector {
 
     private fun findVariableNamesInLambda(lambda: Lambda): kotlin.collections.Set<String> {
         val names = mutableSetOf<String>()
-        lambda.body.forEach { statement ->
+
+        lambda.body.statements.forEach { statement ->
             collectVariableNamesInStatement(statement, names)
         }
+
         return names
     }
 
@@ -375,11 +412,11 @@ class SymbolCollector {
             }
             is Assign -> collectVariableNamesInExpression(expression.value, names)
             is Lambda -> {
-                for (stmt in expression.body) {
+                for (stmt in expression.body.statements) {
                     collectVariableNamesInStatement(stmt, names)
                 }
             }
-            is ListLiteral -> {
+            is drift.ast.expressions.Array -> {
                 for (value in expression.values) {
                     collectVariableNamesInExpression(value, names)
                 }

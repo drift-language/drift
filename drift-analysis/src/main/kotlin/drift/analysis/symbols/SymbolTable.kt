@@ -9,15 +9,13 @@
 package drift.analysis.symbols
 
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
-import drift.runtime.ParserType
 
-class SymbolTable {
-
+data class SymbolTable(
     // Global symbol storage - symbols persist after scope pop
-    private val allSymbols = mutableMapOf<Int, Symbol>()
+    val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
     // Scopes for name binding resolution
-    private val scopes = mutableListOf<Scope>()
+    private val scopes: MutableList<Scope> = mutableListOf()
 
 
     init {
@@ -37,10 +35,10 @@ class SymbolTable {
     fun addVariable(
         nodeId: Int,
         name: String,
-        type: ParserType,
-        isMutable: Boolean) {
+        signature: VariableSymbol.VariableSignature) {
 
-        val symbol = VariableSymbol(type, isMutable)
+        val symbol = VariableSymbol(signature)
+
         allSymbols[nodeId] = symbol
 
         scopes.last().bindings[name] = nodeId
@@ -52,6 +50,7 @@ class SymbolTable {
         signature: CallableSymbol.CallableSignature) {
 
         val symbol = CallableSymbol(signature)
+
         allSymbols[nodeId] = symbol
 
         if (name != null) scopes.last().bindings[name] = nodeId
@@ -62,9 +61,8 @@ class SymbolTable {
         signature: ClassSymbol.ClassSignature,
         hasPrimaryConstructor: Boolean) {
 
-        val symbol = ClassSymbol(
-            signature = signature,
-            hasPrimaryConstructor = hasPrimaryConstructor)
+        val symbol = ClassSymbol(signature, hasPrimaryConstructor)
+
         allSymbols[nodeId] = symbol
 
         scopes.last().bindings[signature.name] = nodeId
@@ -83,6 +81,10 @@ class SymbolTable {
 
         return null
     }
+
+
+    fun hasClass(name: String) : Boolean =
+        scopes.last().bindings.containsKey(name)
 
 
     private class Scope {

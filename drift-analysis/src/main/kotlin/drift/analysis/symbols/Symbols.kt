@@ -8,6 +8,7 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
+import drift.runtime.AnyType
 import drift.runtime.ParserType
 
 
@@ -15,16 +16,25 @@ abstract class Symbol
 
 
 data class VariableSymbol(
-    val typeVariable: ParserType,
-    val isMutable: Boolean) : Symbol()
+    val signature: VariableSignature) : Symbol() {
+
+    data class VariableSignature(
+        val type: ParserType,
+        val isMutable: Boolean)
+}
 
 
 data class CallableSymbol(
-    val signature: CallableSignature) : Symbol() {
+    val signature: CallableSignature = CallableSignature()) : Symbol() {
 
     data class CallableSignature(
-        val parameterTypes: List<ParserType>,
-        val returnType: ParserType)
+        val parameterTypes: List<ParameterType> = emptyList(),
+        val returnType: ParserType = AnyType) {
+
+        data class ParameterType(
+            val type: ParserType,
+            val isRequired: Boolean)
+    }
 }
 
 data class ClassSymbol(
@@ -33,8 +43,9 @@ data class ClassSymbol(
 
     data class ClassSignature(
         val name: String,
-        val fields: LinkedHashMap<String, ParserType>,
-        val staticFields: LinkedHashMap<String, ParserType>,
-        val methods: LinkedHashMap<String, CallableSymbol.CallableSignature>,
-        val staticMethods: LinkedHashMap<String, CallableSymbol.CallableSignature>)
+        val constructorMethod: CallableSymbol,
+        val fields: LinkedHashMap<String, ParserType> = linkedMapOf(),
+        val staticFields: LinkedHashMap<String, ParserType> = linkedMapOf(),
+        val methods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf(),
+        val staticMethods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf())
 }
