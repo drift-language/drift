@@ -36,4 +36,4 @@ import drift.ast.statements.ParserStatement
 data class Conditional(
     val condition: ParserExpression,
     val thenBranch: ParserStatement,
-    val elseBranch: ParserStatement?) : ParserExpression()
+    val elseBranch: ParserStatement? = null) : ParserExpression()

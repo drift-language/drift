@@ -26,4 +26,4 @@ package drift.ast.expressions
  */
 data class Call(
     val callee: ParserExpression,
-    val args: List<Argument>) : ParserExpression()
+    val args: List<Argument> = emptyList()) : ParserExpression()
