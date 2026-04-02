@@ -15,7 +15,6 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
-import drift.hir.*
 import drift.hir.metadata.HIRAnnotation
 import drift.runtime.ParserType
 import drift.runtime.AnyType
@@ -118,7 +117,10 @@ class HIRConverter(
                 defaultValue = param.defaultValue?.let { convertExpression(it) })
         }
 
-        val body = function.body.map { convertStatement(it) }
+        val body = function
+            .body
+            .statements
+            .map { convertStatement(it) }
 
         val hirFunc = HIRFunction(
             hirId = hirId,
@@ -287,7 +289,7 @@ class HIRConverter(
             is Assign -> convertAssign(expr, type)
             is Conditional -> convertConditional(expr, type)
             is Lambda -> convertLambda(expr, type)
-            is ListLiteral -> TODO("List literal handling in HIR")
+            is Array -> TODO("List literal handling in HIR")
 
             else -> error("Unknown expression type: ${expr::class.simpleName}")
         }
@@ -498,7 +500,10 @@ class HIRConverter(
                 definitionHirId = definitionHirId)
         }
 
-        val body = lambda.body.map { convertStatement(it) }
+        val body = lambda
+            .body
+            .statements
+            .map { convertStatement(it) }
 
         val hirLambda = HIRLambda(
             hirId = hirId,

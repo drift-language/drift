@@ -118,7 +118,6 @@ fun evalWithOutputs(source: String) : MutableList<String> {
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),
-                        body = emptyList()
                     ),
                     closure = env,
                     nativeImpl = ParserNativeFunction(
@@ -179,7 +178,6 @@ fun evalAndGetEnv(source: String) : DrEnv {
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),
-                        body = emptyList()
                     ),
                     closure = env,
                     nativeImpl = ParserNativeFunction(
