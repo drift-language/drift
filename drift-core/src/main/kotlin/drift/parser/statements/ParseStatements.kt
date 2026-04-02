@@ -94,6 +94,11 @@ internal fun Parser.parseStatement() : ParserStatement {
                 advance(false)
                 parseImport()
             }
+            token.isKeyword(Token.Keyword.NATIVE) -> {
+                advance(false)
+                parseNativeModifier()
+            }
+
             else -> ExprStmt(parseExpression())
         }
         is Token.Annotation -> {
