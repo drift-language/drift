@@ -10,9 +10,9 @@ package drift.runtime.evaluators
 
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
-import drift.ast.statements.ParserStatement
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
+import drift.ast.statements.Block
 import drift.helper.evalCondition
 import drift.helper.unwrap
 import drift.helper.validateValue
@@ -42,7 +42,7 @@ import drift.runtime.exceptions.DRUnsupportedOperatorException
 import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.exceptions.DRWrongNumberOfClassArgumentsException
 import drift.runtime.values.callables.*
-import drift.runtime.values.containers.list.ParserList
+import drift.runtime.values.containers.list.ParserArray
 import drift.runtime.values.containers.range.ParserExclusiveRange
 import drift.runtime.values.containers.range.ParserInclusiveRange
 import drift.runtime.values.containers.range.ParserRange
@@ -674,19 +674,18 @@ fun ParserExpression.eval(env: DrEnv): ParserValue {
         }
 
         // List
-        is ListLiteral -> ParserList(values
-            .map { unwrap(it.eval(env)) }
-            .toMutableList())
+        is drift.ast.expressions.Array -> ParserArray(values
+            .map { unwrap(it.eval(env)) })
 
         else -> throw DRInvalidExpressionException()
     }
 }
 
 
-private fun evalBlock(returnType: ParserType, statements: List<ParserStatement>, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : ParserValue {
+private fun evalBlock(returnType: ParserType, block: Block, env: DrEnv, implicitLastAsReturnByDefault: Boolean = false) : ParserValue {
     var last: ParserValue = ParserNull
 
-    for (stmt in statements) {
+    for (stmt in block.statements) {
         val result = stmt.eval(env)
 
         if (result is ParserReturn) {

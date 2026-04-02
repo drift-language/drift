@@ -20,7 +20,7 @@ import drift.runtime.exceptions.DRInvalidStatementException
 import drift.runtime.exceptions.DRVariableNotDefinedException
 import drift.runtime.values.callables.ParserFunction
 import drift.runtime.values.callables.ParserReturn
-import drift.runtime.values.containers.list.ParserList
+import drift.runtime.values.containers.list.ParserArray
 import drift.runtime.values.containers.range.ParserExclusiveRange
 import drift.runtime.values.containers.range.ParserInclusiveRange
 import drift.runtime.values.primaries.ParserInt
@@ -122,7 +122,7 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
             val iterable = iterable.eval(env)
 
             val items = when (iterable) {
-                is ParserList -> iterable.items
+                is ParserArray -> iterable.items
                 is ParserInclusiveRange -> rangeToList(iterable).map { it as ParserValue }
                 is ParserExclusiveRange -> rangeToList(iterable, exclusive = true).map { it as ParserValue }
                 else -> throw DRCannotIterateException(type = iterable.type())
@@ -137,7 +137,7 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
                     val name = variables[0].name
 
                     loopEnv.forceDefine(name, ParserVariable(name, AnyType, item, isMutable = true))
-                } else if (iterable is ParserList && variables.size == 2) {
+                } else if (iterable is ParserArray && variables.size == 2) {
                     val valueVariable = variables[0].name
                     val indexVariable = variables[1].name
 
@@ -154,7 +154,7 @@ fun ParserStatement.eval(env: DrEnv): ParserValue {
                             item,
                             isMutable = true))
                     }
-                } else if (item is ParserList && item.items.size == variables.size) {
+                } else if (item is ParserArray && item.items.size == variables.size) {
                     variables.zip(item.items).forEach { (variable, value) ->
                         loopEnv.assign(variable.name, ParserVariable(variable.name, AnyType, value, isMutable = true))
                     }
