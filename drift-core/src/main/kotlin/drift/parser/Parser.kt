@@ -12,6 +12,7 @@ package drift.parser
 import drift.ast.metadata.Annotation
 import drift.ast.statements.ParserStatement
 import drift.ast.statements.Import
+import drift.ast.statements.modifiers.ParserModifier
 import drift.lexer.Token
 import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
 import drift.parser.exceptions.DPImportsStatementsMustPrecedeAllOtherStatementsException
@@ -40,6 +41,9 @@ class Parser(
 
     /** Stored annotations until next non-annotated statement. */
     internal val storedAnnotations: MutableList<Annotation> = mutableListOf()
+
+    /** Stored modifiers to use on the next statement. */
+    internal val storedModifiers: MutableSet<ParserModifier> = mutableSetOf()
 
     /** Current token index */
     private var i = 0
