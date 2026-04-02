@@ -10,6 +10,9 @@ package drift.parser.callables
 
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
+import drift.ast.statements.hooks.ParserHook
+import drift.ast.statements.hooks.ReturnableHook
+import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.DPHookCannotReturnValueException
@@ -48,7 +51,7 @@ import drift.runtime.VoidType
  */
 internal fun Parser.parseHook(
     forceParameters: Boolean = false,
-    disableReturnStatement: Boolean = false) : Func {
+    disableReturnStatement: Boolean = false) : ParserHook {
 
     val name = expect<Token.Identifier>("hook name").value
 
@@ -96,9 +99,16 @@ internal fun Parser.parseHook(
 
     val body = parseBlock()
 
-    return Func(
-        name = name,
-        parameters = parameters,
-        body = body.statements,
-        returnType = hookReturnType)
+    return if (disableReturnStatement) {
+        UnreturnableHook(
+            name = name,
+            parameters = parameters,
+            body = body)
+    } else {
+        ReturnableHook(
+            name = name,
+            parameters = parameters,
+            body = body,
+            returnType = hookReturnType)
+    }
 }
