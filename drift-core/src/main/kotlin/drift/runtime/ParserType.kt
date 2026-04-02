@@ -172,6 +172,19 @@ data class UnionType(val options: List<ParserType>) : ParserType {
  */
 data class ObjectType(val className: String, val args: Map<String, TypeArgument> = emptyMap()) : ParserType {
 
+    constructor(primitive: ParserPrimitiveClass, args: Map<String, TypeArgument> = emptyMap())
+    : this(primitive.className, args)
+
+    fun isPrimitiveNumeric() =
+        isPrimitiveInt() || isPrimitiveInt64() || isPrimitiveUInt()
+
+    fun isPrimitiveInt() = className == ParserPrimitiveClass.Int.className
+    fun isPrimitiveInt64() = className == ParserPrimitiveClass.Int64.className
+    fun isPrimitiveUInt() = className == ParserPrimitiveClass.UInt.className
+    fun isPrimitiveString() = className == ParserPrimitiveClass.String.className
+    fun isPrimitiveBool() = className == ParserPrimitiveClass.Bool.className
+
+
     override fun asString() = className
 }
 
@@ -186,8 +199,8 @@ data class ObjectType(val className: String, val args: Map<String, TypeArgument>
  * @param returnType Type of the return value
  */
 data class FunctionType(
-    val paramTypes: List<ParserType>,
-    val returnType: ParserType) : ParserType {
+    val paramTypes: List<ParserType> = emptyList(),
+    val returnType: ParserType = AnyType) : ParserType {
     
     override fun asString() : String {
         val params = paramTypes.joinToString(", ") { it.asString() }
