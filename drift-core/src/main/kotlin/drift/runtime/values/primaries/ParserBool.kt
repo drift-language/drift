@@ -11,6 +11,8 @@ package drift.runtime.values.primaries
 
 import drift.runtime.ParserValue
 import drift.runtime.ObjectType
+import drift.runtime.ParserObject
+import drift.runtime.ParserPrimitiveClass
 
 
 /******************************************************************************
@@ -28,13 +30,12 @@ import drift.runtime.ObjectType
  */
 data class ParserBool(
     /** Boolean value */
-    override val value: Boolean) : ParserValue, DrPrimary<Boolean> {
+    override val value: Boolean)
+    : ParserObject, DrPrimary<Boolean> {
 
+    override val className = ParserPrimitiveClass.Bool.className
 
 
     /** @return A prepared string version of the type */
     override fun asString() = value.toString()
-
-    /** @return The object representation of the type */
-    override fun type() = ObjectType("Bool")
 }

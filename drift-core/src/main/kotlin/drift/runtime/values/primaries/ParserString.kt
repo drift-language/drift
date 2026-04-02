@@ -11,6 +11,9 @@ package drift.runtime.values.primaries
 
 import drift.runtime.ParserValue
 import drift.runtime.ObjectType
+import drift.runtime.ParserObject
+import drift.runtime.ParserPrimitiveClass
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -28,11 +31,10 @@ import drift.runtime.ObjectType
  */
 data class ParserString(
     /** String value (unquoted) */
-    override val value: String) : ParserValue, DrPrimary<String> {
+    override val value: String) : ParserObject, DrPrimary<String> {
 
-    /** @return A prepared string version of the type */
+    override val className = ParserPrimitiveClass.String.className
+
+
     override fun asString() = value
-
-    /** @return The object representation of the type */
-    override fun type() = ObjectType("String")
 }

@@ -11,6 +11,9 @@ package drift.runtime.values.primaries
 
 import drift.runtime.ParserValue
 import drift.runtime.ObjectType
+import drift.runtime.ParserObject
+import drift.runtime.ParserPrimitiveClass
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -28,28 +31,29 @@ import drift.runtime.ObjectType
  */
 data class ParserInt(
     /** Integer value */
-    override val value: Int) : DrPrimary<Int>, ParserValue, DrInteger<Int> {
+    override val value: Int) : DrPrimary<Int>, ParserObject, DrInteger<Int> {
 
-
-
-    /** @return A prepared string version of the type */
-    override fun asString() = value.toString()
-
-    /** @return The object representation of the type */
-    override fun type() = ObjectType("Int")
+    override val className = ParserPrimitiveClass.Int.className
 
 
     override fun asInt(): Int = value
 
-    override fun asLong(): Long = try {
-        value.toLong()
-    } catch (_: NumberFormatException) {
-        0L
-    }
+    override fun asLong(): Long =
+        try {
+            value.toLong()
+        } catch (_: NumberFormatException) {
+            0L
+        }
 
-    override fun asUInt(): UInt = try {
-        value.toUInt()
-    } catch (_: NumberFormatException) {
-        0U
-    }
+    override fun asUInt(): UInt =
+        try {
+            value.toUInt()
+        } catch (_: NumberFormatException) {
+            0U
+        }
+
+
+    override fun asString() = value.toString()
+
+    override fun type(): ParserType = ObjectType(className)
 }
