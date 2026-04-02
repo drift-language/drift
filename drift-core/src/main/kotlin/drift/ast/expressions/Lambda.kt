@@ -9,8 +9,12 @@
 
 package drift.ast.expressions
 
+import drift.ast.ParserCallable
+import drift.ast.ParserReturnable
 import drift.ast.statements.ParserStatement
 import drift.ast.bindings.FunctionParameter
+import drift.ast.statements.Block
+import drift.runtime.AnyType
 import drift.runtime.ParserType
 
 
@@ -32,6 +36,8 @@ import drift.runtime.ParserType
  * @property returnType Lambda return type
  */
 data class Lambda(
-    val parameters: List<FunctionParameter>,
-    val body: List<ParserStatement>,
-    val returnType: ParserType) : ParserExpression()
+    override val parameters: List<FunctionParameter> = emptyList(),
+    override val body: Block = Block.empty(),
+    override val returnType: ParserType = AnyType)
+    : ParserExpression(),
+    ParserReturnable
