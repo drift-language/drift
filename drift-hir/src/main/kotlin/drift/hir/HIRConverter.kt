@@ -289,7 +289,7 @@ class HIRConverter(
             is Assign -> convertAssign(expr, type)
             is Conditional -> convertConditional(expr, type)
             is Lambda -> convertLambda(expr, type)
-            is Array -> TODO("List literal handling in HIR")
+            is drift.ast.expressions.Array -> TODO("List literal handling in HIR")
 
             else -> error("Unknown expression type: ${expr::class.simpleName}")
         }

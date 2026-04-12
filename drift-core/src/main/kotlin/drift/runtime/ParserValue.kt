@@ -34,8 +34,8 @@ interface ParserValue {
 
 
 /**
- * This interface represent the two type containers:
- * - [SingleType]: contains once type
+ * This interface represents the two type containers:
+ * - [SingleType]: contains one type
  * - [MultiTypes]: contains many types
  *
  * It should be only used if the structure requires
@@ -48,14 +48,14 @@ interface TypeArgument
 
 
 /**
- * This data class permits to contain one type,
+ * This data class permits containing one type,
  * a powerful component of [TypeArgument] interface.
  */
 data class SingleType(val type: ParserType) : TypeArgument
 
 
 /**
- * This data class permits to contain many types,
+ * This data class permits containing many types,
  * a powerful component of [TypeArgument] interface.
  */
 data class MultiTypes(val types: List<ParserType>) : TypeArgument
