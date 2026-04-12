@@ -8,6 +8,15 @@
  ******************************************************************************/
 package drift.analysis.checkers
 
+import drift.analysis.exceptions.DTCCannotReturnValueInNonReturnableContextException
+import drift.analysis.exceptions.DTCClassNotFoundException
+import drift.analysis.exceptions.DTCInvalidArgsCountException
+import drift.analysis.exceptions.DTCRefResolutionNotFoundException
+import drift.analysis.exceptions.DTCTypeResolutionNotFoundException
+import drift.analysis.exceptions.DTCUnexpectedCalleeException
+import drift.analysis.exceptions.DTCUnexpectedReturnStatementException
+import drift.analysis.exceptions.DTCUnexpectedTypeException
+import drift.analysis.exceptions.DTCUnsupportedIterationException
 import drift.analysis.inference.TypeInference
 import drift.analysis.symbols.CallableSymbol
 import drift.analysis.symbols.ClassSymbol
@@ -71,9 +80,8 @@ class TypeChecker(
             let.type,
             let.value)
 
-        if (!compatibleTypes) {
-            error("error type compatibility in let (expected ${let.type})")
-        }
+        if (!compatibleTypes)
+            throw DTCUnexpectedTypeException(let.type)
     }
     private fun checkClass(`class`: Class) {
         `class`.annotations.forEach(this::checkAnnotation)
@@ -98,7 +106,7 @@ class TypeChecker(
                     expression = defaultValue)
 
                 if (!paramDefaultValueCompatible)
-                    error("error type compatibility in func param default value")
+                    throw DTCUnexpectedTypeException(parameter.type)
             }
         }
         function
@@ -110,10 +118,10 @@ class TypeChecker(
     }
     private fun checkReturn(`return`: Return) {
         if (callableContextScopes.isEmpty())
-            error("error return outside callable context")
+            throw DTCUnexpectedReturnStatementException()
 
         val funcCtx = callableContextScopes.last() as? ParserReturnable
-            ?: error("error return stmt in nno-returnable context")
+            ?: throw DTCCannotReturnValueInNonReturnableContextException()
 
         checkExpression(`return`.value)
 
@@ -122,7 +130,7 @@ class TypeChecker(
             `return`.value)
 
         if (!compatibleTypes)
-            error("error type compatibility in return statement")
+            throw DTCUnexpectedTypeException(funcCtx.returnType)
     }
     private fun checkBlock(block: Block) = block.statements.forEach { checkStatement(it) }
     private fun checkIf(`if`: If) {
@@ -135,15 +143,15 @@ class TypeChecker(
 
         checkExpression(`for`.iterable)
         val iterableType = (resolutions.typeResolutions[iterable.nodeId]
-            ?: error("unexpected type #${iterable.nodeId}")) as? ObjectType
-            ?: error("unsupported type for iteration")
+            ?: throw DTCTypeResolutionNotFoundException(iterable.nodeId)) as? ObjectType
+            ?: throw DTCUnsupportedIterationException()
         val iterableClassId = symbolTable.lookupNodeId(iterableType.className)
-            ?: error("class structure not found '${iterableType.className}'")
+            ?: throw DTCClassNotFoundException(iterableType.className)
         val iterableClass = symbolTable.getSymbol(iterableClassId) as ClassSymbol
 
         if (!iterableClass.signature.methods.containsKey("iterate"))
             // TODO: replace 'iterate' check by Iterable interface impl
-            error("error iterable needs Iterable impl to be decomposed")
+            throw DTCUnsupportedIterationException()
 
         checkStatement(`for`.body)
     }
@@ -180,10 +188,10 @@ class TypeChecker(
         checkExpression(callee)
 
         if (callee !is Variable)
-            error("unexpected callee")
+            throw DTCUnexpectedCalleeException()
 
         val calleeDefId = refResolutions[callee.nodeId]
-            ?: error("error undefined callee")
+            ?: throw DTCRefResolutionNotFoundException()
 
         fun checkCallableArguments(symbol: CallableSymbol) {
             val parameterTypes = symbol.signature.parameterTypes
@@ -192,9 +200,11 @@ class TypeChecker(
                 .size
             val maxArgsSize = parameterTypes.size
 
-            if (args.size !in minArgsSize..maxArgsSize)
-                error("error call must have ${parameterTypes.size} args, " +
-                      "not ${args.size}")
+            if (args.size !in minArgsSize..maxArgsSize) {
+                throw DTCInvalidArgsCountException(
+                    expected = parameterTypes.size,
+                    given = args.size)
+            }
 
             parameterTypes.onEachIndexed { index, ctx ->
                 val arg = args[index]
@@ -206,7 +216,7 @@ class TypeChecker(
                     arg.expr)
 
                 if (!compatible)
-                    error("error unexpected type, needed ${ctx.type}")
+                    throw DTCUnexpectedTypeException(ctx.type)
             }
         }
 
@@ -248,7 +258,7 @@ class TypeChecker(
                     expression = defaultValue)
 
                 if (!paramDefaultValueCompatible)
-                    error("error type compatibility in lambda param default value")
+                    throw DTCUnexpectedTypeException(parameter.type)
             }
         }
         lambda
@@ -344,7 +354,7 @@ class TypeChecker(
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
             is ObjectType -> if (!symbolTable.hasClass(type.className)) {
-                throw DRClassNotDefinedException(name = type.className)
+                throw DTCClassNotFoundException(type.className)
             }
 
             else -> { /* No check needed. */ }
