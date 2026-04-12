@@ -637,5 +637,13 @@ class TypeInference(
 
     data class TypeInferenceResult(
         val typeResolutions: Map<Int, ParserType>,
-        val methodResolutions: Map<Int, Int>)
+        val methodResolutions: Map<Int, Int>) {
+
+        companion object {
+
+            fun empty() = TypeInferenceResult(
+                emptyMap(),
+                emptyMap())
+        }
+    }
 }
