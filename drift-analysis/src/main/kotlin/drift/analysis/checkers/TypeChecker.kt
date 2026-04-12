@@ -32,7 +32,7 @@ import drift.runtime.exceptions.DRClassNotDefinedException
 
 
 class TypeChecker(
-    val statements: List<ParserStatement>,
+    val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
     val refResolutions: Map<Int, Int>,
     val resolutions: TypeInference.TypeInferenceResult) {
@@ -41,7 +41,7 @@ class TypeChecker(
 
 
     fun check() {
-        statements.forEach { checkStatement(it) }
+        ast.forEach { checkStatement(it) }
     }
 
 

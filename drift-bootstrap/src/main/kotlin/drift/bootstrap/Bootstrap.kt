@@ -71,7 +71,7 @@ abstract class Bootstrap {
         resolutions: TypeInference.TypeInferenceResult) {
 
         val typeChecker = TypeChecker(
-            statements = ast,
+            ast = ast,
             symbolTable = symbolTable,
             refResolutions = refResolutions,
             resolutions = resolutions)
