@@ -50,7 +50,7 @@ tasks.register<JavaExec>("runDebugger") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("drift.cli.DriftRunnerTestKt")
     workingDir = rootProject.projectDir
-    args = listOf("/Users/jonathan/Documents/Development/drift/examples/src/main.drift")
+    args = listOf("${rootProject.projectDir}/examples/src/main.drift")
 }
 
 application {
