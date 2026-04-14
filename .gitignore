@@ -44,9 +44,8 @@ bin/
 
 ### DRIFT DEV ###
 *.drift
+Standard/
 
 ### CLAUDE CODE ###
 CLAUDE.md
 RESUME.MD
-
-drift-core/libraries/Standard/
