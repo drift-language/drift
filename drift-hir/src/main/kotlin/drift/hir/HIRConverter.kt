@@ -9,12 +9,14 @@
 
 package drift.hir
 
+import drift.analysis.exceptions.DIRUnsupportedOperationException
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
+import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
 import drift.runtime.ParserType
 import drift.runtime.AnyType
@@ -289,7 +291,7 @@ class HIRConverter(
             is Assign -> convertAssign(expr, type)
             is Conditional -> convertConditional(expr, type)
             is Lambda -> convertLambda(expr, type)
-            is drift.ast.expressions.Array -> TODO("List literal handling in HIR")
+            is drift.ast.expressions.Array -> throw DHIRUnsupported("Array is not supported yet")
 
             else -> error("Unknown expression type: ${expr::class.simpleName}")
         }
