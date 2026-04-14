@@ -120,8 +120,6 @@ internal fun Parser.parseClass() : Class {
                 val annotation = parseAnnotation()
                 storedAnnotations.add(annotation)
 
-                advance()
-
                 parseClassStatement()
             }
 

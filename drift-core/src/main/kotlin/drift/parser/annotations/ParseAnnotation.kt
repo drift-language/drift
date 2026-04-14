@@ -27,7 +27,7 @@ internal fun Parser.parseAnnotation() : Annotation {
     val name = nameToken.name
     var args = listOf<Argument>()
 
-    advance(false)
+    advance()
 
     if (matchSymbol("("))
         args = parseArguments()
