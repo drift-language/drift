@@ -226,7 +226,7 @@ class SymbolCollector(
         val ctorParameterTypes = constructorMethod.parameters.map {
             CallableSymbol.CallableSignature.ParameterType(
                 type = it.type,
-                isRequired = it.defaultValue != null)
+                isRequired = it.defaultValue == null)
         }
         val constructorSignature = CallableSymbol.CallableSignature(
             parameterTypes = ctorParameterTypes,
