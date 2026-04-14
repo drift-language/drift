@@ -26,7 +26,7 @@ class DTCUnexpectedTypeException(
     line: Int = 0,
     pos: Int = 0
 ) : DTCException(
-    message = "Expected type '$expected' in this context",
+    message = "Expected type '${expected.asString()}' in this context",
     sourceName = sourceName,
     line = line,
     pos = pos
