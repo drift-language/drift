@@ -72,11 +72,14 @@ internal fun Parser.parseClass() : Class {
     var isStaticBlockAlreadyDefined = false
 
 
+    fun hasConstructorHook() =
+        hooks.firstOrNull { it.name == Token.Keyword.INIT.value } != null
+
     fun parseClassStatement() {
         when (val c = current()) {
             is Token.Identifier -> when {
                 c.isKeyword(Token.Keyword.INIT) -> {
-                    if (hasPrimaryConstructor)
+                    if (hasConstructorHook())
                         throw DPOnlyOneConstructorPerClassException()
 
                     hooks.add(parseHook(
@@ -177,10 +180,8 @@ internal fun Parser.parseClass() : Class {
         }
     }
 
-    if (hooks.firstOrNull { it.name == Token.Keyword.INIT.value } == null) {
-        hooks.add(UnreturnableHook(
-            name = Token.Keyword.INIT.value,))
-    }
+    if (hasConstructorHook())
+        hooks.add(UnreturnableHook(name = Token.Keyword.INIT.value))
 
     return Class(
         name = name,
