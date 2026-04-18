@@ -180,7 +180,7 @@ internal fun Parser.parseClass() : Class {
         }
     }
 
-    if (hasConstructorHook())
+    if (!hasConstructorHook())
         hooks.add(UnreturnableHook(name = Token.Keyword.INIT.value))
 
     return Class(
