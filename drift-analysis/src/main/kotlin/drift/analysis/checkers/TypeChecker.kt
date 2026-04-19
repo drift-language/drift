@@ -37,7 +37,6 @@ import drift.runtime.ParserType
 import drift.runtime.UnionType
 import drift.runtime.UnknownType
 import drift.runtime.VoidType
-import drift.runtime.exceptions.DRClassNotDefinedException
 
 
 class TypeChecker(
@@ -228,8 +227,6 @@ class TypeChecker(
 
                 checkCallableArguments(constructor)
             }
-
-            else -> { }
         }
     }
     private fun checkAssign(assign: Assign) = checkExpression(assign.value)
@@ -288,30 +285,37 @@ class TypeChecker(
         expectedType: ParserType,
         expression: ParserExpression) : Boolean {
 
-        if (expression is Literal) {
-            val t = expression.value.type()
-
-            return when (expectedType) {
-                is OptionalType -> {
-                    compareTypes(expectedType.inner, t) ||
-                    t is NullType
-                }
-                is UnionType -> {
-                    var state = false
-
-                    for (type in expectedType.options) {
-                        if (compareTypes(type, t))
-                            state = true
-                    }
-
-                    state
-                }
-
-                else -> compareTypes(expectedType, t)
+        val resolvedType =
+            if (expression is Literal) {
+                expression.value.type()
+            } else {
+                resolutions.typeResolutions[expression.nodeId]
+                    ?: return true
             }
-        }
 
-        return true
+        return compareTypeStructures(expectedType, resolvedType)
+    }
+
+    private fun compareTypeStructures(expectedType: ParserType, receivedType: ParserType): Boolean {
+        return when (expectedType) {
+            is OptionalType -> {
+                compareTypes(expectedType.inner, receivedType) ||
+                receivedType is NullType
+            }
+
+            is UnionType -> {
+                var state = false
+
+                for (type in expectedType.options) {
+                    if (compareTypes(type, receivedType))
+                        state = true
+                }
+
+                state
+            }
+
+            else -> compareTypes(expectedType, receivedType)
+        }
     }
 
     private fun compareTypes(

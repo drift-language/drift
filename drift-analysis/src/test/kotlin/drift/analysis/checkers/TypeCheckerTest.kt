@@ -23,6 +23,7 @@ import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
 import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.Argument
+import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
@@ -307,6 +308,30 @@ class TypeCheckerTest {
         }
 
         @Test
+        fun `Let with non literal value with resolved type mismatch should throw`() {
+            val binary = Binary(
+                left = Literal(ParserString("str")),
+                operator = "+",
+                right = Literal(ParserInt(1)))
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(binary.nodeId to stringValueType),
+                methodResolutions = emptyMap())
+            val ast: List<ParserStatement> = listOf(
+                intClassDeclaration,
+                stringClassDeclaration,
+                Let(
+                    name = "x",
+                    type = intValueType,
+                    value = binary,
+                    isMutable = false))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                    .check()
+            }
+        }
+
+        @Test
         fun `Let with Any type should never throw`() {
             val ast: List<ParserStatement> = listOf(
                 stringClassDeclaration,
@@ -436,6 +461,31 @@ class TypeCheckerTest {
                     .check()
             }
         }
+
+        @Test
+        fun `Func with non literal parameter default value with resolved type mismatch should throw`() {
+            val binary = Binary(
+                left = Literal(ParserString("str")),
+                operator = "+",
+                right = Literal(ParserInt(1)))
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
+                methodResolutions = emptyMap())
+            val ast: List<ParserStatement> = listOf(
+                intClassDeclaration,
+                Func(
+                    name = "foo",
+                    parameters = listOf(
+                        FunctionParameter(
+                            name = "x",
+                            type = intValueType,
+                            defaultValue = binary))))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                    .check()
+            }
+        }
     }
 
 
@@ -500,6 +550,29 @@ class TypeCheckerTest {
                     returnType = intValueType,
                     body = Block(listOf(
                         Return(value = Literal(ParserString("hello")))))))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                    .check()
+            }
+        }
+
+        @Test
+        fun `Return inside func with non literal value with resolved type mismatch should throw`() {
+            val binary = Binary(
+                left = Literal(ParserString("str")),
+                operator = "+",
+                right = Literal(ParserInt(1)))
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
+                methodResolutions = emptyMap())
+            val ast: List<ParserStatement> = listOf(
+                intClassDeclaration,
+                Func(
+                    name = "foo",
+                    returnType = intValueType,
+                    body = Block(listOf(
+                        Return(value = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
                 TypeChecker(ast, symbolTable, refResolutions, resolutions)
@@ -623,6 +696,40 @@ class TypeCheckerTest {
                 ExprStmt(Call(
                     callee = calleeVar,
                     args = listOf(Argument(name = null, expr = Literal(ParserString("hello")))))))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                    .check()
+            }
+        }
+
+        @Test
+        fun `Call with non literal arg with resolved type mismatch should throw`() {
+            val calleeVar = Variable("foo")
+            val funcDecl = Func(name = "foo")
+            val funcSignature = CallableSymbol.CallableSignature(
+                parameterTypes = listOf(
+                    CallableSymbol.CallableSignature.ParameterType(
+                        type = intValueType,
+                        isRequired = true)))
+
+            symbolTable.addCallable(
+                nodeId = funcDecl.nodeId,
+                name = funcDecl.name,
+                signature = funcSignature)
+
+            val binary = Binary(
+                left = Literal(ParserString("str")),
+                operator = "+",
+                right = Literal(ParserInt(1)))
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
+                methodResolutions = emptyMap())
+            val ast: List<ParserStatement> = listOf(
+                intClassDeclaration,
+                ExprStmt(Call(
+                    callee = calleeVar,
+                    args = listOf(Argument(name = null, expr = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
                 TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
@@ -878,6 +985,30 @@ class TypeCheckerTest {
                             name = "x",
                             type = intValueType,
                             defaultValue = Literal(ParserString("hello")))))))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                    .check()
+            }
+        }
+
+        @Test
+        fun `Lambda with non literal parameter default value with resolved type mismatch should throw`() {
+            val binary = Binary(
+                left = Literal(ParserString("str")),
+                operator = "+",
+                right = Literal(ParserInt(1)))
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
+                methodResolutions = emptyMap())
+            val ast: List<ParserStatement> = listOf(
+                intClassDeclaration,
+                ExprStmt(Lambda(
+                    parameters = listOf(
+                        FunctionParameter(
+                            name = "x",
+                            type = intValueType,
+                            defaultValue = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
                 TypeChecker(ast, symbolTable, refResolutions, resolutions)
