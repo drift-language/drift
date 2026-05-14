@@ -12,13 +12,12 @@ package drift.parser
 import drift.ast.metadata.Annotation
 import drift.ast.statements.ParserStatement
 import drift.ast.statements.Import
-import drift.ast.statements.modifiers.ParserModifier
+import drift.ast.statements.modifiers.Modifier
 import drift.lexer.Token
 import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
 import drift.parser.exceptions.DPImportsStatementsMustPrecedeAllOtherStatementsException
 import drift.parser.exceptions.DPMissingExpectedTokenException
 import drift.parser.statements.parseStatement
-import java.util.LinkedList
 
 
 /******************************************************************************
@@ -39,11 +38,11 @@ class Parser(
     /** Provided lexer tokens */
     private val tokens: List<Token>) {
 
-    /** Stored annotations until next non-annotated statement. */
+    /** Stored annotations until the next non-annotated statement. */
     internal val storedAnnotations: MutableList<Annotation> = mutableListOf()
 
     /** Stored modifiers to use on the next statement. */
-    internal val storedModifiers: MutableSet<ParserModifier> = mutableSetOf()
+    internal val storedModifiers: MutableSet<Modifier> = mutableSetOf()
 
     /** Current token index */
     private var i = 0
@@ -51,7 +50,7 @@ class Parser(
     /**
      * Current depth level.
      *
-     * Tracks the current nesting level of parentheses, brackets and braces.
+     * Tracks the current nesting level of parentheses, brackets, and braces.
      * Incremented on encountering '(', '[', or '{', and decremented on ')', ']', or '}'.
      * Used to manage parsing context and handle newlines within nested structures.
      */
@@ -97,6 +96,18 @@ class Parser(
 
 
 
+    /*
+        NOTE: possibly removable to define
+            using a interface-based definition statement
+
+            interface A {
+
+                hook action(...) {
+                    ...
+                }
+            }
+    */
+    @Deprecated("Should be removed to implement hooks using interfaces")
     internal val authorizedHookNames = setOf(
         "init", "operator",
     )
@@ -112,9 +123,9 @@ class Parser(
      * Go to the next token by incrementing i + 1.
      *
      * @param ignoreNewLines If newlines must be ignored
-     * until next token
+     *                       until the next token
      * @param ignoreWhitespaces If whitespaces must be ignored
-     * until next token
+     *                          until the next token
      */
     internal fun advance(
         ignoreNewLines: Boolean = true,

@@ -18,4 +18,4 @@ package drift.ast.statements.modifiers
  * against the related statement, its effects,
  * and result.
  */
-sealed interface ParserModifier
+sealed interface Modifier

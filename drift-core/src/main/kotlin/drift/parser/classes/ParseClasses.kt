@@ -88,7 +88,6 @@ internal fun Parser.parseClass() : Class {
                 }
                 c.isKeyword(Token.Keyword.IMMUTLET) ||
                 c.isKeyword(Token.Keyword.MUTLET) -> {
-
                     advance(false)
 
                     fields += parseLet(

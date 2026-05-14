@@ -9,13 +9,13 @@
 package drift.parser.modifiers
 
 import drift.ast.statements.Func
-import drift.ast.statements.modifiers.ParserNativeModifier
+import drift.ast.statements.modifiers.NativeModifier
 import drift.parser.Parser
 import drift.parser.callables.parseFunction
 
 
 internal fun Parser.parseNativeModifier() : Func {
-    storedModifiers.add(ParserNativeModifier)
+    storedModifiers.add(NativeModifier)
 
     advance(false)
 

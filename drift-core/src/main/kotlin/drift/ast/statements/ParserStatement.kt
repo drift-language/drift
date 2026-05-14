@@ -9,7 +9,7 @@
 package drift.ast.statements
 
 import drift.ast.ParserNode
-import drift.ast.statements.modifiers.ParserModifier
+import drift.ast.statements.modifiers.Modifier
 
 
 /******************************************************************************
@@ -25,5 +25,5 @@ import drift.ast.statements.modifiers.ParserModifier
  * structures.
  */
 abstract class ParserStatement(
-    val modifiers: MutableSet<ParserModifier> = mutableSetOf<ParserModifier>())
+    val modifiers: MutableSet<Modifier> = mutableSetOf())
     : ParserNode()

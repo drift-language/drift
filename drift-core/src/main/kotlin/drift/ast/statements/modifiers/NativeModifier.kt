@@ -16,4 +16,4 @@ package drift.ast.statements.modifiers
  * This modifier is reserved for native libraries and
  * should not be used in a custom project.
  */
-object ParserNativeModifier : ParserModifier
+object NativeModifier : Modifier

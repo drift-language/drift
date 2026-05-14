@@ -12,6 +12,7 @@ import drift.ast.ParserCallable
 import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
+import drift.ast.statements.modifiers.Modifier
 import drift.runtime.AnyType
 import drift.runtime.ParserType
 
