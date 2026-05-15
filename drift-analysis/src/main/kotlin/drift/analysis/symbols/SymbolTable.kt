@@ -14,7 +14,7 @@ data class SymbolTable(
     // Global symbol storage - symbols persist after scope pop
     val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
-    // Scopes for name binding resolution
+    // Scopes for name-binding resolution
     private val scopes: MutableList<Scope> = mutableListOf()
 
 

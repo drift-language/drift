@@ -60,11 +60,11 @@ class RunnerTestBootstrap(
 
         t.println(
             bold(magenta("[SYM COLLECTION]\t")) +
-                    italic(collection.toString()))
+            italic(collection.toString()))
 
         t.println(
             bold(cyan("[SYM TABLE]\t\t")) +
-                    italic(symbolTable.toString()))
+            italic(symbolTable.toString()))
 
         val inference = bootTypeInference(ast, collection.resolutions)
 
