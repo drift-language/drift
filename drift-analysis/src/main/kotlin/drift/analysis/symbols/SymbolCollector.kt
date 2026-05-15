@@ -12,6 +12,7 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
 import drift.runtime.AnyType
+import drift.runtime.ObjectType
 import drift.runtime.ParserType
 import drift.runtime.VoidType
 
@@ -59,6 +60,12 @@ class SymbolCollector(
      */
     private fun collectLet(statement: Let) {
         collectExpression(statement.value)
+
+        if (statement.type is ObjectType) {
+            symbolTable.lookupNodeId((statement.type as ObjectType).className)?.let {
+                refResolutions[statement.nodeId] = it
+            }
+        }
 
         val signature = VariableSymbol.VariableSignature(
             type = statement.type,
