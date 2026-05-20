@@ -51,7 +51,7 @@ internal fun Parser.parseClassStaticBlock(
         else -> throw DPUnexpectedIdentifierException(
             unexpected = c,
             context = "in static block")
-    } else if (c !is Token.Symbol || c.value != "}") {
+    } else {
         throw DPUnexpectedExpressionException(
             unexpected = c,
             context = "in static block")

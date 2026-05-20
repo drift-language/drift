@@ -109,10 +109,11 @@ internal fun Parser.parseClass() : Class {
 
                     expectSymbol("{", advanceOnSuccess = true)
 
-                    while (!matchSymbol("}")) {
-                        skip(Token.NewLine)
+                    skip(Token.NewLine)
 
+                    while (!matchSymbol("}")) {
                         parseClassStaticBlock(staticFields, staticMethods)
+                        skip(Token.NewLine)
                     }
                 }
 
@@ -121,6 +122,8 @@ internal fun Parser.parseClass() : Class {
             is Token.Annotation -> {
                 val annotation = parseAnnotation()
                 storedAnnotations.add(annotation)
+
+                skip(Token.NewLine)
 
                 parseClassStatement()
             }
