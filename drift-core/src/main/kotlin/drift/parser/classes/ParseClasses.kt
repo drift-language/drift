@@ -170,12 +170,11 @@ internal fun Parser.parseClass() : Class {
     }
 
     if (matchSymbol("{")) {
+        skip(Token.NewLine)
+
         while (!matchSymbol("}")) {
-            skip(Token.NewLine)
-
             parseClassStatement()
-
-            advance()
+            skip(Token.NewLine)
         }
     }
 
