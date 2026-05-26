@@ -31,4 +31,4 @@ import drift.ast.expressions.ParserExpression
 data class For(
     val iterable: ParserExpression,
     val variables: List<ForVariable>,
-    val body: ParserStatement) : ParserStatement()
+    val body: Block) : ParserStatement()
