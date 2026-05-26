@@ -30,7 +30,7 @@ import drift.runtime.values.specials.ParserVoid
 /******************************************************************************
  * DRIFT STATEMENTS PARSER METHODS
  *
- * All methods permitting to parse statements are defined in this file.
+ * All methods permitting parse statements are defined in this file.
  ******************************************************************************/
 
 
@@ -38,7 +38,7 @@ import drift.runtime.values.specials.ParserVoid
 /**
  * Parse a statement expression.
  *
- * This method permits to dispatch to the corresponding
+ * This method permits dispatching to the corresponding
  * parsing method for the provided statement expression.
  *
  * @return Constructed statement AST object
