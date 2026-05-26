@@ -213,8 +213,6 @@ class TypeCheckerTest {
 
         @Test
         fun `Non literal value should not throw`() {
-            // NOTE: non literal type returns TRUE
-
             val fooLet = Let(
                 name = "foo",
                 type = intValueType,
@@ -1013,6 +1011,99 @@ class TypeCheckerTest {
             assertThrows<DTCUnexpectedTypeException> {
                 TypeChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
+            }
+        }
+    }
+
+
+    @Nested
+    inner class ClassTests {
+
+        private lateinit var symbolTable: SymbolTable
+        private val refResolutions = mapOf<Int, Int>()
+        private val resolutions = TypeInference.TypeInferenceResult.empty()
+
+        private val intClassDeclaration = Class(name = "Int")
+        private val intClassSignature = ClassSymbol.ClassSignature(
+            name = intClassDeclaration.name,
+            constructorMethod = CallableSymbol())
+        private val intValueType = ObjectType(className = intClassDeclaration.name)
+
+
+        @BeforeEach
+        fun setUp() {
+            symbolTable = SymbolTable()
+
+            symbolTable.addClass(
+                nodeId = intClassDeclaration.nodeId,
+                signature = intClassSignature,
+                hasPrimaryConstructor = false)
+        }
+
+
+        @Test
+        fun `Class field with undefined type should throw`() {
+            val clazz = Class(
+                name = "Foo",
+                fields = mutableListOf(
+                    Let(name = "x", type = ObjectType("Unknown"), value = Literal(ParserNotAssigned), isMutable = false)))
+
+            assertThrows<DTCClassNotFoundException> {
+                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Class static field with undefined type should throw`() {
+            val clazz = Class(
+                name = "Foo",
+                staticFields = mutableListOf(
+                    Let(name = "count", type = ObjectType("Unknown"), value = Literal(ParserNotAssigned), isMutable = false)))
+
+            assertThrows<DTCClassNotFoundException> {
+                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Class method with undefined return type should throw`() {
+            val clazz = Class(
+                name = "Foo",
+                methods = mutableListOf(
+                    Func(name = "get", returnType = ObjectType("Unknown"))))
+
+            assertThrows<DTCClassNotFoundException> {
+                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Class static method with undefined return type should throw`() {
+            val clazz = Class(
+                name = "Foo",
+                staticMethods = mutableListOf(
+                    Func(name = "create", returnType = ObjectType("Unknown"))))
+
+            assertThrows<DTCClassNotFoundException> {
+                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Class with valid field and method types should not throw`() {
+            val clazz = Class(
+                name = "Foo",
+                fields = mutableListOf(
+                    Let(name = "x", type = intValueType, value = Literal(ParserNotAssigned), isMutable = false)),
+                methods = mutableListOf(
+                    Func(name = "get", returnType = intValueType)),
+                staticFields = mutableListOf(
+                    Let(name = "count", type = intValueType, value = Literal(ParserNotAssigned), isMutable = false)),
+                staticMethods = mutableListOf(
+                    Func(name = "create", returnType = intValueType)))
+
+            assertDoesNotThrow {
+                TypeChecker(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
     }

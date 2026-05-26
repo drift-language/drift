@@ -1522,8 +1522,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1567,8 +1565,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1609,8 +1605,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1651,8 +1645,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1687,8 +1679,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1721,8 +1711,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1788,8 +1776,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1834,8 +1820,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1871,8 +1855,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1906,8 +1888,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1950,8 +1930,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -1994,8 +1972,6 @@ class TypeInferenceTest {
 
             val symbolTable = SymbolTable()
             symbolTable.addClass(
-                // NOTE: add to symbols and scopes,
-                //  it is useless to initialize symbols in symtable ctor
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
@@ -2006,6 +1982,98 @@ class TypeInferenceTest {
                 TypeInference(ast, symbolTable, refResolutions)
                     .infer()
             }
+        }
+    }
+
+
+    @Nested
+    inner class ForTests {
+
+        val symbolTable = SymbolTable()
+        val refResolutions = emptyMap<Int, Int>()
+
+
+        @Test
+        fun `For loop iterable expression type is resolved`() {
+            val iterable = intSample
+            val forStmt = For(
+                iterable = iterable,
+                variables = emptyList(),
+                body = Block.empty())
+            val ast: List<ParserStatement> = listOf(forStmt)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(intOT, inference.typeResolutions[iterable.nodeId])
+        }
+
+        @Test
+        fun `For loop return type does not propagate to containing function`() {
+            val forStmt = For(
+                iterable = intSample,
+                variables = emptyList(),
+                body = Block(listOf(Return(value = intSample))))
+            val func = Func(
+                name = "foo",
+                body = Block(listOf(forStmt)))
+            val ast: List<ParserStatement> = listOf(func)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(VoidType, inference.typeResolutions[func.nodeId])
+        }
+    }
+
+
+    @Nested
+    inner class ClassTests {
+
+        val symbolTable = SymbolTable()
+        val refResolutions = emptyMap<Int, Int>()
+
+
+        @Test
+        fun `Class field type is resolved after class inference`() {
+            val field = Let(name = "x", type = intOT, value = intSample, isMutable = false)
+            val clazz = Class(name = "Foo", fields = mutableListOf(field))
+            val ast: List<ParserStatement> = listOf(clazz)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(intOT, inference.typeResolutions[field.nodeId])
+        }
+
+        @Test
+        fun `Class method return type is resolved after class inference`() {
+            val method = Func(name = "get", returnType = intOT)
+            val clazz = Class(name = "Foo", methods = mutableListOf(method))
+            val ast: List<ParserStatement> = listOf(clazz)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(intOT, inference.typeResolutions[method.nodeId])
+        }
+
+        @Test
+        fun `Class static field type is resolved after class inference`() {
+            val field = Let(name = "count", type = intOT, value = intSample, isMutable = false)
+            val clazz = Class(name = "Foo", staticFields = mutableListOf(field))
+            val ast: List<ParserStatement> = listOf(clazz)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(intOT, inference.typeResolutions[field.nodeId])
+        }
+
+        @Test
+        fun `Class static method return type is resolved after class inference`() {
+            val method = Func(name = "create", returnType = intOT)
+            val clazz = Class(name = "Foo", staticMethods = mutableListOf(method))
+            val ast: List<ParserStatement> = listOf(clazz)
+
+            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+            assertEquals(intOT, inference.typeResolutions[method.nodeId])
         }
     }
 }
