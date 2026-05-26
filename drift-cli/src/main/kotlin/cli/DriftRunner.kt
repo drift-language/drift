@@ -23,7 +23,7 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import drift.DriftVersion
-import drift.runtime.DriftRuntime
+import drift.cli.bootstraps.RunnerBootstrap
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
@@ -83,7 +83,7 @@ class Run : CliktCommand(name = "run") {
         }
 
         val source = entryFile.readText()
-        DriftRuntime.run(source, config, projectDir)
+        RunnerBootstrap(source).boot()
 
         t.run {
             println()
