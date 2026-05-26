@@ -1,4 +1,4 @@
-package drift.parser
+package drift.runtime
 
 import drift.parser.exceptions.DPUnsupportedAnnotationException
 import drift.utils.evalProgram

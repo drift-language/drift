@@ -1,9 +1,9 @@
-package drift.parser
+package drift.runtime
 
 import drift.ast.statements.Func
 import drift.lexer.lex
+import drift.parser.Parser
 import drift.parser.exceptions.DPSpecialInUnionTypeException
-import drift.runtime.*
 import drift.runtime.exceptions.DRUnsuccessfulCastException
 import drift.utils.evalProgram
 import org.junit.jupiter.api.Assertions.assertNotNull

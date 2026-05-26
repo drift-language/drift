@@ -6,7 +6,7 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser
+package drift.runtime
 
 import drift.runtime.exceptions.DRCannotDestructureException
 import drift.utils.evalProgram

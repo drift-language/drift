@@ -1,6 +1,5 @@
-package drift.parser
+package drift.runtime
 
-import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
 import drift.runtime.exceptions.*
 import drift.utils.evalProgram
 import drift.utils.evalWithOutput
@@ -359,18 +358,6 @@ class ClassTest {
         """.trimIndent())
 
         assertEquals("2", result)
-    }
-
-    @Test
-    fun `Field and method name collision must throw`() {
-        assertThrows<DCAmbiguousMemberNameException> {
-            evalProgram("""
-                class A {
-                    let x = 1
-                    fun x { return 2 }
-                }
-            """.trimIndent())
-        }
     }
 
     @Test

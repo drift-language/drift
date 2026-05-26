@@ -1,4 +1,4 @@
-package drift.parser
+package drift.runtime
 
 import drift.parser.exceptions.DPExpectedNewlineBetweenTopLevelStatementsException
 import drift.parser.exceptions.DPMissingExpectedTokenException

@@ -26,7 +26,7 @@ sealed interface HIRNode {
  * Base interface for all statement nodes in HIR.
  * 
  * Statements represent actions and control flow but don't produce values
- * (except ExprStmt which wraps expressions).
+ * (except ExprStmt, which wraps expressions).
  */
 sealed interface HIRStatement : HIRNode
 

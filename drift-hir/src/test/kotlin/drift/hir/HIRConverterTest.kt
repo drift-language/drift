@@ -299,7 +299,7 @@ class HIRConverterTest {
         val function = Func(
             name = "getAnswer",
             parameters = emptyList(),
-            body = listOf(ExprStmt(returnExpr)),
+            body = Block(listOf(ExprStmt(returnExpr))),
             returnType = ObjectType("Int")
         )
         val ast = listOf(function)
@@ -324,7 +324,7 @@ class HIRConverterTest {
         val function = Func(
             name = "add",
             parameters = listOf(param1, param2),
-            body = listOf(ExprStmt(returnExpr)),
+            body = Block(listOf(ExprStmt(returnExpr))),
             returnType = ObjectType("Int")
         )
         val ast = listOf(function)
@@ -560,7 +560,7 @@ class HIRConverterTest {
         val method = Func(
             name = "getName",
             parameters = emptyList(),
-            body = listOf(ExprStmt(Literal(ParserString("test")))),
+            body = Block(listOf(ExprStmt(Literal(ParserString("test"))))),
             returnType = ObjectType("String")
         )
         val klass = Class(
@@ -592,7 +592,7 @@ class HIRConverterTest {
         val staticMethod = Func(
             name = "getCount",
             parameters = emptyList(),
-            body = listOf(ExprStmt(Literal(ParserInt(0)))),
+            body = Block(listOf(ExprStmt(Literal(ParserInt(0))))),
             returnType = ObjectType("Int")
         )
         val klass = Class(
@@ -621,7 +621,7 @@ class HIRConverterTest {
     fun `convert simple for loop`() {
         val iterable = Variable("items")
         val forVar = ForVariable("item")
-        val body = ExprStmt(Variable("item"))
+        val body = Block(listOf(ExprStmt(Variable("item"))))
         val forLoop = For(iterable, listOf(forVar), body)
         val ast = listOf(forLoop)
 
@@ -637,7 +637,7 @@ class HIRConverterTest {
     fun `convert for loop with range`() {
         val range = Binary(Literal(ParserInt(0)), "..", Literal(ParserInt(10)))
         val forVar = ForVariable("i")
-        val body = ExprStmt(Variable("i"))
+        val body = Block(listOf(ExprStmt(Variable("i"))))
         val forLoop = For(range, listOf(forVar), body)
         val ast = listOf(forLoop)
         val typeResolution = mapOf(
@@ -658,7 +658,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert simple lambda`() {
-        val body = listOf(ExprStmt(Literal(ParserInt(42))))
+        val body = Block(listOf(ExprStmt(Literal(ParserInt(42)))))
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
@@ -682,7 +682,7 @@ class HIRConverterTest {
     @Test
     fun `convert lambda with parameters`() {
         val param = FunctionParameter("x", isPositional = true, type = ObjectType("Int"))
-        val body = listOf(ExprStmt(Variable("x")))
+        val body = Block(listOf(ExprStmt(Variable("x"))))
         val lambda = Lambda(
             parameters = listOf(param),
             body = body,
@@ -711,7 +711,7 @@ class HIRConverterTest {
             value = Literal(ParserInt(5)),
             isMutable = false)
 
-        val body = listOf(ExprStmt(Variable("y")))
+        val body = Block(listOf(ExprStmt(Variable("y"))))
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
@@ -906,7 +906,7 @@ class HIRConverterTest {
         val function = Func(
             name = "noop",
             parameters = emptyList(),
-            body = emptyList(),
+            body = Block.empty(),
             returnType = ObjectType("Void")
         )
         val ast = listOf(function)
@@ -1248,7 +1248,7 @@ class HIRConverterTest {
             name = "compute",
             annotations = mutableListOf(annotation),
             parameters = emptyList(),
-            body = emptyList(),
+            body = Block.empty(),
             returnType = ObjectType("Void")
         )
         val ast = listOf(function)
@@ -1266,7 +1266,7 @@ class HIRConverterTest {
         val function = Func(
             name = "noop",
             parameters = emptyList(),
-            body = emptyList(),
+            body = Block.empty(),
             returnType = ObjectType("Void")
         )
         val ast = listOf(function)

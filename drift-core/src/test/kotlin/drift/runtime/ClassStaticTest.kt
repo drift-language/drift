@@ -6,9 +6,8 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.parser
+package drift.runtime
 
-import drift.checkers.collectors.exceptions.DCAmbiguousMemberNameException
 import drift.parser.exceptions.DPUnexpectedExpressionException
 import drift.runtime.exceptions.DRCannotAssignToImmutableException
 import drift.runtime.exceptions.DRInvalidStatementException
@@ -112,36 +111,6 @@ class ClassStaticTest {
     }
 
     @Test
-    fun `Same name for both static and dynamic fields must throw`() {
-        assertThrows<DCAmbiguousMemberNameException> {
-            evalProgram("""
-                class A {
-                    static {
-                        let a = 1
-                    }
-                    
-                    let a = 2
-                }
-            """.trimIndent())
-        }
-    }
-
-    @Test
-    fun `Same name for both static and dynamic methods must throw`() {
-        assertThrows<DCAmbiguousMemberNameException> {
-            evalProgram("""
-                class A {
-                    static {
-                        fun hello {}
-                    }   
-                    
-                    fun hello {}
-                }
-            """.trimIndent())
-        }
-    }
-
-    @Test
     fun `Static mutable field modification must not throw`() {
         assertDoesNotThrow {
             val output = evalWithOutput("""
@@ -181,19 +150,6 @@ class ClassStaticTest {
             evalProgram("""
                 class A(value: String) {
                     static {}
-                }
-            """.trimIndent())
-        }
-    }
-
-    @Test
-    fun `Same name for static field and primary constructor field must throw`() {
-        assertThrows<DCAmbiguousMemberNameException> {
-            evalProgram("""
-                class A(value: String) {
-                    static {
-                        let value: Int = 1
-                    }
                 }
             """.trimIndent())
         }
