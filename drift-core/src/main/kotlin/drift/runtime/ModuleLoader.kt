@@ -9,7 +9,6 @@
 package drift.runtime
 
 import drift.ast.statements.Import
-import drift.checkers.collectors.SymbolCollector
 import drift.lexer.lex
 import drift.parser.Parser
 import drift.runtime.evaluators.eval
@@ -82,7 +81,7 @@ class ModuleLoader(
 
         val moduleEnv = DrEnv()
 
-        SymbolCollector(moduleEnv).collect(ast)
+//        SymbolCollector(moduleEnv).collect(ast)
 
         for (stmt in ast) {
             stmt.eval(moduleEnv)

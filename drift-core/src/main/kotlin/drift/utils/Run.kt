@@ -10,8 +10,6 @@
 package drift.utils
 
 import drift.ast.statements.Func
-import drift.checkers.TypeChecker
-import drift.checkers.collectors.SymbolCollector
 import drift.lexer.lex
 import drift.parser.Parser
 import drift.runtime.*
@@ -34,6 +32,7 @@ import project.ProjectStructure
 
 
 
+@Deprecated("Old interpreter util")
 val testConfig: ProjectConfig = ProjectConfig(
     name = "Test Project",
     structure = ProjectStructure(
@@ -51,6 +50,7 @@ val testConfig: ProjectConfig = ProjectConfig(
  * @param source Source code to evaluate entirely
  * @return The last evaluated value
  */
+@Deprecated("Old interpreter util")
 fun evalProgram(source: String) : ParserValue {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
@@ -64,8 +64,8 @@ fun evalProgram(source: String) : ParserValue {
         defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
         
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
     var result: ParserValue = ParserNull
 
@@ -91,6 +91,7 @@ fun evalProgram(source: String) : ParserValue {
  * @param source Source code to evaluate entirely
  * @return All `test()` outputs
  */
+@Deprecated("Old interpreter util")
 fun evalWithOutputs(source: String) : MutableList<String> {
     val output = mutableListOf<String>()
 
@@ -132,8 +133,8 @@ fun evalWithOutputs(source: String) : MutableList<String> {
         defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
     for (statement in ast) {
         statement.eval(env)
@@ -157,12 +158,14 @@ fun evalWithOutputs(source: String) : MutableList<String> {
  * @param source Source code to evaluate entirely
  * @return The last `test()` output
  */
+@Deprecated("Old interpreter util")
 fun evalWithOutput(source: String) : String {
     return evalWithOutputs(source).last()
 }
 
 
 
+@Deprecated("Old interpreter util")
 fun evalAndGetEnv(source: String) : DrEnv {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
@@ -192,8 +195,8 @@ fun evalAndGetEnv(source: String) : DrEnv {
         defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
     for (statement in ast) {
         statement.eval(env)
