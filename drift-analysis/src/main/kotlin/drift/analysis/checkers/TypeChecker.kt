@@ -72,13 +72,7 @@ class TypeChecker(
 
     private fun checkLet(let: Let) {
         let.annotations.forEach(this::checkAnnotation)
-
-        if (let.type is ObjectType) {
-            if (!refResolutions.containsKey(let.nodeId))
-                throw DTCClassNotFoundException((let.type as ObjectType).className)
-        } else {
-            checkType(let.type)
-        }
+        checkType(let.type)
 
         val compatibleTypes = compareTypesInLiteralContext(
             let.type,
