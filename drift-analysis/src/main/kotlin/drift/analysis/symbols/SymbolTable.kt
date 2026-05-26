@@ -84,7 +84,7 @@ data class SymbolTable(
 
 
     fun hasClass(name: String) : Boolean =
-        scopes.last().bindings.containsKey(name)
+        scopes.asReversed().any { it.bindings.containsKey(name) }
 
 
     private class Scope {
