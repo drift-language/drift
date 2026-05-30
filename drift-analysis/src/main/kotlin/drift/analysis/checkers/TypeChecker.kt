@@ -183,14 +183,6 @@ class TypeChecker(
         val callee = call.callee
         val args = call.args
 
-        checkExpression(callee)
-
-        if (callee !is Variable)
-            throw DTCUnexpectedCalleeException()
-
-        val calleeDefId = refResolutions[callee.nodeId]
-            ?: throw DTCRefResolutionNotFoundException()
-
         fun checkCallableArguments(symbol: CallableSymbol) {
             val parameterTypes = symbol.signature.parameterTypes
             val minArgsSize = parameterTypes
@@ -218,14 +210,44 @@ class TypeChecker(
             }
         }
 
-        when (val symbol = symbolTable.getSymbol(calleeDefId)) {
-            is CallableSymbol -> checkCallableArguments(symbol)
-            is ClassSymbol -> {
-                val signature = symbol.signature
-                val constructor = signature.constructorMethod
+        fun handleVariable(callee: Variable) {
+            val calleeDefId = refResolutions[callee.nodeId]
+                ?: throw DTCRefResolutionNotFoundException()
 
-                checkCallableArguments(constructor)
+            when (val symbol = symbolTable.getSymbol(calleeDefId)) {
+                is CallableSymbol -> checkCallableArguments(symbol)
+                is ClassSymbol -> {
+                    val signature = symbol.signature
+                    val constructor = signature.constructorMethod
+
+                    checkCallableArguments(constructor)
+                }
             }
+        }
+
+        fun handleAccessor(callee: Get) {
+            val receiverType = (resolutions.typeResolutions[callee.receiver.nodeId]
+                ?: throw DTCTypeResolutionNotFoundException(callee.receiver.nodeId)) as? ObjectType
+                ?: throw DTCUnexpectedCalleeException()
+
+            val classId = symbolTable.lookupNodeId(receiverType.className)
+                ?: throw DTCClassNotFoundException(receiverType.className)
+            val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
+                ?: throw DTCUnexpectedCalleeException()
+
+            val methodSignature = classSymbol.signature.methods[callee.name]
+                ?: throw DTCRefResolutionNotFoundException()
+
+            checkCallableArguments(CallableSymbol(methodSignature))
+        }
+
+        checkExpression(callee)
+
+        when (callee) {
+            is Variable -> handleVariable(callee)
+            is Get      -> handleAccessor(callee)
+
+            else -> throw DTCUnexpectedCalleeException()
         }
     }
     private fun checkAssign(assign: Assign) = checkExpression(assign.value)
