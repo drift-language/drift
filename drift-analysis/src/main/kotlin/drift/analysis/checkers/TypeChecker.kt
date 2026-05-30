@@ -183,6 +183,7 @@ class TypeChecker(
         val callee = call.callee
         val args = call.args
 
+
         fun checkCallableArguments(symbol: CallableSymbol) {
             val parameterTypes = symbol.signature.parameterTypes
             val minArgsSize = parameterTypes
@@ -240,6 +241,7 @@ class TypeChecker(
 
             checkCallableArguments(CallableSymbol(methodSignature))
         }
+
 
         checkExpression(callee)
 

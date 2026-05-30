@@ -25,6 +25,7 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.Argument
 import drift.ast.expressions.Binary
 import drift.ast.expressions.Call
+import drift.ast.expressions.Get
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
 import drift.ast.expressions.Variable
@@ -759,6 +760,264 @@ class TypeCheckerTest {
             assertDoesNotThrow {
                 TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
+            }
+        }
+    }
+
+
+    @Nested
+    inner class MethodCallTests {
+
+        private lateinit var symbolTable: SymbolTable
+
+        private val intClassDeclaration = Class(name = "Int")
+        private val intClassSignature = ClassSymbol.ClassSignature(
+            name = intClassDeclaration.name,
+            constructorMethod = CallableSymbol())
+        private val intValueType = ObjectType(className = intClassDeclaration.name)
+
+        private val aClassDeclaration = Class(name = "A")
+        private val aValueType = ObjectType(className = aClassDeclaration.name)
+
+
+        @BeforeEach
+        fun setUp() {
+            symbolTable = SymbolTable()
+
+            symbolTable.addClass(
+                nodeId = intClassDeclaration.nodeId,
+                signature = intClassSignature,
+                hasPrimaryConstructor = false)
+        }
+
+        private fun buildMethodCall(methodName: String, args: List<Argument> = emptyList())
+            : Triple<Variable, Call, Call> {
+            val innerVar = Variable("A")
+            val receiverCall = Call(callee = innerVar)
+            val outerCall = Call(callee = Get(receiver = receiverCall, name = methodName), args = args)
+            return Triple(innerVar, receiverCall, outerCall)
+        }
+
+
+        @Test
+        fun `Method call on instance should not throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol(),
+                methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
+                methodResolutions = emptyMap())
+
+            assertDoesNotThrow {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with missing type resolution for receiver should throw`() {
+            val (innerVar, _, outerCall) = buildMethodCall("t")
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol(),
+                methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            assertThrows<DTCTypeResolutionNotFoundException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Method call on non-object type receiver should throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol())
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to VoidType),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCUnexpectedCalleeException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with unregistered receiver class should throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol())
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to ObjectType("Unknown")),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCClassNotFoundException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with method not found in class should throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("nonExistent")
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol())
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCRefResolutionNotFoundException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with too few args should throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
+
+            val methodSignature = CallableSymbol.CallableSignature(
+                parameterTypes = listOf(
+                    CallableSymbol.CallableSignature.ParameterType(
+                        type = intValueType,
+                        isRequired = true)))
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol(),
+                methods = linkedMapOf("t" to methodSignature))
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCInvalidArgsCountException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with too many args should throw`() {
+            val (innerVar, receiverCall, outerCall) = buildMethodCall(
+                "t",
+                listOf(Argument(name = null, expr = Literal(ParserInt(1)))))
+
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol(),
+                methods = linkedMapOf("t" to CallableSymbol.CallableSignature(parameterTypes = emptyList())))
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCInvalidArgsCountException> {
+                TypeChecker(
+                    listOf(ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
+            }
+        }
+
+        @Test
+        fun `Method call with wrong arg type should throw`() {
+            val arg = Argument(name = null, expr = Literal(ParserString("hello")))
+            val (innerVar, receiverCall, outerCall) = buildMethodCall("t", listOf(arg))
+
+            val methodSignature = CallableSymbol.CallableSignature(
+                parameterTypes = listOf(
+                    CallableSymbol.CallableSignature.ParameterType(
+                        type = intValueType,
+                        isRequired = true)))
+            val aClassSignature = ClassSymbol.ClassSignature(
+                name = aClassDeclaration.name,
+                constructorMethod = CallableSymbol(),
+                methods = linkedMapOf("t" to methodSignature))
+
+            symbolTable.addClass(
+                nodeId = aClassDeclaration.nodeId,
+                signature = aClassSignature,
+                hasPrimaryConstructor = false)
+
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
+                methodResolutions = emptyMap())
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(
+                    listOf(intClassDeclaration, ExprStmt(outerCall)),
+                    symbolTable,
+                    mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
+                    resolutions).check()
             }
         }
     }
