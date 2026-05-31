@@ -72,6 +72,11 @@ data class SymbolTable(
     fun getSymbol(nodeId: Int) : Symbol {
         return allSymbols[nodeId]
             ?: throw DIRNotDefinedSymbolException("nodeId#$nodeId")
+        /*
+                REVIEW: Should not be better to return NULL if the symbol is not found,
+                        instead of throwing an exception. Should not throwing be the
+                        responsibility of the caller?
+         */
     }
 
 
