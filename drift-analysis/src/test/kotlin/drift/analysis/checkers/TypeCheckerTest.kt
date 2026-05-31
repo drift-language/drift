@@ -641,6 +641,7 @@ class TypeCheckerTest {
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = param.name,
                         type = intValueType,
                         isRequired = false)))
 
@@ -665,6 +666,7 @@ class TypeCheckerTest {
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
 
@@ -712,6 +714,7 @@ class TypeCheckerTest {
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
 
@@ -739,6 +742,7 @@ class TypeCheckerTest {
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
 
@@ -773,6 +777,7 @@ class TypeCheckerTest {
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
 
@@ -964,6 +969,7 @@ class TypeCheckerTest {
             val methodSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(
@@ -1026,6 +1032,7 @@ class TypeCheckerTest {
             val methodSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
                     CallableSymbol.CallableSignature.Parameter(
+                        name = "a",
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(

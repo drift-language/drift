@@ -458,26 +458,25 @@ class TypeInference(
     private fun inferCall(call: Call) : ParserType {
         val callee = call.callee
 
-        call.args.forEach { inferExpression(it.expr) }
 
-        inferExpression(callee)
-
-        if (callee is Variable) {
+        fun handleVariable(callee: Variable): ParserType {
             val defId = refResolutions[callee.nodeId]
                 ?: return UnknownType       // NOTE: if there isn't any ref, the structure
                                             //  isn't initialized (none ref linked to declaration)
 
             val type: ParserType = when (val symbol = symbolTable.getSymbol(defId)) {
-                is CallableSymbol -> typeResolutions[defId] ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
+                is CallableSymbol -> typeResolutions[defId]
+                    ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
                 is ClassSymbol -> ObjectType(symbol.signature.name)
                 is VariableSymbol -> {
                     val varType = typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
 
-                    if (varType is FunctionType)
+                    if (varType is FunctionType) {
                         varType.returnType
-
-                    else throw DIRUnexpectedExpressionException()
+                    } else {
+                        throw DIRUnexpectedExpressionException()
+                    }
                 }
 
                 else -> throw DIRUnexpectedExpressionException()
@@ -488,7 +487,29 @@ class TypeInference(
             return type
         }
 
-        return VoidType
+        fun handleAccessor(callee: Get): ParserType {
+            val type = typeResolutions[callee.nodeId]
+                ?: throw DIRUnexpectedUnknownTypeException()
+
+            if (type !is FunctionType)
+                throw DIRUnexpectedTypeException()
+
+            typeResolutions[call.nodeId] = type.returnType
+
+            return type.returnType
+        }
+
+
+        call.args.forEach { inferExpression(it.expr) }
+
+        inferExpression(callee)
+
+        return when (callee) {
+            is Variable -> handleVariable(callee)
+            is Get      -> handleAccessor(callee)
+
+            else        -> throw DTCUnexpectedCalleeException()
+        }
     }
 
     private fun inferGet(get: Get) : ParserType {

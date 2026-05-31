@@ -581,6 +581,65 @@ class TypeInferenceTest {
         }
 
         @Nested
+        inner class MethodCallContextTests {
+
+            @Test
+            fun `Method call should return method return type`() {
+                val clazz = Class(name = "A")
+                val signature = ClassSymbol.ClassSignature(
+                    name = clazz.name,
+                    constructorMethod = CallableSymbol(),
+                    methods = linkedMapOf(
+                        "f" to CallableSymbol.CallableSignature(returnType = intOT)))
+
+                val innerVar = Variable("A")
+                val receiverCall = Call(callee = innerVar)
+                val get = Get(receiver = receiverCall, name = "f")
+                val outerCall = Call(callee = get)
+
+                val symbolTable = SymbolTable()
+                symbolTable.addClass(
+                    nodeId = clazz.nodeId,
+                    signature = signature,
+                    hasPrimaryConstructor = false)
+                val refResolutions = mapOf(innerVar.nodeId to clazz.nodeId)
+
+                val ast = listOf<ParserStatement>(ExprStmt(outerCall))
+
+                val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+
+                assertEquals(intOT, inference.typeResolutions[outerCall.nodeId])
+            }
+
+            @Test
+            fun `Method call on field (non-callable) should throw`() {
+                val clazz = Class(name = "A")
+                val signature = ClassSymbol.ClassSignature(
+                    name = clazz.name,
+                    constructorMethod = CallableSymbol(),
+                    fields = linkedMapOf("x" to intOT))
+
+                val innerVar = Variable("A")
+                val receiverCall = Call(callee = innerVar)
+                val get = Get(receiver = receiverCall, name = "x")
+                val outerCall = Call(callee = get)
+
+                val symbolTable = SymbolTable()
+                symbolTable.addClass(
+                    nodeId = clazz.nodeId,
+                    signature = signature,
+                    hasPrimaryConstructor = false)
+                val refResolutions = mapOf(innerVar.nodeId to clazz.nodeId)
+
+                val ast = listOf<ParserStatement>(ExprStmt(outerCall))
+
+                assertThrows<DIRUnexpectedTypeException> {
+                    TypeInference(ast, symbolTable, refResolutions).infer()
+                }
+            }
+        }
+
+        @Nested
         inner class VariableContextTests {
 
             @Test
