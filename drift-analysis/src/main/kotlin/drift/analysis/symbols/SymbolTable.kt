@@ -83,8 +83,12 @@ data class SymbolTable(
     }
 
 
-    fun hasClass(name: String) : Boolean =
-        scopes.asReversed().any { it.bindings.containsKey(name) }
+    fun hasClass(name: String) : Boolean {
+        val nodeId = lookupNodeId(name) 
+            ?: return false
+
+        return getSymbol(nodeId) is ClassSymbol
+    }
 
 
     private class Scope {
