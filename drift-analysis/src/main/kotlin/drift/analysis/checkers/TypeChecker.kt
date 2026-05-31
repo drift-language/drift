@@ -11,6 +11,8 @@ package drift.analysis.checkers
 import drift.analysis.exceptions.DTCCannotReturnValueInNonReturnableContextException
 import drift.analysis.exceptions.DTCClassNotFoundException
 import drift.analysis.exceptions.DTCInvalidArgsCountException
+import drift.analysis.exceptions.DTCMissingNamedParameterException
+import drift.analysis.exceptions.DTCMissingPositionalParameterException
 import drift.analysis.exceptions.DTCRefResolutionNotFoundException
 import drift.analysis.exceptions.DTCTypeResolutionNotFoundException
 import drift.analysis.exceptions.DTCUnexpectedCalleeException
@@ -185,29 +187,57 @@ class TypeChecker(
 
 
         fun checkCallableArguments(symbol: CallableSymbol) {
-            val parameterTypes = symbol.signature.parameterTypes
-            val minArgsSize = parameterTypes
+            val parameters = symbol.signature.parameterTypes
+            val minArgsSize = parameters
                 .filter { it.isRequired }
                 .size
-            val maxArgsSize = parameterTypes.size
+            val maxArgsSize = parameters.size
 
             if (args.size !in minArgsSize..maxArgsSize) {
                 throw DTCInvalidArgsCountException(
-                    expected = parameterTypes.size,
+                    expected = parameters.size,
                     given = args.size)
             }
 
-            parameterTypes.onEachIndexed { index, ctx ->
-                val arg = args[index]
+            // 1. named args
+
+            val namedArgs = args
+                .filter { it.name != null }
+
+            namedArgs.forEach { arg ->
+                val parameter = parameters
+                    .firstOrNull { it.name == arg.name }
+                    ?: throw DTCMissingNamedParameterException(paramName = arg.name!!)
 
                 checkExpression(arg.expr)
 
                 val compatible = compareTypesInLiteralContext(
-                    ctx.type,
+                    parameter.type,
                     arg.expr)
 
                 if (!compatible)
-                    throw DTCUnexpectedTypeException(ctx.type)
+                    throw DTCUnexpectedTypeException(parameter.type)
+            }
+
+
+            // 2. remaining positional args
+
+            val positionalArgs = args
+                .filter { it.name == null }
+
+            positionalArgs.onEachIndexed { index, arg ->
+                val parameter = parameters
+                    .getOrNull(index)
+                    ?: throw DTCMissingPositionalParameterException(position = index)
+
+                checkExpression(arg.expr)
+
+                val compatible = compareTypesInLiteralContext(
+                    parameter.type,
+                    arg.expr)
+
+                if (!compatible)
+                    throw DTCUnexpectedTypeException(parameter.type)
             }
         }
 
@@ -249,7 +279,7 @@ class TypeChecker(
             is Variable -> handleVariable(callee)
             is Get      -> handleAccessor(callee)
 
-            else -> throw DTCUnexpectedCalleeException()
+            else        -> throw DTCUnexpectedCalleeException()
         }
     }
     private fun checkAssign(assign: Assign) = checkExpression(assign.value)

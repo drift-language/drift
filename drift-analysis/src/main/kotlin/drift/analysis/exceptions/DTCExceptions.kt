@@ -133,3 +133,29 @@ class DTCInvalidArgsCountException(
     line = line,
     pos = pos
 )
+
+
+class DTCMissingNamedParameterException(
+    paramName: String,
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : DTCException(
+    message = "Missing named argument '$paramName'",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)
+
+
+class DTCMissingPositionalParameterException(
+    position: Int,
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : DTCException(
+    message = "Missing positional argument at position $position",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)
