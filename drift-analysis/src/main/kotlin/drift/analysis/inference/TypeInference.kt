@@ -33,15 +33,12 @@ class TypeInference(
     val refResolutions: Map<Int, Int>) {
 
     private val typeResolutions = mutableMapOf<Int, ParserType>()
-    private val methodResolutions = mutableMapOf<Int, Int>()
 
 
     fun infer() : TypeInferenceResult {
         ast.forEach { inferStatement(it) }
 
-        return TypeInferenceResult(
-            typeResolutions,
-            methodResolutions)
+        return TypeInferenceResult(typeResolutions)
     }
 
 
@@ -657,14 +654,12 @@ class TypeInference(
         val lastType: ParserType = VoidType)
 
     data class TypeInferenceResult(
-        val typeResolutions: Map<Int, ParserType>,
-        val methodResolutions: Map<Int, Int>) {
+        val typeResolutions: Map<Int, ParserType>) {
 
         companion object {
 
             fun empty() = TypeInferenceResult(
-                emptyMap(),
-                emptyMap())
+                typeResolutions = emptyMap())
         }
     }
 }

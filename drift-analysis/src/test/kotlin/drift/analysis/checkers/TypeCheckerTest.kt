@@ -314,7 +314,7 @@ class TypeCheckerTest {
                 right = Literal(ParserInt(1)))
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(binary.nodeId to stringValueType),
-                methodResolutions = emptyMap())
+)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 stringClassDeclaration,
@@ -469,7 +469,7 @@ class TypeCheckerTest {
                 right = Literal(ParserInt(1)))
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
-                methodResolutions = emptyMap())
+)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 Func(
@@ -564,7 +564,7 @@ class TypeCheckerTest {
                 right = Literal(ParserInt(1)))
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
-                methodResolutions = emptyMap())
+)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 Func(
@@ -757,7 +757,7 @@ class TypeCheckerTest {
                 right = Literal(ParserInt(1)))
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
-                methodResolutions = emptyMap())
+)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 ExprStmt(Call(
@@ -850,7 +850,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-                methodResolutions = emptyMap())
+)
 
             assertDoesNotThrow {
                 TypeChecker(
@@ -899,7 +899,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to VoidType),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCUnexpectedCalleeException> {
                 TypeChecker(
@@ -925,7 +925,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to ObjectType("Unknown")),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCClassNotFoundException> {
                 TypeChecker(
@@ -951,7 +951,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCRefResolutionNotFoundException> {
                 TypeChecker(
@@ -984,7 +984,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCInvalidArgsCountException> {
                 TypeChecker(
@@ -1013,7 +1013,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCInvalidArgsCountException> {
                 TypeChecker(
@@ -1047,7 +1047,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-                methodResolutions = emptyMap())
+)
 
             assertThrows<DTCUnexpectedTypeException> {
                 TypeChecker(
@@ -1094,7 +1094,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to listType),
-                methodResolutions = emptyMap())
+)
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1125,7 +1125,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to VoidType),
-                methodResolutions = emptyMap())
+)
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1142,7 +1142,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to ObjectType("Unknown")),
-                methodResolutions = emptyMap())
+)
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1164,7 +1164,7 @@ class TypeCheckerTest {
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to listType),
-                methodResolutions = emptyMap())
+)
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1294,7 +1294,7 @@ class TypeCheckerTest {
                 right = Literal(ParserInt(1)))
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(binary.nodeId to ObjectType("String")),
-                methodResolutions = emptyMap())
+)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 ExprStmt(Lambda(
