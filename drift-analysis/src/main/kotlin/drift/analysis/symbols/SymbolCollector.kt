@@ -88,7 +88,8 @@ class SymbolCollector(
      */
     private fun collectFunction(func: Func) {
         val parameterTypes = func.parameters.map {
-            CallableSymbol.CallableSignature.ParameterType(
+            CallableSymbol.CallableSignature.Parameter(
+                name = it.name,
                 type = it.type,
                 isRequired = it.defaultValue == null)
         }
@@ -209,7 +210,8 @@ class SymbolCollector(
                     collectFunction(method)
 
                     val parameterTypes = method.parameters.map {
-                        CallableSymbol.CallableSignature.ParameterType(
+                        CallableSymbol.CallableSignature.Parameter(
+                            name = it.name,
                             type = it.type,
                             isRequired = it.defaultValue != null)
                     }
@@ -231,7 +233,8 @@ class SymbolCollector(
             .first { it.name == "init" }
 
         val ctorParameterTypes = constructorMethod.parameters.map {
-            CallableSymbol.CallableSignature.ParameterType(
+            CallableSymbol.CallableSignature.Parameter(
+                name = it.name,
                 type = it.type,
                 isRequired = it.defaultValue == null)
         }

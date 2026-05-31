@@ -629,12 +629,42 @@ class TypeCheckerTest {
         }
 
         @Test
+        fun `Call with optional parameter omitted`() {
+            val param = FunctionParameter(
+                name = "a",
+                type = intValueType,
+                defaultValue = Literal(ParserInt(1)))
+            val calleeVar = Variable("foo")
+            val funcDecl = Func(
+                name = "foo",
+                parameters = listOf(param))
+            val funcSignature = CallableSymbol.CallableSignature(
+                parameterTypes = listOf(
+                    CallableSymbol.CallableSignature.Parameter(
+                        type = intValueType,
+                        isRequired = false)))
+
+            symbolTable.addCallable(
+                nodeId = funcDecl.nodeId,
+                name = funcDecl.name,
+                signature = funcSignature)
+
+            val ast: List<ParserStatement> = listOf(
+                ExprStmt(Call(callee = calleeVar)))
+
+            assertDoesNotThrow {
+                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                    .check()
+            }
+        }
+
+        @Test
         fun `Call with too few args should throw`() {
             val calleeVar = Variable("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
 
@@ -644,7 +674,7 @@ class TypeCheckerTest {
                 signature = funcSignature)
 
             val ast: List<ParserStatement> = listOf(
-                ExprStmt(Call(callee = calleeVar, args = emptyList())))
+                ExprStmt(Call(callee = calleeVar)))
 
             assertThrows<DTCInvalidArgsCountException> {
                 TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
@@ -681,7 +711,7 @@ class TypeCheckerTest {
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
 
@@ -708,7 +738,7 @@ class TypeCheckerTest {
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
 
@@ -742,7 +772,7 @@ class TypeCheckerTest {
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
 
@@ -933,7 +963,7 @@ class TypeCheckerTest {
 
             val methodSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(
@@ -995,7 +1025,7 @@ class TypeCheckerTest {
 
             val methodSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.ParameterType(
+                    CallableSymbol.CallableSignature.Parameter(
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(

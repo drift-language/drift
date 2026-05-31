@@ -28,10 +28,11 @@ data class CallableSymbol(
     val signature: CallableSignature = CallableSignature()) : Symbol() {
 
     data class CallableSignature(
-        val parameterTypes: List<ParameterType> = emptyList(),
+        val parameterTypes: List<Parameter> = emptyList(),
         val returnType: ParserType = AnyType) {
 
-        data class ParameterType(
+        data class Parameter(
+            val name: String,
             val type: ParserType,
             val isRequired: Boolean)
     }
