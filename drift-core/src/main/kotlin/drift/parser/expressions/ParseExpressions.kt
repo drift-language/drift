@@ -12,7 +12,7 @@ package drift.parser.expressions
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.Block
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 import drift.ast.statements.ExprStmt
 import drift.lexer.Token
 import drift.parser.Parser
@@ -25,11 +25,11 @@ import drift.parser.exceptions.DPNumericSizeOverflowException
 import drift.parser.exceptions.DPUnexpectedExpressionException
 import drift.parser.exceptions.DPUnexpectedSymbolException
 import drift.parser.statements.parseBlock
-import drift.runtime.values.primaries.DrBool
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrInt64
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.primaries.ParserBool
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserInt64
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserNull
 
 
 /******************************************************************************
@@ -49,7 +49,7 @@ import drift.runtime.values.specials.DrNull
  * @param minPrecedence Minimum operator priority index
  * @return Constructed expression AST object
  */
-internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
+internal fun Parser.parseExpression(minPrecedence: Int = 0) : ParserExpression {
     return parseBinary(minPrecedence)
 }
 
@@ -65,7 +65,7 @@ internal fun Parser.parseExpression(minPrecedence: Int = 0) : DrExpr {
  * @return Constructed expression AST object
  * @throws DPInvalidAssignmentTargetException
  */
-internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
+internal fun Parser.parseBinary(minPrecedence: Int) : ParserExpression {
     var left = parseUnary()
 
     while (true) {
@@ -149,27 +149,27 @@ internal fun Parser.parseBinary(minPrecedence: Int) : DrExpr {
  * expression AST object
  * @throws DPNumericSizeOverflowException
  */
-internal fun Parser.parsePrimary() : DrExpr {
+internal fun Parser.parsePrimary() : ParserExpression {
     return when (val token = current()) {
         is Token.StringLiteral -> {
             advance(false)
-            Literal(DrString(token.value))
+            Literal(ParserString(token.value))
         }
         is Token.NumericLiteral -> {
             advance(false)
             Literal(token.value.run {
-                toIntOrNull()?.let { DrInt(it) }
-                    ?: toLongOrNull()?.let { DrInt64(it) }
+                toIntOrNull()?.let { ParserInt(it) }
+                    ?: toLongOrNull()?.let { ParserInt64(it) }
                     ?: throw DPNumericSizeOverflowException()
             })
         }
         is Token.BoolLiteral -> {
             advance(false)
-            Literal(DrBool(token.value))
+            Literal(ParserBool(token.value))
         }
         is Token.NullLiteral -> {
             advance(false)
-            Literal(DrNull)
+            Literal(ParserNull)
         }
         is Token.Identifier -> parseVariable()
         is Token.Symbol -> when (token.value) {
@@ -208,7 +208,7 @@ internal fun Parser.parsePrimary() : DrExpr {
  *
  * @return Constructed primary parsing result AST object
  */
-internal fun Parser.parseUnary() : DrExpr {
+internal fun Parser.parseUnary() : ParserExpression {
     val token = current()
 
     if (token is Token.Symbol && token.value in listOf("!", "-")) {
@@ -237,7 +237,7 @@ internal fun Parser.parseUnary() : DrExpr {
  * @return Constructed variable access or callable call
  * value AST object
  */
-internal fun Parser.parseVariable() : DrExpr {
+internal fun Parser.parseVariable() : ParserExpression {
     val name = expect<Token.Identifier>("variable name")
 
     advance(false)
@@ -257,9 +257,17 @@ internal fun Parser.parseVariable() : DrExpr {
  *
  * @return Constructed callable call AST object
  */
-internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
+internal fun Parser.parseCallArguments(target: ParserExpression) : ParserExpression {
     expectSymbol("(")
 
+    val args = parseArguments()
+
+    return Call(target, args)
+}
+
+
+
+internal fun Parser.parseArguments() : List<Argument> {
     val args = mutableListOf<Argument>()
 
     if (!checkSymbol(")")) {
@@ -277,7 +285,7 @@ internal fun Parser.parseCallArguments(target: DrExpr) : DrExpr {
 
     expectSymbol(")")
 
-    return Call(target, args)
+    return args
 }
 
 
@@ -327,9 +335,9 @@ internal fun Parser.parseArgument() : Argument {
  * @return [Conditional] AST object
  * @throws DPInvalidDriftConditionalBranchException
  */
-internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
-    val thenBlock: DrStmt = parseDriftIfBranch()
-    val elseBlock: DrStmt? =
+internal fun Parser.parseDriftIf(condition: ParserExpression) : ParserExpression {
+    val thenBlock: ParserStatement = parseDriftIfBranch()
+    val elseBlock: ParserStatement? =
         if (matchSymbol(":")) parseDriftIfBranch()
         else null
 
@@ -352,7 +360,7 @@ internal fun Parser.parseDriftIf(condition: DrExpr) : DrExpr {
  *
  * @return Constructed [Block] or [ExprStmt] AST object
  */
-internal fun Parser.parseDriftIfBranch() : DrStmt {
+internal fun Parser.parseDriftIfBranch() : ParserStatement {
     return when {
         matchSymbol("{") -> parseBlock()
         else -> ExprStmt(parseExpression())

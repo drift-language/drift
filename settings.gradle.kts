@@ -7,3 +7,7 @@ rootProject.name = "drift"
 include("drift-common")
 include("drift-cli")
 include("drift-core")
+include("drift-ir")
+include("drift-hir")
+include("drift-analysis")
+include("drift-bootstrap")

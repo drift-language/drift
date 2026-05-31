@@ -130,7 +130,7 @@ class DPUnexpectedExpressionException(
     pos: Int = 0
 ) : DriftParserException(
     message = "Unexpected expression" +
-              (if (unexpected == null) "" else "'$unexpected'") +
+              (if (unexpected == null) "" else " '$unexpected'") +
               " $context",
     sourceName = sourceName,
     line = line,
@@ -620,6 +620,28 @@ class DPSpecialInUnionTypeException(
     pos: Int = 0
 ) : DPInvalidTypeException(
     message = "Cannot unite special type with another",
+    sourceName = sourceName,
+    line = line,
+    pos = pos
+)
+
+
+
+/**
+ * Drift's Parser exception thrown when a union type
+ * unites types with special ones (forbidden).
+ *
+ * @property sourceName The file where the exception has been thrown
+ * @property line The line where the error is
+ * @property pos The character position where the error is
+ */
+class DPUnsupportedAnnotationException(
+    annotationName: String,
+    sourceName: String? = null,
+    line: Int = 0,
+    pos: Int = 0
+) : DPInvalidTypeException(
+    message = "Cannot use annotation '$annotationName' in this context",
     sourceName = sourceName,
     line = line,
     pos = pos

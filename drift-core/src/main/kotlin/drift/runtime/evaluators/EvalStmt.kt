@@ -9,7 +9,7 @@
 package drift.runtime.evaluators
 
 import drift.ast.statements.*
-import drift.ast.statements.Function
+import drift.ast.statements.Func
 import drift.helper.evalCondition
 import drift.helper.rangeToList
 import drift.helper.validateValue
@@ -18,15 +18,15 @@ import drift.runtime.exceptions.DRCannotDestructureException
 import drift.runtime.exceptions.DRCannotIterateException
 import drift.runtime.exceptions.DRInvalidStatementException
 import drift.runtime.exceptions.DRVariableNotDefinedException
-import drift.runtime.values.callables.DrFunction
-import drift.runtime.values.callables.DrReturn
-import drift.runtime.values.containers.list.DrList
-import drift.runtime.values.containers.range.DrExclusiveRange
-import drift.runtime.values.containers.range.DrInclusiveRange
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.specials.DrNull
-import drift.runtime.values.specials.DrVoid
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.callables.ParserFunction
+import drift.runtime.values.callables.ParserReturn
+import drift.runtime.values.containers.list.ParserArray
+import drift.runtime.values.containers.range.ParserExclusiveRange
+import drift.runtime.values.containers.range.ParserInclusiveRange
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.specials.ParserNull
+import drift.runtime.values.specials.ParserVoid
+import drift.runtime.values.variables.ParserVariable
 import drift.utils.castNumericIfNeeded
 
 
@@ -43,9 +43,9 @@ import drift.utils.castNumericIfNeeded
  *
  * @param env Environment instance
  * @return Computed statement value
- * @see DrStmt
+ * @see ParserStatement
  */
-fun DrStmt.eval(env: DrEnv): DrValue {
+fun ParserStatement.eval(env: DrEnv): ParserValue {
     return when (this) {
         // Expression statement computing
         is ExprStmt -> expr.eval(env)
@@ -53,12 +53,12 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         // Block
         is Block -> {
             val subEnv = DrEnv(env)
-            var last: DrValue = DrNull
+            var last: ParserValue = ParserNull
 
             for (statement in statements) {
                 last = statement.eval(subEnv)
 
-                if (last is DrReturn)
+                if (last is ParserReturn)
                     return last
             }
 
@@ -67,7 +67,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
 
         // Classic conditional computing
         is If -> {
-            var result: DrValue = DrNull
+            var result: ParserValue = ParserNull
 
             if (evalCondition(condition, env)) {
                 result = thenBranch.eval(env)
@@ -79,8 +79,8 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         }
 
         // Function computing
-        is Function -> {
-            val f = DrFunction(this, env.copy())
+        is Func -> {
+            val f = ParserFunction(this, env.copy())
 
             env.assign(name, f)
 
@@ -91,11 +91,11 @@ fun DrStmt.eval(env: DrEnv): DrValue {
         is Return -> {
             val value = validateValue(value.eval(env), ignoreVoid = true)
 
-            DrReturn(value)
+            ParserReturn(value)
         }
 
         // Class definition
-        is Class -> DrVoid      /* NOTE: defined by collector */
+        is Class -> ParserVoid      /* NOTE: defined by collector */
 
         // Variable definition
         is Let -> {
@@ -106,12 +106,12 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             }
 
             if (env.isTopLevel()) {
-                val variable = env.resolve(name) as? DrVariable
+                val variable = env.resolve(name) as? ParserVariable
                     ?: throw DRVariableNotDefinedException(name = name)
 
                 variable.set(v)
             } else {
-                env.define(name, DrVariable(name, type, v, isMutable))
+                env.define(name, ParserVariable(name, type, v, isMutable))
             }
 
             v
@@ -122,9 +122,9 @@ fun DrStmt.eval(env: DrEnv): DrValue {
             val iterable = iterable.eval(env)
 
             val items = when (iterable) {
-                is DrList -> iterable.items
-                is DrInclusiveRange -> rangeToList(iterable).map { it as DrValue }
-                is DrExclusiveRange -> rangeToList(iterable, exclusive = true).map { it as DrValue }
+                is ParserArray -> iterable.items
+                is ParserInclusiveRange -> rangeToList(iterable).map { it as ParserValue }
+                is ParserExclusiveRange -> rangeToList(iterable, exclusive = true).map { it as ParserValue }
                 else -> throw DRCannotIterateException(type = iterable.type())
             }
 
@@ -134,29 +134,29 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                 if (variables.isEmpty()) {
                     loopEnv.forceDefine("_", item)
                 } else if (variables.size == 1) {
-                    val name = variables[0]
+                    val name = variables[0].name
 
-                    loopEnv.forceDefine(name, DrVariable(name, AnyType, item, isMutable = true))
-                } else if (iterable is DrList && variables.size == 2) {
-                    val valueVariable = variables[0]
-                    val indexVariable = variables[1]
+                    loopEnv.forceDefine(name, ParserVariable(name, AnyType, item, isMutable = true))
+                } else if (iterable is ParserArray && variables.size == 2) {
+                    val valueVariable = variables[0].name
+                    val indexVariable = variables[1].name
 
                     loopEnv.run {
-                        forceDefine(indexVariable, DrVariable(
+                        forceDefine(indexVariable, ParserVariable(
                             indexVariable,
                             ObjectType("Int"),
-                            DrInt(index),
+                            ParserInt(index),
                             isMutable = false))
 
-                        forceDefine(valueVariable, DrVariable(
+                        forceDefine(valueVariable, ParserVariable(
                             valueVariable,
                             AnyType,
                             item,
                             isMutable = true))
                     }
-                } else if (item is DrList && item.items.size == variables.size) {
-                    variables.zip(item.items).forEach { (name, value) ->
-                        loopEnv.assign(name, DrVariable(name, AnyType, value, isMutable = true))
+                } else if (item is ParserArray && item.items.size == variables.size) {
+                    variables.zip(item.items).forEach { (variable, value) ->
+                        loopEnv.assign(variable.name, ParserVariable(variable.name, AnyType, value, isMutable = true))
                     }
                 } else {
                     throw DRCannotDestructureException(
@@ -167,7 +167,7 @@ fun DrStmt.eval(env: DrEnv): DrValue {
                 body.eval(loopEnv)
             }
 
-            DrVoid
+            ParserVoid
         }
 
         else -> throw DRInvalidStatementException()

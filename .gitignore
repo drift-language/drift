@@ -46,4 +46,6 @@ bin/
 *.drift
 Standard/
 
+### CLAUDE CODE ###
 CLAUDE.md
+RESUME.MD

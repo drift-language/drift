@@ -9,29 +9,28 @@
 
 package drift.parser.statements
 
-import drift.ast.expressions.Lambda
+import drift.ast.bindings.ForVariable
 import drift.ast.expressions.Literal
 import drift.ast.statements.*
 import drift.lexer.Token
 import drift.parser.Parser
+import drift.parser.annotations.parseAnnotation
 import drift.parser.callables.parseFunction
 import drift.parser.classes.parseClass
-import drift.parser.exceptions.DPMissingExpectedTokenException
-import drift.parser.exceptions.DPStaticFieldMustBeInitializedException
-import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
-import drift.parser.exceptions.DPUnterminatedBlockException
+import drift.parser.exceptions.*
 import drift.parser.expressions.parseExpression
+import drift.parser.modifiers.parseNativeModifier
 import drift.parser.types.parseType
 import drift.runtime.AnyType
-import drift.runtime.DrType
-import drift.runtime.values.specials.DrNotAssigned
-import drift.runtime.values.specials.DrVoid
+import drift.runtime.ParserType
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.specials.ParserVoid
 
 
 /******************************************************************************
  * DRIFT STATEMENTS PARSER METHODS
  *
- * All methods permitting to parse statements are defined in this file.
+ * All methods permitting parse statements are defined in this file.
  ******************************************************************************/
 
 
@@ -39,18 +38,19 @@ import drift.runtime.values.specials.DrVoid
 /**
  * Parse a statement expression.
  *
- * This method permits to dispatch to the corresponding
+ * This method permits dispatching to the corresponding
  * parsing method for the provided statement expression.
  *
  * @return Constructed statement AST object
  */
-internal fun Parser.parseStatement() : DrStmt {
-    return when (val token = current()) {
+internal fun Parser.parseStatement() : ParserStatement {
+    val statement: ParserStatement = when (val token = current()) {
         is Token.Symbol -> when (token.value) {
             "{" -> {
                 advance(false)
                 parseBlock()
             }
+
             else -> ExprStmt(parseExpression())
         }
         is Token.Identifier -> when {
@@ -68,7 +68,7 @@ internal fun Parser.parseStatement() : DrStmt {
             }
             token.isKeyword(Token.Keyword.LEAVE) -> {
                 advance(false)
-                Return(Literal(DrVoid))
+                Return(Literal(ParserVoid))
             }
             token.isKeyword(Token.Keyword.FOR) -> {
                 advance(false)
@@ -90,10 +90,29 @@ internal fun Parser.parseStatement() : DrStmt {
                 advance(false)
                 parseImport()
             }
+            token.isKeyword(Token.Keyword.NATIVE) -> {
+                advance(false)
+                parseNativeModifier()
+            }
+
             else -> ExprStmt(parseExpression())
         }
+        is Token.Annotation -> {
+            val annotation = parseAnnotation()
+            storedAnnotations.add(annotation)
+
+            skip(Token.NewLine)
+
+            parseStatement()
+        }
+
         else -> ExprStmt(parseExpression())
     }
+
+    if (storedAnnotations.isNotEmpty())
+        throw DPUnsupportedAnnotationException(annotationName = storedAnnotations.last().name)
+
+    return statement
 }
 
 
@@ -124,7 +143,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
             || peekSymbol("=", true))
 
     // Type definition
-    val type : DrType = if (matchSymbol(":")) {
+    val type : ParserType = if (matchSymbol(":")) {
         parseType()
     } else {
         AnyType
@@ -134,20 +153,25 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
         advance()
 
     // Value initialization
-    var expr = if (matchSymbol("=")) {
-        parseExpression()
-    } else if (!acceptUnassigned) {
-        throw DPStaticFieldMustBeInitializedException(
-            fieldName = name)
-    } else {
-        Literal(DrNotAssigned)
-    }
+    val expr =
+        if (matchSymbol("=")) {
+            parseExpression()
+        } else if (!acceptUnassigned) {
+            throw DPStaticFieldMustBeInitializedException(
+                fieldName = name)
+        } else {
+            Literal(ParserNotAssigned)
+        }
 
-    if (expr is Lambda) {
-        expr = expr.copy(name = name)
-    }
+    val annotations = storedAnnotations.toMutableList()
+    storedAnnotations.clear()
 
-    return Let(name, type, expr, isMutable)
+    return Let(
+        name = name,
+        annotations = annotations,
+        type = type,
+        value = expr,
+        isMutable = isMutable)
 }
 
 
@@ -172,7 +196,7 @@ internal fun Parser.parseClassicIf() : If {
     skip(Token.NewLine)
 
     val thenBlock = parseStatement()
-    var elseBlock: DrStmt? = null
+    var elseBlock: ParserStatement? = null
 
     if (current() is Token.Identifier
         && (current() as Token.Identifier).isKeyword(Token.Keyword.ELSE)) {
@@ -216,7 +240,7 @@ internal fun Parser.parseReturn() : Return =
 internal fun Parser.parseBlock() : Block {
     skip(Token.NewLine)
 
-    val statements = mutableListOf<DrStmt>()
+    val statements = mutableListOf<ParserStatement>()
 
     while (true) {
         if (matchSymbol("}"))
@@ -264,7 +288,7 @@ internal fun Parser.parseFor() : For {
     expectSymbol("{")
     skip(Token.NewLine)
 
-    val variables = mutableListOf<String>()
+    val variables = mutableListOf<ForVariable>()
 
     val c = current()
 
@@ -272,10 +296,7 @@ internal fun Parser.parseFor() : For {
         advance(false)
 
         do {
-            val name = expect<Token.Identifier>(
-                "variable name after '${Token.Keyword.AS}'").value
-
-            variables.add(name)
+            variables.add(parseForVariable())
 
             advance(false)
         } while (matchSymbol(","))
@@ -283,18 +304,20 @@ internal fun Parser.parseFor() : For {
         advance()
     }
 
-    val statements = mutableListOf<DrStmt>()
+    val statements = mutableListOf<ParserStatement>()
 
     while (!checkSymbol("}")) {
         statements.add(parseStatement())
 
         when (val c = current()) {
             is Token.NewLine -> advance()
+
             is Token.Symbol ->
                 if (c.value == "}") break
                 else throw DPMissingExpectedTokenException(
                     expected = "newline or '}'",
                     found = c)
+
             else -> throw DPMissingExpectedTokenException(
                     expected = "newline or '}'",
                     found = c)
@@ -304,6 +327,12 @@ internal fun Parser.parseFor() : For {
     expectSymbol("}")
 
     return For(iterable, variables, Block(statements))
+}
+
+internal fun Parser.parseForVariable() : ForVariable {
+    val name = expect<Token.Identifier>("variable name").value
+
+    return ForVariable(name)
 }
 
 

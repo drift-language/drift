@@ -25,5 +25,5 @@ package drift.ast.expressions
  * @property args Callable arguments list
  */
 data class Call(
-    val callee: DrExpr,
-    val args: List<Argument>) : DrExpr
+    val callee: ParserExpression,
+    val args: List<Argument> = emptyList()) : ParserExpression()

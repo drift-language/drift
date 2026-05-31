@@ -1,11 +1,11 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.2.0"
 
     application
 }
 
-group = "dev.drift"
-version = "0.1"
+group = "fr.belic.drift"
+version = "2026.0"
 
 repositories {
     mavenCentral()

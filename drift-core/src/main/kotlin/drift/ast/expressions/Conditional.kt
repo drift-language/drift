@@ -9,7 +9,7 @@
 
 package drift.ast.expressions
 
-import drift.ast.statements.DrStmt
+import drift.ast.statements.ParserStatement
 
 
 /******************************************************************************
@@ -34,6 +34,6 @@ import drift.ast.statements.DrStmt
  * condition is unsuccessful
  */
 data class Conditional(
-    val condition: DrExpr,
-    val thenBranch: DrStmt,
-    val elseBranch: DrStmt?) : DrExpr
+    val condition: ParserExpression,
+    val thenBranch: ParserStatement,
+    val elseBranch: ParserStatement? = null) : ParserExpression()

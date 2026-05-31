@@ -16,8 +16,8 @@ import drift.runtime.exceptions.DRNotDefinedException
 import drift.runtime.exceptions.DRUnsuccessfulCastException
 import drift.runtime.exceptions.DRVariableAlreadyDefinedException
 import drift.runtime.exceptions.DRVariableNotDefinedException
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.variables.ParserVariable
 
 
 /******************************************************************************
@@ -40,10 +40,10 @@ class DrEnv(
     private val parent: DrEnv? = null,
 
     /** Environment's variables and functions */
-    private val values: MutableMap<String, DrValue> = mutableMapOf(),
+    private val values: MutableMap<String, ParserValue> = mutableMapOf(),
 
     /** Environment's classes */
-    private val classes: MutableMap<String, DrClass> = mutableMapOf()) {
+    private val classes: MutableMap<String, ParserClass> = mutableMapOf()) {
 
 
 
@@ -55,8 +55,8 @@ class DrEnv(
      * @throws DRUnsuccessfulCastException
      * @throws DRAlreadyDefinedException
      */
-    fun define(name: String, value: DrValue) {
-        if (value is DrVariable && !isAssignable(value.value.type(), value.type()))
+    fun define(name: String, value: ParserValue) {
+        if (value is ParserVariable && !isAssignable(value.value.type(), value.type()))
             throw DRUnsuccessfulCastException(value.value.type(), value.type())
 
 
@@ -74,7 +74,7 @@ class DrEnv(
      * @param name Entity name
      * @param value Entity value
      */
-    fun forceDefine(name: String, value: DrValue) {
+    fun forceDefine(name: String, value: ParserValue) {
         values[name] = value
     }
 
@@ -87,7 +87,7 @@ class DrEnv(
      * @param klass Class structure
      * @throws DRClassAlreadyDefinedException
      */
-    fun defineClass(name: String, klass: DrClass) {
+    fun defineClass(name: String, klass: ParserClass) {
         if (classes.containsKey(name))
             throw DRClassAlreadyDefinedException(name = name)
 
@@ -103,8 +103,8 @@ class DrEnv(
      * @param value New entity value
      * @throws DRVariableAlreadyDefinedException
      */
-    fun assign(name: String, value: DrValue) {
-        val variable = resolve(name) as? DrVariable
+    fun assign(name: String, value: ParserValue) {
+        val variable = resolve(name) as? ParserVariable
             ?: throw DRVariableNotDefinedException(name = name)
 
         variable.set(value)
@@ -119,7 +119,7 @@ class DrEnv(
      * @param klass New class structure
      * @throws DRClassNotDefinedException
      */
-    fun assignClass(name: String, klass: DrClass) {
+    fun assignClass(name: String, klass: ParserClass) {
         if (!classes.containsKey(name))
             throw DRClassNotDefinedException(name = name)
 
@@ -146,7 +146,7 @@ class DrEnv(
      * @return Entity value
      * @throws DRNotDefinedException
      */
-    fun get(name: String) : DrValue = values[name]
+    fun get(name: String) : ParserValue = values[name]
         ?: parent?.get(name)
         ?: throw DRNotDefinedException(name = name)
 
@@ -158,7 +158,7 @@ class DrEnv(
      *
      * @return Entities values/structures
      */
-    fun all() : Map<String, DrValue> = values
+    fun all() : Map<String, ParserValue> = values
 
 
 
@@ -186,7 +186,7 @@ class DrEnv(
      * @param name Entity name
      * @return Entity value/structure if exists; else, NULL
      */
-    fun resolve(name: String) : DrValue? =
+    fun resolve(name: String) : ParserValue? =
         values[name] ?: parent?.resolve(name)
 
 
@@ -199,7 +199,7 @@ class DrEnv(
      * @param name Class name
      * @return Class structure if exists; else, NULL
      */
-    fun resolveClass(name: String) : DrClass? =
+    fun resolveClass(name: String) : ParserClass? =
         classes[name] ?: parent?.resolveClass(name)
 
 
@@ -228,7 +228,7 @@ class DrEnv(
     /**
      * Export all environment recorded members and structures
      */
-    fun export() : Map<String, DrValue> {
+    fun export() : Map<String, ParserValue> {
         return values + classes
     }
 }

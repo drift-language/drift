@@ -9,8 +9,6 @@
 
 package drift.ast.expressions
 
-import drift.ast.statements.DrStmt
-
 /******************************************************************************
  * DRIFT OBJECT SETTER AST NODE
  *
@@ -27,7 +25,7 @@ import drift.ast.statements.DrStmt
  * @property value Value to assign
  */
 data class Set(
-    val receiver: DrExpr,
+    val receiver: ParserExpression,
     val name: String,
-    val value: DrExpr
-) : DrExpr
+    val value: ParserExpression
+) : ParserExpression()

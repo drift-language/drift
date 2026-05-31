@@ -57,18 +57,18 @@ private val singleCharSymbols = setOf(
  */
 sealed class Token {
 
-
     /**
      * Identifier token type.
      *
      * An identifier is a word that could
-     * match with entity name or keyword.
+     * match with an entity name or keyword.
      *
      * ```
      * keyword
      * ```
      */
     data class Identifier(val value: String) : Token() {
+
         /** @return If the identifier is the expected keyword */
         fun isKeyword(expected: Keyword): Boolean =
             this.value == expected.value
@@ -126,7 +126,7 @@ sealed class Token {
     /**
      * Symbol token type.
      *
-     * A symbol is a single or multi characters operator,
+     * A symbol is a single or multi-character operator,
      * used to compute an expression like boolean comparison
      * or arithmetical equation, for example.
      *
@@ -137,6 +137,19 @@ sealed class Token {
      * ```
      */
     data class Symbol(val value: String) : Token()
+
+
+
+    /**
+     * Annotation token type.
+     *
+     * An annotation is a compiler time mark.
+     *
+     * ```
+     * @Annotation
+     * ```
+     */
+    data class Annotation(val name: String) : Token()
 
 
 
@@ -152,6 +165,7 @@ sealed class Token {
      * ```
      */
     enum class Keyword(val value: String) {
+
         IF("if"),
         ELSE("else"),
         FUNCTION("fun"),
@@ -165,12 +179,13 @@ sealed class Token {
         STATIC("static"),
         IMPORT("import"),
         INIT("init"),
+        NATIVE("native"),
     }
 
 
 
     /** Whitespace token type */
-    data object Whitespace: Token()
+    data object Whitespace : Token()
 
 
 
@@ -247,6 +262,20 @@ fun lex(input: String): List<Token> {
 
             pos = next
             continue
+        } else if (c == '@') {
+            pos++
+
+            if (pos >= input.length || !input[pos].isLetter()) {
+                throw DLUnexpectedCharacterException(
+                    unexpected = if (pos < input.length) input[pos] else '@',
+                    line = line,
+                    pos = pos)
+            }
+
+            val (token, next) = lexAnnotation(input, pos)
+            tokens.add(token)
+
+            pos = next
         } else if (input.substring(pos).take(3) in threeCharsSymbols) {
             val (token, next) = lexSymbol(input, pos, 3)
             tokens.add(token)
@@ -338,7 +367,7 @@ fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
 /**
  * This function tokenizes a word.
  *
- * Null, booleans and identifiers are lexed by this function.
+ * Null, booleans, and identifiers are lexed by this function.
  *
  * @param input Source code
  * @param startIndex The start index of the expression to tokenize
@@ -348,14 +377,14 @@ fun lexNumeric(input: String, startIndex: Int): Pair<Token, Int> {
 fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
     var i = startIndex
 
-    while (i < input.length && (input[i].isLetterOrDigit() || input[i] == '_' || input[i] == '$')) {
+    while (i < input.length && (input[i].isLetterOrDigit() || input[i] == '_' || input[i] == '$'))
         i++
-    }
 
     return when (val word = input.substring(startIndex, i)) {
         "true" -> Token.BoolLiteral(true) to i
         "false" -> Token.BoolLiteral(false) to i
         "null" -> Token.NullLiteral to i
+
         else -> Token.Identifier(word) to i
     }
 }
@@ -366,7 +395,7 @@ fun lexWord(input: String, startIndex: Int): Pair<Token, Int> {
  * This function tokenizes a symbol
  *
  * @param input Source code
- * @param startIndex Start index of the expression to tokenize
+ * @param startIndex Start the index of the expression to tokenize
  * @param length Length of the symbol, by default = 1
  * @return A pair composed by the [Token.Symbol] object and the next
  * character position index
@@ -375,4 +404,15 @@ fun lexSymbol(input: String, startIndex: Int, length: Int = 1): Pair<Token.Symbo
     val symbol = input.substring(startIndex, startIndex + length)
 
     return Token.Symbol(symbol) to (startIndex + length)
+}
+
+
+
+fun lexAnnotation(input: String, startIndex: Int) : Pair<Token.Annotation, Int> {
+    var i = startIndex
+
+    while (i < input.length && (input[i].isLetterOrDigit() || input[i] == '_'))
+        i++
+
+    return Token.Annotation(input.substring(startIndex, i)) to i
 }

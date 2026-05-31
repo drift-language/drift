@@ -8,8 +8,11 @@
  ******************************************************************************/
 package drift.parser.callables
 
-import drift.ast.statements.Function
-import drift.ast.statements.FunctionParameter
+import drift.ast.statements.Func
+import drift.ast.bindings.FunctionParameter
+import drift.ast.statements.hooks.ParserHook
+import drift.ast.statements.hooks.ReturnableHook
+import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.DPHookCannotReturnValueException
@@ -17,7 +20,7 @@ import drift.parser.exceptions.DPMissingHookParameterException
 import drift.parser.exceptions.DPUnallowedHookNameException
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
-import drift.runtime.DrType
+import drift.runtime.ParserType
 import drift.runtime.VoidType
 
 
@@ -48,7 +51,7 @@ import drift.runtime.VoidType
  */
 internal fun Parser.parseHook(
     forceParameters: Boolean = false,
-    disableReturnStatement: Boolean = false) : Function {
+    disableReturnStatement: Boolean = false) : ParserHook {
 
     val name = expect<Token.Identifier>("hook name").value
 
@@ -83,7 +86,7 @@ internal fun Parser.parseHook(
         expectSymbol(")")
     }
 
-    var hookReturnType: DrType = VoidType
+    var hookReturnType: ParserType = VoidType
 
     if (matchSymbol(":")) {
         if (disableReturnStatement)
@@ -96,9 +99,16 @@ internal fun Parser.parseHook(
 
     val body = parseBlock()
 
-    return Function(
-        name,
-        parameters,
-        body.statements,
-        hookReturnType)
+    return if (disableReturnStatement) {
+        UnreturnableHook(
+            name = name,
+            parameters = parameters,
+            body = body)
+    } else {
+        ReturnableHook(
+            name = name,
+            parameters = parameters,
+            body = body,
+            returnType = hookReturnType)
+    }
 }

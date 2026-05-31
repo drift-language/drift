@@ -9,8 +9,9 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.DrExpr
-import drift.runtime.DrType
+import drift.ast.expressions.ParserExpression
+import drift.ast.metadata.Annotation
+import drift.runtime.ParserType
 
 
 /******************************************************************************
@@ -31,6 +32,7 @@ import drift.runtime.DrType
  */
 data class Let(
     val name: String,
-    val type: DrType,
-    val value: DrExpr,
-    val isMutable: Boolean) : DrStmt
+    val annotations: MutableList<Annotation> = mutableListOf(),
+    val type: ParserType,
+    val value: ParserExpression,
+    val isMutable: Boolean) : ParserStatement()

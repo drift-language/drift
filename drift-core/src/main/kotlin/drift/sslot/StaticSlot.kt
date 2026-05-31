@@ -9,10 +9,10 @@
 package drift.sslot
 
 import drift.runtime.DrEnv
-import drift.runtime.DrType
-import drift.runtime.DrValue
+import drift.runtime.ParserType
+import drift.runtime.ParserValue
 import drift.runtime.exceptions.DRCannotAssignToImmutableException
-import drift.runtime.values.variables.DrVariable
+import drift.runtime.values.variables.ParserVariable
 
 
 /******************************************************************************
@@ -36,28 +36,28 @@ class StaticSlot(
     val name: String,
 
     /** Static field's type */
-    val type: DrType,
+    val type: ParserType,
 
     /** If the field is mutable */
     val isMutable: Boolean,
 
     /** Static field's compute lambda */
-    private val initializer: (DrEnv) -> DrValue) {
+    private val initializer: (DrEnv) -> ParserValue) {
 
 
-    private var variable: DrVariable? = null
+    private var variable: ParserVariable? = null
 
 
-    fun get(env: DrEnv): DrVariable {
+    fun get(env: DrEnv): ParserVariable {
         if (variable == null) {
             val value = initializer(env)
-            variable = DrVariable(name, type, value, isMutable)
+            variable = ParserVariable(name, type, value, isMutable)
         }
 
         return variable!!
     }
 
-    fun set(env: DrEnv, value: DrValue) {
+    fun set(env: DrEnv, value: ParserValue) {
         if (!isMutable)
             throw DRCannotAssignToImmutableException(name = name)
 

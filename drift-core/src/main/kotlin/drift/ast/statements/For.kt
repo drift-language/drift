@@ -9,7 +9,8 @@
 
 package drift.ast.statements
 
-import drift.ast.expressions.DrExpr
+import drift.ast.bindings.ForVariable
+import drift.ast.expressions.ParserExpression
 
 
 /******************************************************************************
@@ -28,6 +29,6 @@ import drift.ast.expressions.DrExpr
  * @property body Loop body block
  */
 data class For(
-    val iterable: DrExpr,
-    val variables: List<String>,
-    val body: DrStmt) : DrStmt
+    val iterable: ParserExpression,
+    val variables: List<ForVariable>,
+    val body: Block) : ParserStatement()

@@ -1,13 +1,13 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.2.0"
 
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.6"
 
     application
 }
 
-group = "dev.drift"
-version = "0.1"
+group = "fr.belic.drift"
+version = "2026.0"
 
 repositories {
     mavenCentral()
@@ -24,6 +24,10 @@ dependencies {
 
     implementation(project(":drift-common"))
     implementation(project(":drift-core"))
+    implementation(project(":drift-analysis"))
+    implementation(project(":drift-hir"))
+    implementation(project(":drift-ir"))
+    implementation(project(":drift-bootstrap"))
 
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
     implementation("com.github.ajalt.clikt:clikt-markdown:5.0.3")
@@ -40,6 +44,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("runDebugger") {
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("drift.cli.DriftRunnerTestKt")
+    workingDir = rootProject.projectDir
+    args = listOf("${rootProject.projectDir}/examples/src/main.drift")
 }
 
 application {

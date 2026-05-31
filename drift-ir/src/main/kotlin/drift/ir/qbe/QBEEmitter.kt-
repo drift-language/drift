@@ -1,0 +1,1034 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+package drift.ir.qbe
+
+import drift.ast.bindings.FunctionParameter
+import drift.ast.expressions.*
+import drift.ast.expressions.Set
+import drift.ast.statements.*
+import drift.ast.statements.Func
+import drift.ir.exceptions.*
+import drift.ir.symbols.ClassSymbol
+import drift.ir.symbols.SymbolTable
+import drift.qbe.memory.NameRegister
+import drift.qbe.structure.*
+import drift.runtime.*
+import drift.runtime.values.primaries.ParserBool
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserInt64
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserNotAssigned
+import drift.runtime.values.specials.ParserNull
+import drift.runtime.values.specials.ParserVoid
+import kotlin.collections.emptyList
+
+
+class QBEEmitter(
+    private val typeResolution: Map<Int, ParserType>,
+    private val lambdaClosures: Map<Int, Map<String, Int>>,
+    private val symbolTable: SymbolTable) {
+
+    private val types = mutableListOf<QBETypeDefinition>()
+    private val data = mutableListOf<QBEData>()
+    private val functions = mutableListOf<QBEFunction>()
+
+    private val register = NameRegister()
+
+    private val scopes = ArrayDeque<MutableMap<String, Int>>()
+
+    // Context for closures (lambdas or nested functions) with captured variables
+    private var currentClosureNodeId: Int? = null
+    private var currentClosureEnvStruct: QBEStruct? = null
+    private var currentClosureEnvParam: QBETemporary? = null
+
+
+    fun emit(ast: List<ParserStatement>) : QBEModule {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        pushScope()
+
+        ast.forEach { statement ->
+            instructions.addAll(emitStatement(statement))
+        }
+
+        return QBEModule(types, data, functions)
+    }
+
+
+    /* -- SCOPES MANAGEMENT -- */
+
+    private fun pushScope() {
+        scopes.add(mutableMapOf())
+    }
+
+    private fun popScope() {
+        scopes.removeLast()
+    }
+
+    private fun declare(name: String, nodeId: Int) {
+        val scope = scopes.last()
+        scope[name] = nodeId
+    }
+
+    private fun resolve(name: String) : Int? {
+        return scopes.reversed().firstNotNullOfOrNull {
+            it[name]
+        }
+    }
+
+
+    /* -- STATEMENTS -- */
+
+    private fun emitStatement(statement: ParserStatement) : List<QBEInstruction> {
+        return when (statement) {
+            is Class -> emitClass(statement)
+            is Func -> emitFunction(statement)
+            is Let -> emitLet(statement)
+            is If  -> emitIf(statement)
+            is For -> emitFor(statement)
+            is Block -> emitBlock(statement)
+            is Return -> emitReturn(statement)
+            is ExprStmt -> emitExprStmt(statement)
+
+            else -> throw DIRUnexpectedStatementException()
+        }
+    }
+
+    private fun emitClass(`class`: Class) : List<QBEInstruction> {
+
+        return emptyList()
+    }
+
+    private fun emitFunction(func: Func) : List<QBEInstruction> {
+        pushScope()
+
+        val startLabel = register.label()
+
+        val (returnType, _) = emitType(func.returnType)
+        val params = func.parameters
+            .map { emitFunctionParameter(it) }
+        val blockInstructions = func.body
+            .map { emitStatement(it) }
+
+        val block = QBEBlock(startLabel, blockInstructions.flatten())
+
+        val functionStruct = QBEFunction(
+            export = true,      // TODO
+            name = func.name,
+            returnType = returnType,
+            parameters = params,
+            block = block)
+
+        functions.add(functionStruct)
+
+        popScope()
+
+        return emptyList()
+    }
+
+    private fun emitLet(let: Let) : List<QBEInstruction> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val register = NameRegister()
+        val letId = let.nodeId
+        val letStruct = register.temp(letId)
+        val (resultValue, exprInstructions) = emitExpression(let.value)
+
+        instructions.addAll(exprInstructions)
+
+        val letInstruction = QBEUnary(
+            destination = letStruct,
+            type = emitType(let.type).first,
+            operation = QBEOpcode.COPY,
+            operand = resultValue)
+
+        instructions.add(letInstruction)
+
+        declare(let.name, let.nodeId)
+
+        return instructions
+    }
+
+    private fun emitIf(`if`: If) : List<QBEInstruction> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val thenLabel = register.label()
+        val endLabel = register.label()
+        val elseLabel =
+            if (`if`.elseBranch != null) register.label()
+            else null
+
+        val (conditionValue, conditionInstructions) = emitExpression(`if`.condition)
+        val innerThenInstructions = emitStatement(`if`.thenBranch)
+
+        val evalConditionInstruction = QBEControlFlow(
+            QBEOpcode.JNZ,
+            listOf(conditionValue, thenLabel, elseLabel ?: endLabel))
+
+        val thenInstructions = innerThenInstructions + listOf(
+            QBEControlFlow(QBEOpcode.JMP, listOf(endLabel)))
+
+        instructions.addAll(conditionInstructions)
+        instructions.add(evalConditionInstruction)
+        instructions.add(QBEBlock(thenLabel, thenInstructions))
+
+        if (elseLabel != null) {
+            val elseInstructions = `if`.elseBranch
+                ?.let { emitStatement(it) }
+                ?: emptyList()
+
+            instructions.add(QBEBlock(elseLabel, elseInstructions))
+        }
+
+        instructions.add(QBEBlock(endLabel, listOf()))
+
+        return instructions
+    }
+
+    private fun emitFor(`for`: For) : List<QBEInstruction> {
+        TODO("waiting for emitCall / Get etc")
+    }
+
+    private fun emitBlock(block: Block) : List<QBEInstruction> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        pushScope()
+
+        block.statements
+            .map { emitStatement(it) }
+            .forEach { instructions.addAll(it) }
+
+        popScope()
+
+        return instructions
+    }
+
+    private fun emitReturn(`return`: Return) : List<QBEInstruction> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val (value, exprInstructions) = emitExpression(`return`.value)
+        instructions.addAll(exprInstructions)
+
+        val returnInstruction = QBEControlFlow(QBEOpcode.RET, listOf(value))
+        instructions.add(returnInstruction)
+
+        return instructions
+    }
+
+    private fun emitExprStmt(exprStmt: ExprStmt) : List<QBEInstruction> {
+        val (_, instructions) = emitExpression(exprStmt.expr)
+
+        return instructions
+    }
+
+
+    /* -- EXPRESSIONS -- */
+
+    private fun emitExpression(expression: ParserExpression) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        return when (expression) {
+            is Assign -> emitAssign(expression)
+            is Unary -> emitUnary(expression)
+            is Binary -> emitBinary(expression)
+            is Call -> emitCall(expression)
+            is Conditional -> emitConditional(expression)
+            is Get -> emitGet(expression)
+            is Set -> emitSet(expression)
+            is Lambda -> emitLambda(expression)
+            is ListLiteral -> emitListLiteral(expression)
+            is Literal -> emitLiteral(expression)
+            is Variable -> emitVariable(expression)
+
+            else -> throw DIRUnexpectedExpressionException()
+        }
+    }
+
+    private fun emitAssign(assign: Assign) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val (value, valueInstructions) = emitExpression(assign.value)
+        instructions.addAll(valueInstructions)
+
+        val destId = resolve(assign.name)
+            ?: throw DIRNotDefinedSymbolException(name = assign.name)
+        val destination = register.temp(destId)
+        val type = typeResolution[assign.nodeId]
+            ?: throw DIRMissingTypeException()
+
+        val assignInstruction = QBEUnary(
+            destination = destination,
+            type = emitType(type).first,
+            operation = QBEOpcode.COPY,
+            operand = value)
+
+        instructions.add(assignInstruction)
+
+        return Pair(destination, instructions)
+    }
+
+    private fun emitUnary(unary: Unary) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val (value, instr) = emitExpression(unary.expr)
+        instructions.addAll(instr)
+
+        val parserType = typeResolution[unary.nodeId]
+            ?: throw DIRMissingTypeException()
+        val (type, _) = emitType(parserType)
+
+        val parserOperandType = typeResolution[unary.expr.nodeId]
+            ?: throw DIRMissingTypeException()
+
+        val destination = register.temp(unary.nodeId)
+
+        val instruction: QBEInstruction = when (unary.operator) {
+            "-" -> QBEUnary(
+                destination,
+                type,
+                QBEOpcode.NEG,
+                value)
+
+            "!" -> QBEBinary(
+                destination,
+                type,
+                QBEOpcode.CEQW,
+                value to QBEInteger(0))
+            // NOTE: the boolean negation does not exist on QBE-IL.
+            //  We need to use a binary expression : (0 == value),
+            //  as all QBE-IL values are numeric (word, long, simple & float).
+
+            else -> throw DIRUnsupportedOperationException(
+                unary.operator,
+                Pair(parserOperandType, null))
+        }
+
+        instructions.add(instruction)
+
+        return Pair(destination, instructions)
+    }
+
+    private fun emitBinary(binary: Binary) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val (leftValue, leftInstructions) = emitExpression(binary.left)
+        val (rightValue, rightInstructions) = emitExpression(binary.right)
+
+        instructions.addAll(leftInstructions)
+        instructions.addAll(rightInstructions)
+
+        val parserType = typeResolution[binary.nodeId]
+            ?: throw DIRMissingTypeException()
+        val (type, _) = emitType(parserType)
+
+        val parserOperandType = typeResolution[binary.left.nodeId]
+            ?: throw DIRMissingTypeException()
+        val (operandType, unsigned) = emitType(parserOperandType)
+
+        val operator: QBEOpcode = when (binary.operator) {
+            /* Arithmetic */
+            "+" -> QBEOpcode.ADD
+            "-" -> QBEOpcode.SUB
+            "*" -> QBEOpcode.MUL
+            "/" -> if (unsigned) QBEOpcode.UDIV else QBEOpcode.DIV
+            "%" -> if (unsigned) QBEOpcode.UREM else QBEOpcode.REM
+
+            /* Boolean */
+            "&&" -> QBEOpcode.AND
+            "||" -> QBEOpcode.OR
+
+            /* Comparison */
+            "==" -> when (operandType) {
+                QBEWord   -> QBEOpcode.CEQW
+                QBELong   -> QBEOpcode.CEQL
+                QBESingle -> QBEOpcode.CEQS
+                QBEDouble -> QBEOpcode.CEQD
+
+                else -> QBEOpcode.CEQW
+            }
+            "!=" -> when (operandType) {
+                QBEWord   -> QBEOpcode.CNEW
+                QBELong   -> QBEOpcode.CNEL
+                QBESingle -> QBEOpcode.CNES
+                QBEDouble -> QBEOpcode.CNED
+
+                else -> QBEOpcode.CNEW
+            }
+            "<" -> when {
+                unsigned && operandType == QBEWord   -> QBEOpcode.CULTW
+                operandType == QBEWord               -> QBEOpcode.CSLTW
+                unsigned && operandType == QBELong   -> QBEOpcode.CULTL
+                operandType == QBELong               -> QBEOpcode.CSLTL
+                operandType == QBESingle             -> QBEOpcode.CLTS
+                operandType == QBEDouble             -> QBEOpcode.CLTD
+
+                else                            -> QBEOpcode.CSLTW
+            }
+            "<=" -> when {
+                unsigned && operandType == QBEWord   -> QBEOpcode.CULEW
+                operandType == QBEWord               -> QBEOpcode.CSLEW
+                unsigned && operandType == QBELong   -> QBEOpcode.CULEL
+                operandType == QBELong               -> QBEOpcode.CSLEL
+                operandType == QBESingle             -> QBEOpcode.CLES
+                operandType == QBEDouble             -> QBEOpcode.CLED
+
+                else                            -> QBEOpcode.CSLEW
+            }
+            ">" -> when {
+                unsigned && operandType == QBEWord   -> QBEOpcode.CUGTW
+                operandType == QBEWord               -> QBEOpcode.CSGTW
+                unsigned && operandType == QBELong   -> QBEOpcode.CUGTL
+                operandType == QBELong               -> QBEOpcode.CSGTL
+                operandType == QBESingle             -> QBEOpcode.CGTS
+                operandType == QBEDouble             -> QBEOpcode.CGTD
+
+                else                            -> QBEOpcode.CSGTW
+            }
+            ">=" -> when {
+                unsigned && operandType == QBEWord   -> QBEOpcode.CUGEW
+                operandType == QBEWord               -> QBEOpcode.CSGEW
+                unsigned && operandType == QBELong   -> QBEOpcode.CUGEL
+                operandType == QBELong               -> QBEOpcode.CSGEL
+                operandType == QBESingle             -> QBEOpcode.CGES
+                operandType == QBEDouble             -> QBEOpcode.CGED
+
+                else                            -> QBEOpcode.CSGEW
+            }
+
+
+            else -> TODO("ranges etc")
+        }
+
+        val destination = register.temp(binary.nodeId)
+
+        val binaryInstruction = QBEBinary(
+            destination,
+            type,
+            operator,
+            leftValue to rightValue)
+
+        instructions.add(binaryInstruction)
+
+        return Pair(destination, instructions)
+    }
+
+    private fun emitCall(call: Call) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val callee = call.callee
+
+        val args = call.args.map { emitExpression(it.expr) }
+
+        args.forEach { (_, argInstructions) ->
+            instructions.addAll(argInstructions)
+        }
+
+        val argValues = args.map { it.first }
+
+        // Get return type from the call expression itself
+        val callReturnType = typeResolution[call.nodeId]
+            ?: throw DIRMissingTypeException()
+        val (qbeReturnType) = emitType(callReturnType)
+
+        val callInstruction: QBECall = when (callee) {
+            is Variable -> {
+                val calleeGlobal = register.global(callee.name)
+                val result = register.internalTemp()
+
+                QBECall(
+                    destination = result,
+                    returnType = qbeReturnType,
+                    callee = calleeGlobal,
+                    args = argValues)
+            }
+
+            else -> {
+                val (closurePointer, calleeInstructions) = emitExpression(callee)
+                instructions.addAll(calleeInstructions)
+
+                val functionAddress = emitAddressCalculation(closurePointer, 0L, instructions)
+                val functionPointer = register.internalTemp()
+
+                instructions.add(QBEUnary(
+                    destination = functionPointer,
+                    type = QBELong,
+                    operation = QBEOpcode.LOAD,
+                    operand = functionAddress))
+
+
+                val envAddress = emitAddressCalculation(closurePointer, 8L, instructions)
+                val envPointer = register.internalTemp()
+
+                instructions.add(QBEUnary(
+                    destination = envPointer,
+                    type = QBELong,
+                    operation = QBEOpcode.LOAD,
+                    operand = envAddress))
+
+
+                val result = register.internalTemp()
+
+                QBECall(
+                    destination = result,
+                    returnType = qbeReturnType,
+                    callee = functionPointer,
+                    args = listOf(envPointer) + argValues)
+            }
+        }
+
+        instructions.add(callInstruction)
+
+        return Pair(callInstruction.destination, instructions)
+    }
+
+    private fun emitConditional(conditional: Conditional) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val parserType = typeResolution[conditional.nodeId]
+            ?: throw DIRMissingTypeException()
+        val (type, _) = emitType(parserType)
+        val destination = register.temp(conditional.nodeId)
+
+        val thenLabel = register.label()
+        val elseLabel = register.label()
+        val endLabel = register.label()
+
+        val (conditionValue, conditionInstructions) = emitExpression(conditional.condition)
+        instructions.addAll(conditionInstructions)
+
+        val evalConditionInstruction = QBEControlFlow(
+            QBEOpcode.JNZ,
+            listOf(conditionValue, thenLabel, elseLabel))
+
+        val (thenValue, innerThenInstructions) = emitBranchValue(conditional.thenBranch)
+        val thenInstructions =
+            innerThenInstructions + listOf(
+            QBEUnary(destination, type, QBEOpcode.COPY, thenValue),
+            QBEControlFlow(QBEOpcode.JMP, listOf(endLabel)))
+
+        instructions.add(evalConditionInstruction)
+        instructions.add(QBEBlock(thenLabel, thenInstructions))
+
+        val (elseValue, elseInstructions) = conditional.elseBranch
+            ?.let { emitBranchValue(it) }
+            ?: Pair(QBEInteger(0), emptyList())
+
+        instructions.add(QBEBlock(
+            elseLabel,
+            elseInstructions + listOf(
+                QBEUnary(destination, type, QBEOpcode.COPY, elseValue))))
+
+        instructions.add(QBEBlock(endLabel, emptyList()))
+
+        return Pair(destination, instructions)
+    }
+
+    private fun emitGet(get: Get) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val receiver = get.receiver
+        val receiverParserType = typeResolution[receiver.nodeId]
+            ?: throw DIRMissingTypeException()
+
+        val className = getClassNameFromParserType(receiverParserType)
+        val classId = symbolTable.lookupNodeId(className)
+            ?: throw DIRNotDefinedClassException(name = className)
+
+        val receiverType = symbolTable.getSymbol(classId) as ClassSymbol
+        val signature = receiverType.signature
+
+        val isStatic = receiverParserType is ClassType
+
+        if (isStatic) return when {
+            signature.staticFields.containsKey(get.name) -> {
+                val global = QBEGlobal("${signature.name}.${get.name}")
+                Pair(global, instructions)
+            }
+            signature.staticMethods.containsKey(get.name) -> {
+                val global = QBEGlobal("${signature.name}.${get.name}")
+                Pair(global, instructions)
+            }
+
+            else -> throw DIRNotDefinedSymbolException(name = get.name)
+        }
+
+        val (receiverValue, receiverInstructions) = emitExpression(receiver)
+        instructions.addAll(receiverInstructions)
+
+        return when {
+            signature.fields.containsKey(get.name) -> {
+                val parserFieldType = typeResolution[get.nodeId]
+                    ?: throw DIRMissingTypeException()
+                val (fieldType, _) = emitType(parserFieldType)
+
+                val offset = memberOffset(signature, get.name, isField = true)
+
+                val address = emitAddressCalculation(
+                    receiverValue,
+                    offset,
+                    instructions)
+
+                val destination = register.temp(get.nodeId)
+                instructions.add(
+                    QBEUnary(
+                        destination = destination,
+                        type = fieldType,
+                        operation = QBEOpcode.LOAD,
+                        operand = address))
+
+                Pair(destination, instructions)
+            }
+            signature.methods.containsKey(get.name) -> {
+                val parserMethodType = typeResolution[get.nodeId]
+                    ?: throw DIRMissingTypeException()
+                val (methodType, _) = emitType(parserMethodType)
+
+                val offset = memberOffset(signature, get.name, isField = false)
+                val address = emitAddressCalculation(
+                    receiverValue,
+                    offset,
+                    instructions)
+
+                val destination = register.temp(get.nodeId)
+                instructions.add(QBEUnary(
+                    destination = destination,
+                    type = methodType,
+                    operation = QBEOpcode.LOAD,
+                    operand = address))
+
+                Pair(destination, instructions)
+            }
+
+            else -> throw DIRNotDefinedSymbolException(name = get.name)
+        }
+    }
+
+    private fun emitSet(set: Set) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        val receiver = set.receiver
+        val receiverParserType = typeResolution[receiver.nodeId]
+            ?: throw DIRMissingTypeException()
+
+        val (value, valueInstructions) = emitExpression(set.value)
+        instructions.addAll(valueInstructions)
+
+        val className = getClassNameFromParserType(receiverParserType)
+        val classId = symbolTable.lookupNodeId(className)
+            ?: throw DIRNotDefinedClassException(name = className)
+
+        val receiverType = symbolTable.getSymbol(classId) as ClassSymbol
+        val signature = receiverType.signature
+
+        val isStatic = receiverParserType is ClassType
+
+        val (address, fieldType) =
+            if (isStatic) when {
+                signature.staticFields.containsKey(set.name) -> {
+                    val global = register.member(signature.name, set.name)
+
+                    val parserFieldType = signature.staticFields[set.name]
+                        ?: throw DIRNotDefinedSymbolException(name = set.name)
+                    val (fieldType, _) = emitType(parserFieldType)
+
+                    Pair(global, fieldType)
+                }
+                signature.staticMethods.containsKey(set.name) ->
+                    throw DIRUnsupportedOperationException(
+                        operator = "set",
+                        types = Pair(receiverParserType, null))
+
+                else -> throw DIRNotDefinedSymbolException(name = set.name)
+            } else {
+                val (receiverValue, receiverInstructions) = emitExpression(receiver)
+                instructions.addAll(receiverInstructions)
+
+                when {
+                    signature.fields.containsKey(set.name) -> {
+                        val offset = memberOffset(signature, set.name, isField = true)
+                        val address = emitAddressCalculation(receiverValue, offset, instructions)
+
+                        val parserFieldType = signature.fields[set.name]
+                            ?: throw DIRNotDefinedSymbolException(name = set.name)
+                        val (fieldType, _) = emitType(parserFieldType)
+
+                        Pair(address, fieldType)
+                    }
+
+                    signature.methods.containsKey(set.name) ->
+                        throw DIRUnsupportedOperationException(
+                            operator = "set",
+                            types = Pair(receiverParserType, null))
+
+                    else -> throw DIRNotDefinedSymbolException(name = set.name)
+                }
+            }
+
+        val storeOpcode = getStoreOpcodeByType(fieldType)
+
+        instructions.add(QBEStore(
+            destination = address,
+            storeOpcode = storeOpcode,
+            source = value))
+
+        return Pair(value, instructions)
+    }
+
+    private fun emitLambda(lambda: Lambda) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val instructions = mutableListOf<QBEInstruction>()
+
+        pushScope()
+
+        val startLabel = register.label()
+
+        val name = "lfun::${startLabel.name}"
+        val (returnType, _) = emitType(lambda.returnType)
+
+        // Create capture info before emitting body
+        val capture = lambdaClosures[lambda.nodeId]
+            ?: throw DIRNotDefinedLambdaCaptureException(name = name)
+        val preparedCaptureForEnv = capture
+            .map { (name, nodeId) ->
+                val parserType = typeResolution[nodeId] ?: throw DIRMissingTypeException()
+                name to emitType(parserType).first
+            }
+
+        val envStruct = QBEStruct(
+            name = "$name.env",
+            fields = preparedCaptureForEnv)
+
+        // Create implicit environment parameter for lambda body
+        val implicitEnvParam = register.internalTemp()
+        declare("__env", lambda.nodeId)  // Use lambda nodeId for consistency
+
+        // Set context for emitVariable to use when accessing captured vars
+        currentClosureNodeId = lambda.nodeId
+        currentClosureEnvStruct = envStruct
+        currentClosureEnvParam = implicitEnvParam
+
+        // Build parameters: environment parameter first, then explicit parameters
+        val params = mutableListOf(
+            QBEFunction.QBEParameter(implicitEnvParam, QBELong))  // Environment as first param
+        params.addAll(lambda.parameters.map { emitFunctionParameter(it) })
+        val blockInstructions = lambda.body.map { emitStatement(it) }
+
+        // Clear context after body emission
+        currentClosureNodeId = null
+        currentClosureEnvStruct = null
+        currentClosureEnvParam = null
+
+        val block = QBEBlock(startLabel, blockInstructions.flatten())
+
+        val lambdaStruct = QBEFunction(
+            export = false,
+            name = name,
+            returnType = returnType,
+            parameters = params,
+            block = block)
+
+        functions.add(lambdaStruct)
+
+        val skeletonStruct = QBEStruct(
+            name = "$name.skeleton",
+            fields = listOf(
+                "funptr" to QBELong,
+                "envptr" to QBELong))
+
+        val envPointer = register.internalTemp()
+        val skeletonPointer = register.internalTemp()
+
+        types.add(envStruct.toTypeDefinition())
+        types.add(skeletonStruct.toTypeDefinition())
+
+        instructions.add(malloc(
+            destination = envPointer,
+            args = listOf(QBEInteger(envStruct.size()))))
+
+        for ((index, field) in envStruct.fields.withIndex()) {
+            val (name, type) = field
+
+            val capturedNodeId = capture[name]
+                ?: throw DIRNotDefinedSymbolException(name = name)
+            val value = register.temp(capturedNodeId)
+
+            val offset = envStruct.fieldOffset(index)
+            val address = emitAddressCalculation(envPointer, offset, instructions)
+
+            instructions.add(QBEStore(
+                destination = address,
+                storeOpcode = getStoreOpcodeByType(type),
+                source = value))
+        }
+
+        instructions.add(malloc(
+            destination = skeletonPointer,
+            args = listOf(QBEInteger(skeletonStruct.size()))))
+
+        val skeletonPointerAddress = emitAddressCalculation(
+            skeletonPointer,
+            offset = 0L,
+            instructions)
+
+        val envPointerAddress = emitAddressCalculation(
+            envPointer,
+            offset = 8L,
+            instructions)
+
+        skeletonStruct.run {
+            instructions.add(QBEStore(
+                destination = skeletonPointerAddress,
+                storeOpcode = getStoreOpcodeByType(fields[0].second),       // [0] <=> funptr
+                source = QBEGlobal(name)))
+
+            instructions.add(QBEStore(
+                destination = envPointerAddress,
+                storeOpcode = getStoreOpcodeByType(fields[1].second),       // [1] <=> envptr
+                source = envPointer))
+        }
+
+        popScope()
+
+        return Pair(skeletonPointer, instructions)
+    }
+
+    private fun emitListLiteral(list: ListLiteral) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        TODO("List literals require stdlib List class")
+    }
+
+    private fun emitLiteral(literal: Literal) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        return when (val value = literal.value) {
+
+            /* -- Primaries -- */
+            is ParserInt -> Pair(
+                QBEInteger(value.value.toLong()),
+                emptyList())
+
+            is ParserInt64 -> Pair(
+                QBEInteger(value.value),
+                emptyList())
+
+            is ParserBool -> Pair(
+                QBEInteger(if (value.value) 1 else 0),
+                emptyList())
+
+            is ParserString -> {
+                val dataName = register.data()
+                val dataStruct = QBEData(
+                    name = dataName,
+                    content = listOf(QBEDataString(value.value)))
+
+                data.add(dataStruct)
+
+                Pair(dataName, emptyList())
+            }
+
+            /* -- Specials -- */
+            is ParserNull -> Pair(QBEInteger(0), emptyList())
+
+            is ParserVoid,
+            is ParserNotAssigned -> throw DIRUnexpectedExpressionException()
+
+            else -> TODO()
+        }
+    }
+
+    private fun emitVariable(variable: Variable) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        val declarationId = resolve(variable.name)
+
+        if (declarationId != null)
+            return Pair(register.temp(declarationId), emptyList())
+
+        // Check if a variable is captured in the current closure (lambda or nested function)
+        if (currentClosureNodeId != null) {
+            val captured = lambdaClosures[currentClosureNodeId]
+            val envStruct = currentClosureEnvStruct
+            val envParam = currentClosureEnvParam
+
+            if (captured != null && envStruct != null && envParam != null && captured.containsKey(variable.name)) {
+                val instructions = mutableListOf<QBEInstruction>()
+
+                // Find field index in environment struct
+                val fieldIndex = envStruct.fields.indexOfFirst { it.first == variable.name }
+
+                if (fieldIndex >= 0) {
+                    val offset = envStruct.fieldOffset(fieldIndex)
+                    val address = emitAddressCalculation(envParam, offset, instructions)
+
+                    val destination = register.temp(variable.nodeId)
+                    val varType = typeResolution[variable.nodeId]
+                        ?: throw DIRMissingTypeException()
+                    val (qbeType, _) = emitType(varType)
+
+                    instructions.add(QBEUnary(
+                        destination = destination,
+                        type = qbeType,
+                        operation = QBEOpcode.LOAD,
+                        operand = address))
+
+                    return Pair(destination, instructions)
+                }
+            }
+        }
+
+        throw DIRNotDefinedVariableException(name = variable.name)
+    }
+
+    private fun emitBranchValue(branch: ParserStatement) : Pair<QBEUsableValue, List<QBEInstruction>> {
+        return when (branch) {
+            is ExprStmt -> emitExpression(branch.expr)
+            is Block -> {
+                pushScope()
+
+                val instructions = mutableListOf<QBEInstruction>()
+                val statements = branch.statements
+
+                if (statements.isEmpty())
+                    return Pair(QBEInteger(0), emptyList())
+
+                for (i in 0 until statements.size - 1) {
+                    instructions.addAll(emitStatement(statements[i]))
+                }
+
+                val (value, lastInstructions) = emitBranchValue(statements.last())
+                instructions.addAll(lastInstructions)
+
+                popScope()
+
+                Pair(value, instructions)
+            }
+
+            else -> Pair(QBEInteger(0), emitStatement(branch))
+        }
+    }
+
+
+    /* -- VARIABLE BINDING -- */
+
+    private fun emitFunctionParameter(parameter: FunctionParameter) : QBEFunction.QBEParameter {
+        val paramVar = register.temp(parameter.nodeId)
+        val (type, _) = emitType(parameter.type)
+
+        declare(parameter.name, parameter.nodeId)
+
+        return QBEFunction.QBEParameter(paramVar, type)
+    }
+
+
+    /* -- TYPES -- */
+
+    private fun emitType(type: ParserType) : Pair<QBEType, Boolean> {
+        return when (type) {
+            is OptionalType -> emitType(type.inner)
+            is UnionType    -> {
+                TODO("Feature not implemented yet.")
+            }
+            is NullType     -> Pair(QBELong, false)
+            is AnyType      -> Pair(QBELong, false)
+            is VoidType     -> throw DIRUnexpectedVoidTypeException()
+            is UnknownType  -> throw DIRUnexpectedUnknownTypeException()
+            is ClassType    -> Pair(QBELong, false)             // NOTE: class reference is a pointer
+            is ObjectType   -> when (type.className) {
+                "Int", "Bool"       -> Pair(QBEWord, false)
+                "UInt"              -> Pair(QBEWord, true)
+                "Int64", "String"   -> Pair(QBELong, false)
+                "Float"             -> Pair(QBESingle, false)
+                "Double"            -> Pair(QBEDouble, false)
+
+                else                -> Pair(QBELong, false)     // NOTE: custom class is a pointer
+            }
+
+            else            -> throw DIRUnexpectedTypeException()
+        }
+    }
+
+
+    /* -- VALUES -- */
+
+    private fun emitAddressCalculation(
+        base: QBEUsableValue,
+        offset: Long,
+        instructions: MutableList<QBEInstruction>) : QBEStorableValue {
+
+        if (offset == 0L) return when (base) {
+            is QBEStorableValue -> base
+            else -> {
+                val temp = register.internalTemp()
+                instructions.add(QBEUnary(
+                    destination = temp,
+                    type = QBELong,
+                    operation = QBEOpcode.COPY,
+                    operand = base))
+
+                temp
+            }
+        }
+
+        val addrTemp = register.internalTemp()
+        instructions.add(QBEBinary(
+            destination = addrTemp,
+            type = QBELong,
+            operation = QBEOpcode.ADD,
+            operands = base to QBEInteger(offset)))
+
+        return addrTemp
+    }
+
+
+    /* -- HELPERS -- */
+
+    private fun memberOffset(
+        signature: ClassSymbol.ClassSignature,
+        memberName: String,
+        isField: Boolean = true): Long {
+
+        var offset = 0L
+
+        for ((name, fieldType) in signature.fields) {
+            if (name == memberName) return offset
+
+            val (qbeType, _) = emitType(fieldType)
+            offset += qbeType.size
+        }
+
+        if (!isField) for ((name, _) in signature.methods) {
+            if (name == memberName) return offset
+
+            offset += 8L        // NOTE: Method pointer is 8 bytes (QBELong)
+        }
+
+        throw DIRNotDefinedSymbolException(name = memberName)
+    }
+
+    private fun getClassNameFromParserType(parserType: ParserType) : String {
+        return when (parserType) {
+            is ClassType -> parserType.className
+            is ObjectType -> parserType.className
+
+            else -> throw DIRUnexpectedTypeException()
+        }
+    }
+
+    private fun getStoreOpcodeByType(type: QBEType) : QBEOpcode = when (type) {
+        QBEWord     -> QBEOpcode.STOREW
+        QBELong     -> QBEOpcode.STOREL
+        QBESingle   -> QBEOpcode.STORES
+        QBEDouble   -> QBEOpcode.STORED
+
+        else        -> QBEOpcode.BLIT
+    }
+
+
+    /* -- HEAP -- */
+
+    private fun malloc(destination: QBETemporary, args: List<QBEUsableValue>) : QBECall {
+        return QBECall(
+            destination = destination,
+            returnType = QBELong,
+            callee = QBEGlobal("malloc"),
+            args = args)
+    }
+}

@@ -9,19 +9,17 @@
 
 package drift.utils
 
-import drift.ast.statements.Function
-import drift.checkers.TypeChecker
-import drift.checkers.collectors.SymbolCollector
+import drift.ast.statements.Func
 import drift.lexer.lex
 import drift.parser.Parser
 import drift.runtime.*
 import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrNull
+import drift.runtime.values.callables.ParserMethod
+import drift.runtime.values.callables.ParserNativeFunction
+import drift.runtime.values.oop.ParserClass
+import drift.runtime.values.primaries.ParserInt
+import drift.runtime.values.primaries.ParserString
+import drift.runtime.values.specials.ParserNull
 import project.ProjectConfig
 import project.ProjectStructure
 
@@ -34,6 +32,7 @@ import project.ProjectStructure
 
 
 
+@Deprecated("Old interpreter util")
 val testConfig: ProjectConfig = ProjectConfig(
     name = "Test Project",
     structure = ProjectStructure(
@@ -51,23 +50,24 @@ val testConfig: ProjectConfig = ProjectConfig(
  * @param source Source code to evaluate entirely
  * @return The last evaluated value
  */
-fun evalProgram(source: String) : DrValue {
+@Deprecated("Old interpreter util")
+fun evalProgram(source: String) : ParserValue {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
     val env = DrEnv()
 
     env.apply {
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", ParserClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", ParserClass("String", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
         
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
-    var result: DrValue = DrNull
+    var result: ParserValue = ParserNull
 
     for (statement in ast) {
         result = statement.eval(env)
@@ -91,6 +91,7 @@ fun evalProgram(source: String) : DrValue {
  * @param source Source code to evaluate entirely
  * @return All `test()` outputs
  */
+@Deprecated("Old interpreter util")
 fun evalWithOutputs(source: String) : MutableList<String> {
     val output = mutableListOf<String>()
 
@@ -99,42 +100,41 @@ fun evalWithOutputs(source: String) : MutableList<String> {
     val env = DrEnv()
 
     env.apply {
-        define("test", DrNativeFunction(
+        define("test", ParserNativeFunction(
             impl = { _, args ->
                 args.map { output.add(it.second.asString()) }
-                DrNull
+                ParserNull
             },
             paramTypes = listOf(AnyType),
             returnType = NullType)
         )
 
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("String", DrClass(
+        defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", ParserClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", ParserClass(
             "String", mutableMapOf(), mutableMapOf(
-                "length" to DrMethod(
-                    let = Function(
+                "length" to ParserMethod(
+                    let = Func(
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),
-                        body = emptyList()
                     ),
                     closure = env,
-                    nativeImpl = DrNativeFunction(
+                    nativeImpl = ParserNativeFunction(
                         name = "length",
                         paramTypes = emptyList(),
                         returnType = ObjectType("Int"),
                         impl = { receiver, _ ->
-                            val instance = receiver as DrString
+                            val instance = receiver as ParserString
 
-                            DrInt(instance.value.length)
+                            ParserInt(instance.value.length)
                         }))), closure = env))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
     for (statement in ast) {
         statement.eval(env)
@@ -158,44 +158,45 @@ fun evalWithOutputs(source: String) : MutableList<String> {
  * @param source Source code to evaluate entirely
  * @return The last `test()` output
  */
+@Deprecated("Old interpreter util")
 fun evalWithOutput(source: String) : String {
     return evalWithOutputs(source).last()
 }
 
 
 
+@Deprecated("Old interpreter util")
 fun evalAndGetEnv(source: String) : DrEnv {
     val tokens = lex(source)
     val ast = Parser(tokens).parse()
     val env = DrEnv()
     env.apply {
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("String", DrClass(
+        defineClass("Int", ParserClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Int64", ParserClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("UInt", ParserClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("String", ParserClass(
             "String", mutableMapOf(), mutableMapOf(
-                "length" to DrMethod(
-                    let = Function(
+                "length" to ParserMethod(
+                    let = Func(
                         name = "length",
                         parameters = emptyList(),
                         returnType = ObjectType("Int"),
-                        body = emptyList()
                     ),
                     closure = env,
-                    nativeImpl = DrNativeFunction(
+                    nativeImpl = ParserNativeFunction(
                         name = "length",
                         paramTypes = emptyList(),
                         returnType = ObjectType("Int"),
                         impl = { receiver, args ->
-                            val instance = receiver as DrString
+                            val instance = receiver as ParserString
 
-                            DrInt(instance.value.length)
+                            ParserInt(instance.value.length)
                         }))), closure = env))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
+        defineClass("Bool", ParserClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
     }
 
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
+//    SymbolCollector(env).collect(ast)
+//    TypeChecker(env).check(ast)
 
     for (statement in ast) {
         statement.eval(env)

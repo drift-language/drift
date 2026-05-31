@@ -9,15 +9,14 @@
 package drift.runtime
 
 import drift.ast.statements.Import
-import drift.checkers.collectors.SymbolCollector
 import drift.lexer.lex
 import drift.parser.Parser
 import drift.runtime.evaluators.eval
 import drift.runtime.exceptions.DMLAlreadyImportedModuleException
 import drift.runtime.exceptions.DMLNotFoundInModuleException
 import drift.runtime.exceptions.DMLUnexistingModuleException
-import drift.runtime.values.imports.DrModule
-import drift.runtime.values.oop.DrClass
+import drift.runtime.values.imports.ParserModule
+import drift.runtime.values.oop.ParserClass
 import project.ProjectConfig
 import java.io.File
 
@@ -82,7 +81,7 @@ class ModuleLoader(
 
         val moduleEnv = DrEnv()
 
-        SymbolCollector(moduleEnv).collect(ast)
+//        SymbolCollector(moduleEnv).collect(ast)
 
         for (stmt in ast) {
             stmt.eval(moduleEnv)
@@ -91,7 +90,7 @@ class ModuleLoader(
         when {
             import.alias != null -> env.define(
                 import.alias,
-                DrModule(
+                ParserModule(
                     import.namespace,
                     import.alias,
                     moduleEnv.export()))
@@ -116,7 +115,7 @@ class ModuleLoader(
                 if (import.wildcard) {
                     for ((k, v) in moduleEnv.export().filter { it.key !in recorded }) {
                         when (v) {
-                            is DrClass  -> env.defineClass(k, v)
+                            is ParserClass  -> env.defineClass(k, v)
                             else        -> env.define(k, v)
                         }
                     }
@@ -125,7 +124,7 @@ class ModuleLoader(
 
             else -> env.define(
                 import.steps.last(),
-                DrModule(
+                ParserModule(
                     import.namespace,
                     import.namespace,
                     moduleEnv.export()))

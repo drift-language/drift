@@ -22,10 +22,11 @@ import drift.runtime.*
 /**
  * Runtime representation of a callable return statement.
  */
-data class DrReturn(val value: DrValue) : DrValue {
+data class ParserReturn(val value: ParserValue) : ParserValue {
+
     /** @return A prepared string version of the type */
     override fun asString(): String = value.asString()
 
     /** @return The object representation of the type */
-    override fun type(): DrType = value.type()
+    override fun type(): ParserType = value.type()
 }

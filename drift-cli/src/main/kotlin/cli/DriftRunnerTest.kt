@@ -11,25 +11,10 @@ package drift.cli
 import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
-import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.rendering.TextStyles.bold
 import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
-import drift.ast.statements.Function
-import drift.checkers.TypeChecker
-import drift.checkers.collectors.SymbolCollector
-import drift.lexer.lex
-import drift.parser.Parser
-import drift.runtime.AnyType
-import drift.runtime.DrEnv
-import drift.runtime.NullType
-import drift.runtime.ObjectType
-import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.DrMethod
-import drift.runtime.values.callables.DrNativeFunction
-import drift.runtime.values.oop.DrClass
-import drift.runtime.values.primaries.DrInt
-import drift.runtime.values.primaries.DrString
-import drift.runtime.values.specials.DrVoid
+import drift.cli.bootstraps.RunnerTestBootstrap
 import project.loadConfig
 import java.io.File
 
@@ -49,9 +34,7 @@ fun main(args: Array<String>) {
         ))
     }
 
-    if (args.isEmpty()) {
-        return
-    }
+    if (args.isEmpty()) return
 
     t.run {
         println(bold("Entry: ${args[0]}"))
@@ -65,65 +48,22 @@ fun main(args: Array<String>) {
     }
 
     val source = file.readText()
-    val env = DrEnv()
     val config = loadConfig(File("examples"))
 
-    val tokens = lex(source)
-    t.println(bold(yellow("[TOKENS]\t")) + italic(tokens.toString()))
 
-    val ast = Parser(tokens).parse()
-    t.println(bold(red("[AST]\t\t")) + italic(ast.toString()))
-    t.println("\n——————\n")
+    val bootstrap = RunnerTestBootstrap(source)
+    bootstrap.boot()
 
-    env.run {
-        define("print", DrNativeFunction(
-            impl = { _, args ->
-                println(args.joinToString(" ") { it.second.asString() })
-                DrVoid
-            },
-            paramTypes = listOf(AnyType),
-            returnType = NullType
-        ))
 
-        defineClass("String", DrClass("String", mutableMapOf(), mutableMapOf(
-            "length" to DrMethod(
-                let = Function(
-                    name = "length",
-                    parameters = emptyList(),
-                    returnType = ObjectType("Int"),
-                    body = emptyList()
-                ),
-                closure = env,
-                nativeImpl = DrNativeFunction(
-                    name = "length",
-                    paramTypes = emptyList(),
-                    returnType = ObjectType("Int"),
-                    impl = { receiver, args ->
-                        val instance = receiver as DrString
-
-                        DrInt(instance.value.length)
-                    }
-                )
-            )
-        ), closure = env))
-
-        defineClass("Int", DrClass("Int", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Bool", DrClass("Bool", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("Int64", DrClass("Int64", mutableMapOf(), mutableMapOf(), closure = env))
-        defineClass("UInt", DrClass("UInt", mutableMapOf(), mutableMapOf(), closure = env))
+    t.run {
+        println("\n——————\n")
     }
 
-    SymbolCollector(env).collect(ast)
-    TypeChecker(env).check(ast)
-
-    for (statement in ast) {
-        statement.eval(env)
-    }
+    //
 
     t.run {
         println()
         println(bold(
-            (white on black)(" — End of Program — ")
-        ))
+            (white on black)(" — End of Program — ")))
     }
 }

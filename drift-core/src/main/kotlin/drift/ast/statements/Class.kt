@@ -9,6 +9,9 @@
 
 package drift.ast.statements
 
+import drift.ast.metadata.Annotation
+import drift.ast.statements.hooks.ParserHook
+
 
 /******************************************************************************
  * DRIFT CLASS DECLARATION STATEMENT AST NODE
@@ -27,8 +30,14 @@ package drift.ast.statements
  */
 data class Class(
     val name: String,
+    val annotations: MutableList<Annotation> = mutableListOf(),
     val fields: MutableList<Let> = mutableListOf(),
-    val methods: MutableList<Function> = mutableListOf(),
+    val methods: MutableList<Func> = mutableListOf(),
+    val hooks: MutableList<ParserHook> = mutableListOf(),
     val staticFields: MutableList<Let> = mutableListOf(),
-    val staticMethods: MutableList<Function> = mutableListOf(),
-    val hasPrimaryConstructor: Boolean = false) : DrStmt
+    val staticMethods: MutableList<Func> = mutableListOf(),
+    val hasPrimaryConstructor: Boolean = false) : ParserStatement() {
+
+    fun hookExists(name: String) =
+        hooks.firstOrNull { it.name == name } != null
+}

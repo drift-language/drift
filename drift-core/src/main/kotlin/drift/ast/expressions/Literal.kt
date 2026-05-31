@@ -9,7 +9,7 @@
 
 package drift.ast.expressions
 
-import drift.runtime.DrValue
+import drift.runtime.ParserValue
 
 
 /******************************************************************************
@@ -26,4 +26,4 @@ import drift.runtime.DrValue
  * @property value Literal value
  */
 data class Literal(
-    val value: DrValue) : DrExpr
+    val value: ParserValue) : ParserExpression()
