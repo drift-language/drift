@@ -10,10 +10,10 @@
 package drift.helper
 
 import drift.ast.expressions.ParserExpression
-import drift.runtime.DrEnv
-import drift.runtime.evaluators.eval
-import drift.runtime.exceptions.DRNotSupportedTypeInBooleanExpressionException
-import drift.runtime.values.primaries.ParserBool
+import drift.oldruntime.DrEnv
+import drift.oldruntime.evaluators.eval
+import drift.oldruntime.exceptions.DRNotSupportedTypeInBooleanExpressionException
+import drift.oldruntime.values.primaries.ParserBool
 
 
 /******************************************************************************

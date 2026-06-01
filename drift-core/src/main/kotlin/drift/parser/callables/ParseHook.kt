@@ -8,7 +8,6 @@
  ******************************************************************************/
 package drift.parser.callables
 
-import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.hooks.ParserHook
 import drift.ast.statements.hooks.ReturnableHook
@@ -20,8 +19,8 @@ import drift.parser.exceptions.DPMissingHookParameterException
 import drift.parser.exceptions.DPUnallowedHookNameException
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
-import drift.runtime.ParserType
-import drift.runtime.VoidType
+import drift.oldruntime.ParserType
+import drift.oldruntime.VoidType
 
 
 /******************************************************************************

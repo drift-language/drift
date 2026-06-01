@@ -12,14 +12,14 @@ package drift.utils
 import drift.ast.statements.Func
 import drift.lexer.lex
 import drift.parser.Parser
-import drift.runtime.*
-import drift.runtime.evaluators.eval
-import drift.runtime.values.callables.ParserMethod
-import drift.runtime.values.callables.ParserNativeFunction
-import drift.runtime.values.oop.ParserClass
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserString
-import drift.runtime.values.specials.ParserNull
+import drift.oldruntime.*
+import drift.oldruntime.evaluators.eval
+import drift.oldruntime.values.callables.ParserMethod
+import drift.oldruntime.values.callables.ParserNativeFunction
+import drift.oldruntime.values.oop.ParserClass
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserString
+import drift.oldruntime.values.specials.ParserNull
 import project.ProjectConfig
 import project.ProjectStructure
 

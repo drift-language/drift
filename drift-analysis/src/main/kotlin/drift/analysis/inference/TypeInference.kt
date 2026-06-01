@@ -16,16 +16,16 @@ import drift.analysis.symbols.VariableSymbol
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
-import drift.runtime.*
-import drift.runtime.values.containers.list.ParserArray
-import drift.runtime.values.primaries.ParserBool
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserInt64
-import drift.runtime.values.primaries.ParserString
-import drift.runtime.values.primaries.ParserUInt
-import drift.runtime.values.specials.ParserNotAssigned
-import drift.runtime.values.specials.ParserNull
-import drift.runtime.values.specials.ParserVoid
+import drift.oldruntime.*
+import drift.oldruntime.values.containers.list.ParserArray
+import drift.oldruntime.values.primaries.ParserBool
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserString
+import drift.oldruntime.values.primaries.ParserUInt
+import drift.oldruntime.values.specials.ParserNotAssigned
+import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.specials.ParserVoid
 
 class TypeInference(
     val ast: List<ParserStatement>,

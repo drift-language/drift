@@ -4,10 +4,10 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.ast.statements.hooks.UnreturnableHook
-import drift.runtime.AnyType
-import drift.runtime.ObjectType
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.specials.ParserNotAssigned
+import drift.oldruntime.AnyType
+import drift.oldruntime.ObjectType
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.specials.ParserNotAssigned
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

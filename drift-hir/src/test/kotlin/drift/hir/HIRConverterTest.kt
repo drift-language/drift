@@ -16,10 +16,9 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
-import drift.hir.metadata.HIRAnnotation
-import drift.runtime.*
-import drift.runtime.values.primaries.*
-import drift.runtime.values.specials.ParserNull
+import drift.oldruntime.*
+import drift.oldruntime.values.primaries.*
+import drift.oldruntime.values.specials.ParserNull
 import kotlin.test.*
 
 

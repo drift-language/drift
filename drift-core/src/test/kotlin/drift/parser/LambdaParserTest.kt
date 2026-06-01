@@ -5,8 +5,8 @@ import drift.ast.statements.ExprStmt
 import drift.ast.statements.Let
 import drift.lexer.lex
 import drift.parser.exceptions.DPParameterAlreadyDefinedException
-import drift.runtime.AnyType
-import drift.runtime.ObjectType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ObjectType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

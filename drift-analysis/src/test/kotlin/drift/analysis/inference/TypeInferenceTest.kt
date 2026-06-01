@@ -20,11 +20,11 @@ import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
 import drift.ast.expressions.*
 import drift.ast.statements.*
-import drift.runtime.*
-import drift.runtime.values.primaries.*
-import drift.runtime.values.specials.ParserNotAssigned
-import drift.runtime.values.specials.ParserNull
-import drift.runtime.values.specials.ParserVoid
+import drift.oldruntime.*
+import drift.oldruntime.values.primaries.*
+import drift.oldruntime.values.specials.ParserNotAssigned
+import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.specials.ParserVoid
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

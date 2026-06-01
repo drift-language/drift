@@ -81,9 +81,9 @@ object HIRAnyType : HIRType
  * Helper function to convert a ParserType to an HIRType.
  * This is used during AST-to-HIR conversion.
  */
-fun convertParserTypeToHIRType(parserType: drift.runtime.ParserType): HIRType {
+fun convertParserTypeToHIRType(parserType: drift.oldruntime.ParserType): HIRType {
     return when (parserType) {
-        is drift.runtime.ObjectType -> when (parserType.className) {
+        is drift.oldruntime.ObjectType -> when (parserType.className) {
             "Int" -> HIRPrimitiveType(PrimitiveKind.INT)
             "Int64" -> HIRPrimitiveType(PrimitiveKind.INT64)
             "UInt" -> HIRPrimitiveType(PrimitiveKind.UINT)
@@ -93,8 +93,8 @@ fun convertParserTypeToHIRType(parserType: drift.runtime.ParserType): HIRType {
             else -> {
                 val args = parserType.args.mapValues { (_, argValue) ->
                     when (argValue) {
-                        is drift.runtime.SingleType -> convertParserTypeToHIRType(argValue.type)
-                        is drift.runtime.MultiTypes -> HIRClassType("Tuple",
+                        is drift.oldruntime.SingleType -> convertParserTypeToHIRType(argValue.type)
+                        is drift.oldruntime.MultiTypes -> HIRClassType("Tuple",
                             argValue.types.mapIndexed { idx, t -> "$idx" to convertParserTypeToHIRType(t) }.toMap())
                         else -> HIRAnyType
                     }
@@ -102,14 +102,14 @@ fun convertParserTypeToHIRType(parserType: drift.runtime.ParserType): HIRType {
                 HIRClassType(parserType.className, args)
             }
         }
-        is drift.runtime.FunctionType -> HIRFunctionType(
+        is drift.oldruntime.FunctionType -> HIRFunctionType(
             parameterTypes = parserType.paramTypes.map { convertParserTypeToHIRType(it) },
             returnType = convertParserTypeToHIRType(parserType.returnType))
-        is drift.runtime.OptionalType -> HIROptionalType(convertParserTypeToHIRType(parserType.inner))
-        is drift.runtime.UnionType -> HIRUnionType(parserType.options.map { convertParserTypeToHIRType(it) })
-        is drift.runtime.VoidType -> HIRPrimitiveType(PrimitiveKind.VOID)
-        is drift.runtime.NullType -> HIRPrimitiveType(PrimitiveKind.NULL)
-        is drift.runtime.AnyType -> HIRAnyType
+        is drift.oldruntime.OptionalType -> HIROptionalType(convertParserTypeToHIRType(parserType.inner))
+        is drift.oldruntime.UnionType -> HIRUnionType(parserType.options.map { convertParserTypeToHIRType(it) })
+        is drift.oldruntime.VoidType -> HIRPrimitiveType(PrimitiveKind.VOID)
+        is drift.oldruntime.NullType -> HIRPrimitiveType(PrimitiveKind.NULL)
+        is drift.oldruntime.AnyType -> HIRAnyType
 
         else -> HIRAnyType
     }

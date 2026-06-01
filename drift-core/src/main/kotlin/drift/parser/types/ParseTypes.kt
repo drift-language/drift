@@ -13,7 +13,7 @@ import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.DPSpecialInUnionTypeException
 import drift.parser.exceptions.DPWrongOptionalUnionTypeException
-import drift.runtime.*
+import drift.oldruntime.*
 
 
 /******************************************************************************

@@ -8,8 +8,8 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
-import drift.runtime.AnyType
-import drift.runtime.ParserType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ParserType
 
 
 abstract class Symbol

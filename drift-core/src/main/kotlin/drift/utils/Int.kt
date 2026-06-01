@@ -9,13 +9,13 @@
 
 package drift.utils
 
-import drift.runtime.ParserType
-import drift.runtime.ParserValue
-import drift.runtime.ObjectType
-import drift.runtime.exceptions.DRCannotNegateUnsignedException
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserInt64
-import drift.runtime.values.primaries.ParserUInt
+import drift.oldruntime.ParserType
+import drift.oldruntime.ParserValue
+import drift.oldruntime.ObjectType
+import drift.oldruntime.exceptions.DRCannotNegateUnsignedException
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserUInt
 
 
 /******************************************************************************

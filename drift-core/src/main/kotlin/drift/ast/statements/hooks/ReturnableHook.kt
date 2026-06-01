@@ -8,13 +8,12 @@
  ******************************************************************************/
 package drift.ast.statements.hooks
 
-import drift.ast.ParserCallable
 import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.ast.statements.Block
 import drift.ast.statements.ParserStatement
-import drift.runtime.ParserType
+import drift.oldruntime.ParserType
 
 data class ReturnableHook(
     override val name: String,

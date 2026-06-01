@@ -13,9 +13,7 @@ import drift.ast.expressions.Literal
 import drift.ast.statements.Class
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
-import drift.ast.metadata.Annotation
 import drift.ast.statements.Let
-import drift.ast.statements.ParserStatement
 import drift.ast.statements.hooks.ParserHook
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
@@ -28,10 +26,8 @@ import drift.parser.exceptions.DPOnlyOneStaticBlockPerClassException
 import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
 import drift.parser.exceptions.DPUnsupportedAnnotationException
 import drift.parser.statements.parseLet
-import drift.parser.statements.parseStatement
 import drift.parser.types.parseType
-import drift.runtime.VoidType
-import drift.runtime.values.specials.ParserNotAssigned
+import drift.oldruntime.values.specials.ParserNotAssigned
 
 
 /******************************************************************************

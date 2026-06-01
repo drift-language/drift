@@ -9,8 +9,8 @@
 
 package drift.hir
 
-import drift.ast.metadata.Annotation
 import drift.hir.metadata.HIRAnnotation
+
 
 /**
  * Base interface for all HIR (High-level Intermediate Representation) nodes.

@@ -8,13 +8,11 @@
  ******************************************************************************/
 package drift.ast.statements
 
-import drift.ast.ParserCallable
 import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
-import drift.ast.statements.modifiers.Modifier
-import drift.runtime.AnyType
-import drift.runtime.ParserType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ParserType
 
 
 /******************************************************************************
@@ -32,9 +30,9 @@ import drift.runtime.ParserType
  * @property parameters Callable arguments structures
  * @property body Callable body AST
  * @property returnType Callable return type
- * @see drift.runtime.values.callables.ParserFunction
- * @see drift.runtime.values.callables.ParserMethod
- * @see drift.runtime.values.callables.ParserLambda
+ * @see drift.oldruntime.values.callables.ParserFunction
+ * @see drift.oldruntime.values.callables.ParserMethod
+ * @see drift.oldruntime.values.callables.ParserLambda
  */
 data class Func(
     val name: String,

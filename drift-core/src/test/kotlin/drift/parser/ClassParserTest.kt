@@ -5,7 +5,7 @@ import drift.lexer.lex
 import drift.parser.exceptions.DPOnlyOneConstructorPerClassException
 import drift.parser.exceptions.DPOnlyOneStaticBlockPerClassException
 import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
-import drift.runtime.ObjectType
+import drift.oldruntime.ObjectType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

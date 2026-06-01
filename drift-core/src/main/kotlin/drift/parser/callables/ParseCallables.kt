@@ -21,8 +21,8 @@ import drift.parser.exceptions.*
 import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
-import drift.runtime.AnyType
-import drift.runtime.ParserType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ParserType
 
 
 /******************************************************************************

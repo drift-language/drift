@@ -9,7 +9,7 @@
 
 package drift.ast.expressions
 
-import drift.runtime.ParserValue
+import drift.oldruntime.ParserValue
 
 
 /******************************************************************************

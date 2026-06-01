@@ -8,9 +8,6 @@
  ******************************************************************************/
 package drift.ast.bindings
 
-import drift.runtime.AnyType
-import drift.runtime.ParserType
-
 
 class ForVariable(
     override val name: String) : VariableBinding(name)

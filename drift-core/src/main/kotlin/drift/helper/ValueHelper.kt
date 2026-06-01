@@ -9,18 +9,18 @@
 
 package drift.helper
 
-import drift.runtime.ParserValue
-import drift.runtime.exceptions.DRCannotUseUnassignedEntityException
-import drift.runtime.exceptions.DRCannotUseVoidAsValueException
-import drift.runtime.exceptions.DRNotSupportedTypeInRangeException
-import drift.runtime.exceptions.DRRangeLimitsMustHaveSameTypeException
-import drift.runtime.values.containers.range.ParserRange
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserInt64
-import drift.runtime.values.primaries.DrInteger
-import drift.runtime.values.specials.ParserNotAssigned
-import drift.runtime.values.specials.ParserVoid
-import drift.runtime.values.variables.ParserVariable
+import drift.oldruntime.ParserValue
+import drift.oldruntime.exceptions.DRCannotUseUnassignedEntityException
+import drift.oldruntime.exceptions.DRCannotUseVoidAsValueException
+import drift.oldruntime.exceptions.DRNotSupportedTypeInRangeException
+import drift.oldruntime.exceptions.DRRangeLimitsMustHaveSameTypeException
+import drift.oldruntime.values.containers.range.ParserRange
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.DrInteger
+import drift.oldruntime.values.specials.ParserNotAssigned
+import drift.oldruntime.values.specials.ParserVoid
+import drift.oldruntime.values.variables.ParserVariable
 
 
 /******************************************************************************

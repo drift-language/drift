@@ -11,10 +11,10 @@ package drift.analysis.symbols
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
-import drift.runtime.AnyType
-import drift.runtime.ObjectType
-import drift.runtime.ParserType
-import drift.runtime.VoidType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ObjectType
+import drift.oldruntime.ParserType
+import drift.oldruntime.VoidType
 
 class SymbolCollector(
     val symbolTable: SymbolTable,

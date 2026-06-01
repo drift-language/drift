@@ -29,16 +29,16 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
-import drift.runtime.AnyType
-import drift.runtime.ClassType
-import drift.runtime.FunctionType
-import drift.runtime.NullType
-import drift.runtime.ObjectType
-import drift.runtime.OptionalType
-import drift.runtime.ParserType
-import drift.runtime.UnionType
-import drift.runtime.UnknownType
-import drift.runtime.VoidType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ClassType
+import drift.oldruntime.FunctionType
+import drift.oldruntime.NullType
+import drift.oldruntime.ObjectType
+import drift.oldruntime.OptionalType
+import drift.oldruntime.ParserType
+import drift.oldruntime.UnionType
+import drift.oldruntime.UnknownType
+import drift.oldruntime.VoidType
 
 
 class TypeChecker(

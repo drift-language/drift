@@ -1,0 +1,32 @@
+/******************************************************************************
+ * Drift Programming Language                                                 *
+ *                                                                            *
+ * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ *                                                                            *
+ * This source code is licensed under the MIT License.                        *
+ * See the LICENSE file in the root directory for details.                    *
+ ******************************************************************************/
+package drift.oldruntime.values.callables
+
+import drift.oldruntime.*
+
+
+/******************************************************************************
+ * DRIFT CALLABLE VALUE TYPES
+ *
+ * All callable value types are defined in this file.
+ ******************************************************************************/
+
+
+
+/**
+ * Runtime representation of a callable return statement.
+ */
+data class ParserReturn(val value: ParserValue) : ParserValue {
+
+    /** @return A prepared string version of the type */
+    override fun asString(): String = value.asString()
+
+    /** @return The object representation of the type */
+    override fun type(): ParserType = value.type()
+}

@@ -11,7 +11,7 @@ package drift.ast.statements
 
 import drift.ast.expressions.ParserExpression
 import drift.ast.metadata.Annotation
-import drift.runtime.ParserType
+import drift.oldruntime.ParserType
 
 
 /******************************************************************************

@@ -9,7 +9,6 @@
 
 package drift.hir
 
-import drift.analysis.exceptions.DIRUnsupportedOperationException
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.ast.expressions.*
@@ -18,15 +17,15 @@ import drift.ast.metadata.Annotation
 import drift.ast.statements.*
 import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
-import drift.runtime.ParserType
-import drift.runtime.AnyType
-import drift.runtime.ObjectType
-import drift.runtime.values.primaries.ParserBool
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserInt64
-import drift.runtime.values.primaries.ParserString
-import drift.runtime.values.primaries.ParserUInt
-import drift.runtime.values.specials.ParserNull
+import drift.oldruntime.ParserType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ObjectType
+import drift.oldruntime.values.primaries.ParserBool
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserString
+import drift.oldruntime.values.primaries.ParserUInt
+import drift.oldruntime.values.specials.ParserNull
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).

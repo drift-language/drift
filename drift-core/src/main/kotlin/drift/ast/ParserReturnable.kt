@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.ast
 
-import drift.runtime.ParserType
+import drift.oldruntime.ParserType
 
 interface ParserReturnable : ParserCallable {
 

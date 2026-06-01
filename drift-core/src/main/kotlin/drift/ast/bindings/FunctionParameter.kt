@@ -9,10 +9,9 @@
 
 package drift.ast.bindings
 
-import drift.ast.ParserNode
 import drift.ast.expressions.ParserExpression
-import drift.runtime.AnyType
-import drift.runtime.ParserType
+import drift.oldruntime.AnyType
+import drift.oldruntime.ParserType
 
 
 /******************************************************************************

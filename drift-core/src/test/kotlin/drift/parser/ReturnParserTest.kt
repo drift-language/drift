@@ -4,7 +4,7 @@ import drift.ast.expressions.Literal
 import drift.ast.expressions.Variable
 import drift.ast.statements.Return
 import drift.lexer.lex
-import drift.runtime.values.specials.ParserVoid
+import drift.oldruntime.values.specials.ParserVoid
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

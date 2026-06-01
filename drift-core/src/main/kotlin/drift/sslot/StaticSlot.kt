@@ -8,11 +8,11 @@
  ******************************************************************************/
 package drift.sslot
 
-import drift.runtime.DrEnv
-import drift.runtime.ParserType
-import drift.runtime.ParserValue
-import drift.runtime.exceptions.DRCannotAssignToImmutableException
-import drift.runtime.values.variables.ParserVariable
+import drift.oldruntime.DrEnv
+import drift.oldruntime.ParserType
+import drift.oldruntime.ParserValue
+import drift.oldruntime.exceptions.DRCannotAssignToImmutableException
+import drift.oldruntime.values.variables.ParserVariable
 
 
 /******************************************************************************

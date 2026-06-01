@@ -25,11 +25,11 @@ import drift.parser.exceptions.DPNumericSizeOverflowException
 import drift.parser.exceptions.DPUnexpectedExpressionException
 import drift.parser.exceptions.DPUnexpectedSymbolException
 import drift.parser.statements.parseBlock
-import drift.runtime.values.primaries.ParserBool
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.primaries.ParserInt64
-import drift.runtime.values.primaries.ParserString
-import drift.runtime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserBool
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserString
+import drift.oldruntime.values.specials.ParserNull
 
 
 /******************************************************************************

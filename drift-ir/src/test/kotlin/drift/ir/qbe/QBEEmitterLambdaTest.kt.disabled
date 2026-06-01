@@ -15,8 +15,8 @@ import drift.ast.statements.Let
 import drift.ir.inference.TypeInference
 import drift.ir.symbols.SymbolCollector
 import drift.qbe.structure.*
-import drift.runtime.ObjectType
-import drift.runtime.values.primaries.ParserInt
+import drift.oldruntime.ObjectType
+import drift.oldruntime.values.primaries.ParserInt
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

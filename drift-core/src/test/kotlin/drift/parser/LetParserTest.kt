@@ -4,13 +4,12 @@ import drift.ast.expressions.Literal
 import drift.ast.statements.Let
 import drift.lexer.lex
 import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
-import drift.runtime.*
-import drift.runtime.values.primaries.ParserInt
-import drift.runtime.values.specials.ParserNotAssigned
+import drift.oldruntime.*
+import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.specials.ParserNotAssigned
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
 class LetParserTest {

@@ -10,8 +10,6 @@ package drift.ast
 
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Block
-import drift.ast.statements.ParserStatement
-import drift.runtime.ParserType
 
 
 interface ParserCallable {

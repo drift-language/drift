@@ -21,10 +21,10 @@ import drift.parser.exceptions.*
 import drift.parser.expressions.parseExpression
 import drift.parser.modifiers.parseNativeModifier
 import drift.parser.types.parseType
-import drift.runtime.AnyType
-import drift.runtime.ParserType
-import drift.runtime.values.specials.ParserNotAssigned
-import drift.runtime.values.specials.ParserVoid
+import drift.oldruntime.AnyType
+import drift.oldruntime.ParserType
+import drift.oldruntime.values.specials.ParserNotAssigned
+import drift.oldruntime.values.specials.ParserVoid
 
 
 /******************************************************************************
