@@ -21,7 +21,8 @@ data class HIRFunction(
     val name: String,
     val parameters: List<HIRParameter>,
     val returnType: HIRType,
-    val body: List<HIRStatement>
+    val body: List<HIRStatement>,
+    val isStatic: Boolean
 ) : HIRStatement, HIRAnnotatable
 
 /**

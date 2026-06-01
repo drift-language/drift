@@ -64,7 +64,12 @@ class HIRConverter(
     private fun convertStatement(stmt: ParserStatement) : HIRStatement {
         return when (stmt) {
             is Let -> convertLet(stmt)
-            is Func -> convertFunction(stmt)
+            is Func -> convertFunction(stmt, isStatic = true)
+                    // NOTE: isStatic is set to TRUE in this context
+                    //  because it defines a top-level function, not a
+                    //  class method.
+                    //  A top-level function, in JVM, is declared in
+                    //  a synthetic class as a static method.
             is Class -> convertClass(stmt)
             is If -> convertIfStmt(stmt)
             is For -> convertFor(stmt)
@@ -102,7 +107,7 @@ class HIRConverter(
         return hirVar
     }
 
-    private fun convertFunction(function: Func) : HIRFunction {
+    private fun convertFunction(function: Func, isStatic: Boolean) : HIRFunction {
         val hirId = allocateHirId()
 
         val annotations = function.annotations
@@ -129,7 +134,8 @@ class HIRConverter(
             name = function.name,
             parameters = parameters,
             returnType = returnType,
-            body = body)
+            body = body,
+            isStatic = isStatic)
 
         astToHirMap[function.nodeId] = hirId
         definitionHirIds[function.name] = hirId
@@ -144,10 +150,10 @@ class HIRConverter(
             .map(this::convertAnnotation)
             .toMutableList()
 
-        val staticFields = clazz.staticFields.map { convertClassField(it) }
-        val fields = clazz.fields.map { convertClassField(it) }
-        val staticMethods = clazz.staticMethods.map { convertFunction(it) }
-        val methods = clazz.methods.map { convertFunction(it) }
+        val staticFields = clazz.staticFields.map { convertClassField(it, isStatic = true) }
+        val fields = clazz.fields.map { convertClassField(it, isStatic = false) }
+        val staticMethods = clazz.staticMethods.map { convertFunction(it, isStatic = true) }
+        val methods = clazz.methods.map { convertFunction(it, isStatic = false) }
 
         val hirClass = HIRClass(
             hirId = hirId,
@@ -164,7 +170,7 @@ class HIRConverter(
         return hirClass
     }
 
-    private fun convertClassField(field: Let) : HIRField {
+    private fun convertClassField(field: Let, isStatic: Boolean) : HIRField {
         val hirId = allocateHirId()
         val fieldAnnotations = field.annotations
             .map(this::convertAnnotation)
@@ -175,7 +181,7 @@ class HIRConverter(
             name = field.name,
             annotations = fieldAnnotations,
             type = convertType(field.type),
-            isStatic = false)
+            isStatic = isStatic)
     }
 
     private fun convertIfStmt(ifStmt: If) : HIRExpressionStmt {
