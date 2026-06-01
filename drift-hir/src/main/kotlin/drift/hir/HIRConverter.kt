@@ -165,11 +165,13 @@ class HIRConverter(
     }
 
     private fun convertClassField(field: Let) : HIRField {
+        val hirId = allocateHirId()
         val fieldAnnotations = field.annotations
             .map(this::convertAnnotation)
             .toMutableList()
 
         return HIRField(
+            hirId = hirId,
             name = field.name,
             annotations = fieldAnnotations,
             type = convertType(field.type),

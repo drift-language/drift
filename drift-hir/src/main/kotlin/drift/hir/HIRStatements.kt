@@ -62,11 +62,12 @@ data class HIRClass(
  * Class field definition.
  */
 data class HIRField(
+    override val hirId: Int,
     val name: String,
     override val annotations: MutableList<HIRAnnotation>,
     val type: HIRType,
     val isStatic: Boolean,
-) : HIRAnnotatable
+) : HIRStatement, HIRAnnotatable
 
 /**
  * Code block (scoped statements).
