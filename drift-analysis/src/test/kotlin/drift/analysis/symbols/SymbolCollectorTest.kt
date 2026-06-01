@@ -42,7 +42,7 @@ class SymbolCollectorTest {
         @Test
         fun `Let with ObjectType annotation resolves to class when class is defined before`() {
             val clazz = classWithInit("Foo")
-            val let = Let(name = "x", type = ObjectType("Foo"), value = Literal(ParserNotAssigned), isMutable = false)
+            val let = Let(name = "x", type = ObjectType("Foo"), isMutable = false)
             val result = collect(clazz, let)
             assertEquals(clazz.nodeId, result.resolutions[let.nodeId])
         }
@@ -102,7 +102,7 @@ class SymbolCollectorTest {
 
         @Test
         fun `Class fields are included in the class signature`() {
-            val field = Let(name = "x", type = ObjectType("Int"), value = Literal(ParserNotAssigned), isMutable = false)
+            val field = Let(name = "x", type = ObjectType("Int"), isMutable = false)
             val clazz = classWithInit("Foo", fields = listOf(field))
             val result = collect(clazz)
             val symbol = result.symbolTable.getSymbol(clazz.nodeId) as ClassSymbol
@@ -120,7 +120,7 @@ class SymbolCollectorTest {
 
         @Test
         fun `Class static fields are included in the class signature`() {
-            val field = Let(name = "count", type = ObjectType("Int"), value = Literal(ParserNotAssigned), isMutable = false)
+            val field = Let(name = "count", type = ObjectType("Int"), isMutable = false)
             val clazz = Class(
                 name = "Foo",
                 staticFields = mutableListOf(field),

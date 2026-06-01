@@ -59,7 +59,7 @@ class SymbolCollector(
      * Save the variable in the [symbolTable].
      */
     private fun collectLet(statement: Let) {
-        collectExpression(statement.value)
+        statement.value?.let(this::collectExpression)
 
         if (statement.type is ObjectType) {
             symbolTable.lookupNodeId((statement.type as ObjectType).className)?.let {
@@ -163,7 +163,7 @@ class SymbolCollector(
      * Collect the returned expression.
      */
     private fun collectReturn(`return`: Return) {
-        collectExpression(`return`.value)
+        `return`.value?.let(this::collectExpression)
     }
 
     /**
@@ -399,7 +399,7 @@ class SymbolCollector(
     }
 
     private fun collectVariableNamesInExpression(
-        expression: ParserExpression,
+        expression: ParserExpression?,
         names: MutableSet<String>) {
 
         when (expression) {
@@ -431,6 +431,7 @@ class SymbolCollector(
                     collectVariableNamesInExpression(value, names)
                 }
             }
+
             else -> {}
         }
     }

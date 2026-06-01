@@ -33,8 +33,7 @@ class ReturnParserTest {
         @Test
         fun `leave keyword produces void return`() {
             val ret = parseReturn("leave")
-            assertTrue(ret.value is Literal)
-            assertEquals(ParserVoid, (ret.value as Literal).value)
+            assertNull((ret).value)
         }
     }
 }

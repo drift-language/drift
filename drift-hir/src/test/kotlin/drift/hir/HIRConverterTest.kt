@@ -18,7 +18,7 @@ import drift.ast.metadata.Annotation
 import drift.ast.statements.*
 import drift.oldruntime.*
 import drift.oldruntime.values.primaries.*
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import kotlin.test.*
 
 
@@ -720,7 +720,7 @@ class HIRConverterTest {
         val ast = listOf(letStmt, exprStmt)
         val typeResolution = mapOf(
             lambda.nodeId to ObjectType("Function"),
-            letStmt.value.nodeId to ObjectType("Int")
+            letStmt.value!!.nodeId to ObjectType("Int")
         )
         val lambdaClosures = mapOf(lambda.nodeId to mapOf("y" to letStmt.nodeId))
 

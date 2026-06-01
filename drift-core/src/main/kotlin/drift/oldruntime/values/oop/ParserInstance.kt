@@ -9,17 +9,12 @@
 package drift.oldruntime.values.oop
 
 import drift.oldruntime.DrEnv
+import drift.oldruntime.ObjectType
 import drift.oldruntime.ParserType
 import drift.oldruntime.ParserValue
-import drift.oldruntime.ObjectType
-import drift.oldruntime.evaluators.eval
-import drift.oldruntime.exceptions.DRMissingReturnStatementException
 import drift.oldruntime.exceptions.DRUnknownClassMemberException
-import drift.oldruntime.exceptions.DRUnsuccessfulCastException
 import drift.oldruntime.exceptions.DRVariableNotDefinedException
 import drift.oldruntime.values.callables.ParserMethod
-import drift.oldruntime.values.callables.ParserReturn
-import drift.oldruntime.values.primaries.ParserString
 
 
 /******************************************************************************
@@ -45,35 +40,36 @@ data class ParserInstance(
     /** @return A prepared string version of the type */
     override fun asString() : String {
         val default = "<[class#${klass.hashCode()}] ${klass.name} | instance ${this.hashCode()}>"
+        return default
 
-        val method = klass.methods["asString"]
-            ?: return default
-
-        val local = DrEnv()
-        local.define("\$this", this)
-
-        var result: ParserValue? = null
-
-        for (statement in method.let.body.statements) {
-            val evalResult = statement.eval(local)
-
-            if (evalResult is ParserReturn) {
-                result = evalResult.value
-                break
-            }
-
-            result = evalResult
-        }
-
-        if (result == null)
-            throw DRMissingReturnStatementException()
-
-        if (result !is ParserString)
-            throw DRUnsuccessfulCastException(
-                valueType = result.type(),
-                expectedType = ObjectType("String"))
-
-        return result.asString()
+//        val method = klass.methods["asString"]
+//            ?: return default
+//
+//        val local = DrEnv()
+//        local.define("\$this", this)
+//
+//        var result: ParserValue? = null
+//
+//        for (statement in method.let.body.statements) {
+//            val evalResult = statement.eval(local)
+//
+//            if (evalResult is ParserReturn) {
+//                result = evalResult.value
+//                break
+//            }
+//
+//            result = evalResult
+//        }
+//
+//        if (result == null)
+//            throw DRMissingReturnStatementException()
+//
+//        if (result !is ParserString)
+//            throw DRUnsuccessfulCastException(
+//                valueType = result.type(),
+//                expectedType = ObjectType("String"))
+//
+//        return result.asString()
     }
 
     /** @return The object representation of the type */

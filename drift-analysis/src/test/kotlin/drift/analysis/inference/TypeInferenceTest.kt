@@ -23,7 +23,7 @@ import drift.ast.statements.*
 import drift.oldruntime.*
 import drift.oldruntime.values.primaries.*
 import drift.oldruntime.values.specials.ParserNotAssigned
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import drift.oldruntime.values.specials.ParserVoid
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
@@ -722,34 +722,6 @@ class TypeInferenceTest {
         private val mathNeg = "-"
 
         @Test
-        fun `Unary operation on Void should throw`() {
-            val unary = Unary(
-                operator = boolNeg,   // NOTE: arbitrary operator (control flow unreached)
-                expr = Literal(ParserVoid))
-
-            val ast: List<ParserStatement> = listOf(ExprStmt(unary))
-
-            assertThrows<DIRUnexpectedVoidTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
-                    .infer()
-            }
-        }
-
-        @Test
-        fun `Unary operation on Unknown should throw`() {
-            val unary = Unary(
-                operator = boolNeg,   // NOTE: arbitrary operator (control flow unreached)
-                expr = Literal(ParserNotAssigned))
-
-            val ast: List<ParserStatement> = listOf(ExprStmt(unary))
-
-            assertThrows<DIRUnexpectedUnknownTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
-                    .infer()
-            }
-        }
-
-        @Test
         fun `Negative math unary operation on numeric should pass`() {
             val unary = Unary(
                 operator = mathNeg,
@@ -839,64 +811,6 @@ class TypeInferenceTest {
         private val symbolTable = SymbolTable()
         private val refResolutions = emptyMap<Int, Int>()
 
-
-        @Test
-        fun `Binary operation on Void should throw`() {
-            val binaryLeftAttempt = Binary(
-                operator = add,   // NOTE: arbitrary operator (control flow unreached)
-                left = Literal(ParserVoid),
-                right = Literal(ParserInt(1)))
-            val binaryRightAttempt = Binary(
-                operator = add,   // NOTE: arbitrary operator (control flow unreached)
-                left = Literal(ParserInt(1)),
-                right = Literal(ParserVoid))
-
-            val astLeftAttempt: List<ParserStatement> = listOf(ExprStmt(binaryLeftAttempt))
-            val astRightAttempt: List<ParserStatement> = listOf(ExprStmt(binaryRightAttempt))
-
-            assertThrows<DIRUnexpectedVoidTypeException>(
-                "Void as left value in a binary expression should throw") {
-
-                TypeInference(astLeftAttempt, symbolTable, refResolutions)
-                    .infer()
-            }
-
-            assertThrows<DIRUnexpectedVoidTypeException>(
-                "Void as right value in a binary expression should throw") {
-
-                TypeInference(astRightAttempt, symbolTable, refResolutions)
-                    .infer()
-            }
-        }
-
-        @Test
-        fun `Binary operation on Unknown should throw`() {
-            val binaryLeftAttempt = Binary(
-                operator = add,   // NOTE: arbitrary operator (control flow unreached)
-                left = Literal(ParserNotAssigned),
-                right = Literal(ParserInt(1)))
-            val binaryRightAttempt = Binary(
-                operator = add,   // NOTE: arbitrary operator (control flow unreached)
-                left = Literal(ParserInt(1)),
-                right = Literal(ParserNotAssigned))
-
-            val astLeftAttempt: List<ParserStatement> = listOf(ExprStmt(binaryLeftAttempt))
-            val astRightAttempt: List<ParserStatement> = listOf(ExprStmt(binaryRightAttempt))
-
-            assertThrows<DIRUnexpectedUnknownTypeException>(
-                "Unknown as left value in a binary expression should throw") {
-
-                TypeInference(astLeftAttempt, symbolTable, refResolutions)
-                    .infer()
-            }
-
-            assertThrows<DIRUnexpectedUnknownTypeException>(
-                "Unknown as right value in a binary expression should throw") {
-
-                TypeInference(astRightAttempt, symbolTable, refResolutions)
-                    .infer()
-            }
-        }
 
         @Test
         fun `Binary operation with unexisting operator should throw`() {

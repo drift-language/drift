@@ -24,7 +24,7 @@ import drift.oldruntime.values.containers.list.ParserArray
 import drift.oldruntime.values.containers.range.ParserExclusiveRange
 import drift.oldruntime.values.containers.range.ParserInclusiveRange
 import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import drift.oldruntime.values.specials.ParserVoid
 import drift.oldruntime.values.variables.ParserVariable
 import drift.utils.castNumericIfNeeded

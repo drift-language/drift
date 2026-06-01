@@ -88,8 +88,8 @@ class LetParserTest {
 
         @Test
         fun `unassigned let has ParserNotAssigned value`() {
-            val value = parse("let x: Int").value as Literal
-            assertEquals(ParserNotAssigned, value.value)
+            val value = parse("let x: Int").value
+            assertNull(value)
         }
     }
 }

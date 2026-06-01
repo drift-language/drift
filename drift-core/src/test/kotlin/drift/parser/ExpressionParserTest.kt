@@ -7,7 +7,7 @@ import drift.lexer.lex
 import drift.parser.exceptions.DPInvalidAssignmentTargetException
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

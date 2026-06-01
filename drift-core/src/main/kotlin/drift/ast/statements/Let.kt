@@ -34,5 +34,5 @@ data class Let(
     val name: String,
     val annotations: MutableList<Annotation> = mutableListOf(),
     val type: ParserType,
-    val value: ParserExpression,
+    val value: ParserExpression? = null,
     val isMutable: Boolean) : ParserStatement()

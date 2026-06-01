@@ -156,7 +156,6 @@ internal fun Parser.parseClass() : Class {
                 fields.add(Let(
                     name = param.name,
                     type = param.type,
-                    value = Literal(ParserNotAssigned),
                     isMutable = false))
             }
 

@@ -27,7 +27,10 @@ import drift.oldruntime.UnknownType
  *
  * It is linked to [UnknownType].
  */
+@Deprecated("Literal NULL value on a nullable ParserExpression? environment is preferred")
 data object ParserNotAssigned : ParserValue {
+
     override fun asString(): String = UnknownType.asString()
+
     override fun type(): ParserType = UnknownType
 }

@@ -42,7 +42,7 @@ data class HIRVariable(
     override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val type: HIRType,
-    val initialValue: HIRExpression,
+    val initialValue: HIRExpression? = null,
     val isMutable: Boolean
 ) : HIRStatement, HIRAnnotatable
 
@@ -83,7 +83,7 @@ data class HIRBlock(
  */
 data class HIRReturn(
     override val hirId: Int,
-    val value: HIRExpression
+    val value: HIRExpression? = null
 ) : HIRStatement
 
 /**

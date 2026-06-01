@@ -76,12 +76,15 @@ class TypeChecker(
         let.annotations.forEach(this::checkAnnotation)
         checkType(let.type)
 
-        val compatibleTypes = compareTypesInLiteralContext(
-            let.type,
-            let.value)
+        val letValue = let.value
+        if (letValue != null) {
+            val compatibleTypes = compareTypesInLiteralContext(
+                let.type,
+                letValue)
 
-        if (!compatibleTypes)
-            throw DTCUnexpectedTypeException(let.type)
+            if (!compatibleTypes)
+                throw DTCUnexpectedTypeException(let.type)
+        }
     }
     private fun checkClass(`class`: Class) {
         `class`.annotations.forEach(this::checkAnnotation)
@@ -123,14 +126,17 @@ class TypeChecker(
         val funcCtx = callableContextScopes.last() as? ParserReturnable
             ?: throw DTCCannotReturnValueInNonReturnableContextException()
 
-        checkExpression(`return`.value)
+        val returnValue = `return`.value
+        if (returnValue != null) {
+            checkExpression(returnValue)
 
-        val compatibleTypes = compareTypesInLiteralContext(
-            funcCtx.returnType,
-            `return`.value)
+            val compatibleTypes = compareTypesInLiteralContext(
+                funcCtx.returnType,
+                returnValue)
 
-        if (!compatibleTypes)
-            throw DTCUnexpectedTypeException(funcCtx.returnType)
+            if (!compatibleTypes)
+                throw DTCUnexpectedTypeException(funcCtx.returnType)
+        }
     }
     private fun checkBlock(block: Block) = block.statements.forEach { checkStatement(it) }
     private fun checkIf(`if`: If) {
@@ -340,7 +346,14 @@ class TypeChecker(
 
         val resolvedType =
             if (expression is Literal) {
-                expression.value.type()
+                when (expression.value) {
+                    is drift.oldruntime.values.primaries.ParserInt -> ObjectType("Int")
+                    is drift.oldruntime.values.primaries.ParserInt64 -> ObjectType("Int64")
+                    is drift.oldruntime.values.primaries.ParserUInt -> ObjectType("UInt")
+                    is drift.oldruntime.values.primaries.ParserBool -> ObjectType("Bool")
+                    is drift.oldruntime.values.primaries.ParserString -> ObjectType("String")
+                    is drift.oldruntime.values.primaries.ParserNull -> NullType
+                }
             } else {
                 resolutions.typeResolutions[expression.nodeId]
                     ?: return true

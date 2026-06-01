@@ -10,6 +10,7 @@
 package drift.ast.expressions
 
 import drift.oldruntime.ParserValue
+import drift.oldruntime.values.primaries.DrPrimary
 
 
 /******************************************************************************
@@ -26,4 +27,4 @@ import drift.oldruntime.ParserValue
  * @property value Literal value
  */
 data class Literal(
-    val value: ParserValue) : ParserExpression()
+    val value: DrPrimary<*>) : ParserExpression()

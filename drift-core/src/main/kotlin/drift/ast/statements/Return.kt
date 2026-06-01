@@ -26,4 +26,4 @@ import drift.ast.expressions.ParserExpression
  * @property value Value to return from the callable
  */
 data class Return(
-    val value: ParserExpression) : ParserStatement()
+    val value: ParserExpression? = null) : ParserStatement()

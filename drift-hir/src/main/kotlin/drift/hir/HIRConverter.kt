@@ -25,7 +25,7 @@ import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserInt64
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserUInt
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
@@ -91,7 +91,7 @@ class HIRConverter(
 
         val type = convertType(typeResolution[let.nodeId] ?: let.type)
 
-        val initialValue = convertExpression(let.value)
+        val initialValue = let.value?.let(this::convertExpression)
 
         val hirVar = HIRVariable(
             hirId = hirId,
@@ -223,7 +223,7 @@ class HIRConverter(
 
     private fun convertReturn(returnStmt: Return) : HIRReturn {
         val hirId = allocateHirId()
-        val value = convertExpression(returnStmt.value)
+        val value = returnStmt.value?.let(this::convertExpression)
 
         val hirReturn = HIRReturn(
             hirId = hirId,
@@ -306,16 +306,7 @@ class HIRConverter(
 
     private fun convertLiteral(literal: Literal, type: HIRType) : HIRLiteral {
         val hirId = allocateHirId()
-        val value = when (val v = literal.value) {
-            is ParserInt -> v.value
-            is ParserInt64 -> v.value
-            is ParserUInt -> v.value
-            is ParserBool -> v.value
-            is ParserString -> v.value
-            is ParserNull -> null
-
-            else -> null
-        }
+        val value = literal.value.value
 
         val hirLiteral = HIRLiteral(
             hirId = hirId,

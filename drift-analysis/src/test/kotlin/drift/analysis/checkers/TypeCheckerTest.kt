@@ -45,7 +45,7 @@ import drift.oldruntime.VoidType
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.specials.ParserNotAssigned
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -165,7 +165,6 @@ class TypeCheckerTest {
                 Let(
                     name = "x",
                     type = expectedType,
-                    value = Literal(ParserNotAssigned),
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
@@ -182,7 +181,6 @@ class TypeCheckerTest {
                 Let(
                     name = "x",
                     type = OptionalType(expectedType),
-                    value = Literal(ParserNotAssigned),
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
@@ -1342,7 +1340,7 @@ class TypeCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 fields = mutableListOf(
-                    Let(name = "x", type = ObjectType("Unknown"), value = Literal(ParserNotAssigned), isMutable = false)))
+                    Let(name = "x", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
                 TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
@@ -1354,7 +1352,7 @@ class TypeCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 staticFields = mutableListOf(
-                    Let(name = "count", type = ObjectType("Unknown"), value = Literal(ParserNotAssigned), isMutable = false)))
+                    Let(name = "count", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
                 TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
@@ -1390,11 +1388,11 @@ class TypeCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 fields = mutableListOf(
-                    Let(name = "x", type = intValueType, value = Literal(ParserNotAssigned), isMutable = false)),
+                    Let(name = "x", type = intValueType, isMutable = false)),
                 methods = mutableListOf(
                     Func(name = "get", returnType = intValueType)),
                 staticFields = mutableListOf(
-                    Let(name = "count", type = intValueType, value = Literal(ParserNotAssigned), isMutable = false)),
+                    Let(name = "count", type = intValueType, isMutable = false)),
                 staticMethods = mutableListOf(
                     Func(name = "create", returnType = intValueType)))
 

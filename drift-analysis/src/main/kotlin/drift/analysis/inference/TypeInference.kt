@@ -24,7 +24,7 @@ import drift.oldruntime.values.primaries.ParserInt64
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserUInt
 import drift.oldruntime.values.specials.ParserNotAssigned
-import drift.oldruntime.values.specials.ParserNull
+import drift.oldruntime.values.primaries.ParserNull
 import drift.oldruntime.values.specials.ParserVoid
 
 class TypeInference(
@@ -194,7 +194,7 @@ class TypeInference(
 
     /*  --  EXPRESSIONS  --  */
 
-    private fun inferExpression(expression: ParserExpression) : ParserType {
+    private fun inferExpression(expression: ParserExpression?) : ParserType {
         return when (expression) {
             is Variable -> inferVariable(expression)
             is Literal -> inferLiteral(expression)

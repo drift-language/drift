@@ -68,7 +68,7 @@ internal fun Parser.parseStatement() : ParserStatement {
             }
             token.isKeyword(Token.Keyword.LEAVE) -> {
                 advance(false)
-                Return(Literal(ParserVoid))
+                Return()
             }
             token.isKeyword(Token.Keyword.FOR) -> {
                 advance(false)
@@ -160,7 +160,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
             throw DPStaticFieldMustBeInitializedException(
                 fieldName = name)
         } else {
-            Literal(ParserNotAssigned)
+            null
         }
 
     val annotations = storedAnnotations.toMutableList()
