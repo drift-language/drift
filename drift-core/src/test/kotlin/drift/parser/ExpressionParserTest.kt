@@ -5,7 +5,7 @@ import drift.ast.expressions.Set
 import drift.ast.statements.ExprStmt
 import drift.lexer.lex
 import drift.parser.exceptions.DPInvalidAssignmentTargetException
-import drift.oldruntime.values.primaries.ParserInt
+import drift.oldruntime.values.primaries.ParserNumeric
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.*
@@ -25,7 +25,7 @@ class ExpressionParserTest {
         @Test
         fun `integer literal`() {
             val expr = parseExpr("1") as Literal
-            assertEquals(ParserInt(1), expr.value)
+            assertEquals(ParserNumeric(1L), expr.value)
         }
 
         @Test

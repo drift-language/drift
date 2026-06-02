@@ -26,8 +26,7 @@ import drift.parser.exceptions.DPUnexpectedExpressionException
 import drift.parser.exceptions.DPUnexpectedSymbolException
 import drift.parser.statements.parseBlock
 import drift.oldruntime.values.primaries.ParserBool
-import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserNumeric
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserNull
 
@@ -158,8 +157,7 @@ internal fun Parser.parsePrimary() : ParserExpression {
         is Token.NumericLiteral -> {
             advance(false)
             Literal(token.value.run {
-                toIntOrNull()?.let { ParserInt(it) }
-                    ?: toLongOrNull()?.let { ParserInt64(it) }
+                toLongOrNull()?.let { ParserNumeric(it) }
                     ?: throw DPNumericSizeOverflowException()
             })
         }

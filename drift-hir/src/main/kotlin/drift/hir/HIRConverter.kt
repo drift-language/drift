@@ -23,6 +23,7 @@ import drift.oldruntime.ObjectType
 import drift.oldruntime.values.primaries.ParserBool
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserNumeric
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserUInt
 import drift.oldruntime.values.primaries.ParserNull
@@ -39,9 +40,9 @@ class HIRConverter(
     companion object {
 
         private var nextHirId = 0
-        
+
         fun allocateHirId() : Int = nextHirId++
-        
+
         fun resetIds() {
             nextHirId = 0
         }
@@ -115,7 +116,7 @@ class HIRConverter(
             .toMutableList()
 
         val returnType = convertType(function.returnType)
-        
+
         val parameters = function.parameters.map { param ->
             HIRParameter(
                 name = param.name,
@@ -333,7 +334,7 @@ class HIRConverter(
         return hirVar
     }
 
-    private fun convertBinary(binary: Binary, type: HIRType) : HIRBinaryOp {
+    private fun convertBinary(binary: Binary, type: HIRType) : HIRExpression {
         val hirId = allocateHirId()
         val operator = when (binary.operator) {
             "+" -> BinaryOperator.ADD
@@ -349,8 +350,8 @@ class HIRConverter(
             ">=" -> BinaryOperator.GTE
             "&&" -> BinaryOperator.AND
             "||" -> BinaryOperator.OR
-            ".." -> BinaryOperator.INCLUSIVE_RANGE
-            "..<" -> BinaryOperator.EXCLUSIVE_RANGE
+            "..",
+            "..<" -> return convertRange(binary)
 
             else -> error("Unknown binary operator: ${binary.operator}")
         }
@@ -367,6 +368,10 @@ class HIRConverter(
 
         astToHirMap[binary.nodeId] = hirId
         return hirBinary
+    }
+
+    private fun convertRange(rangeOperation: Binary) : HIRCall {
+        TODO("Ranges are not implemented yet")
     }
 
     private fun convertUnary(unary: Unary, type: HIRType) : HIRUnaryOp {

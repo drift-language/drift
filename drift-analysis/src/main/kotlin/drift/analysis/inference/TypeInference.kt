@@ -21,6 +21,7 @@ import drift.oldruntime.values.containers.list.ParserArray
 import drift.oldruntime.values.primaries.ParserBool
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserInt64
+import drift.oldruntime.values.primaries.ParserNumeric
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserUInt
 import drift.oldruntime.values.specials.ParserNotAssigned
@@ -93,6 +94,11 @@ class TypeInference(
             val usedType =
                 if (type == AnyType) valueType
                 else type
+
+            val expr = value
+            if (type != AnyType && expr is Literal && expr.value is ParserNumeric) {
+                typeResolutions[expr.nodeId] = type
+            }
 
             typeResolutions[nodeId] = usedType
         }
@@ -248,6 +254,13 @@ class TypeInference(
             ObjectType(primitive)
 
         val type: ParserType = when (literal.value) {
+            is ParserNumeric        -> {
+                val v = (literal.value as ParserNumeric).value
+                if (v >= Int.MIN_VALUE && v <= Int.MAX_VALUE)
+                    obj(ParserPrimitiveClass.Int)
+                else
+                    obj(ParserPrimitiveClass.Int64)
+            }
             is ParserInt            -> obj(ParserPrimitiveClass.Int)
             is ParserInt64          -> obj(ParserPrimitiveClass.Int64)
             is ParserUInt           -> obj(ParserPrimitiveClass.UInt)
@@ -462,8 +475,17 @@ class TypeInference(
                                             //  isn't initialized (none ref linked to declaration)
 
             val type: ParserType = when (val symbol = symbolTable.getSymbol(defId)) {
-                is CallableSymbol -> typeResolutions[defId]
-                    ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
+                is CallableSymbol -> {
+                    symbol.signature.parameterTypes.zip(call.args).forEach { (param, arg) ->
+                        val argExpr = arg.expr
+                        if (argExpr is Literal && argExpr.value is ParserNumeric) {
+                            typeResolutions[argExpr.nodeId] = param.type
+                        }
+                    }
+                    
+                    typeResolutions[defId]
+                        ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
+                }
                 is ClassSymbol -> ObjectType(symbol.signature.name)
                 is VariableSymbol -> {
                     val varType = typeResolutions[defId]
@@ -490,6 +512,13 @@ class TypeInference(
 
             if (type !is FunctionType)
                 throw DIRUnexpectedTypeException()
+
+            type.paramTypes.zip(call.args).forEach { (paramType, arg) ->
+                val argExpr = arg.expr
+                if (argExpr is Literal && argExpr.value is ParserNumeric) {
+                    typeResolutions[argExpr.nodeId] = paramType
+                }
+            }
 
             typeResolutions[call.nodeId] = type.returnType
 

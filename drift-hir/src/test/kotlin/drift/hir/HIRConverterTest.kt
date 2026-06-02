@@ -632,24 +632,6 @@ class HIRConverterTest {
         assertEquals("item", loopExpr.iteratorVariable)
     }
 
-    @Test
-    fun `convert for loop with range`() {
-        val range = Binary(Literal(ParserInt(0)), "..", Literal(ParserInt(10)))
-        val forVar = ForVariable("i")
-        val body = Block(listOf(ExprStmt(Variable("i"))))
-        val forLoop = For(range, listOf(forVar), body)
-        val ast = listOf(forLoop)
-        val typeResolution = mapOf(
-            range.nodeId to ObjectType("InclusiveRange")
-        )
-
-        val converter = createConverter(ast, typeResolution = typeResolution)
-        val hir = converter.convert()
-
-        val loopExpr = (hir[0] as HIRExpressionStmt).expression as HIRLoop
-        assertEquals("i", loopExpr.iteratorVariable)
-        assertTrue(loopExpr.iterable is HIRBinaryOp)
-    }
 
     // ========================================================================
     // LAMBDA TESTS
@@ -1003,34 +985,6 @@ class HIRConverterTest {
         assertEquals(HIRPrimitiveType(PrimitiveKind.UINT), lit.type)
     }
 
-    @Test
-    fun `convert range operators`() {
-        val left = Literal(ParserInt(1))
-        val right = Literal(ParserInt(10))
-
-        val inclusiveRange = Binary(left, "..", right)
-        val exclRange = Binary(left, "..<", right)
-
-        val ast = listOf(
-            ExprStmt(inclusiveRange),
-            ExprStmt(exclRange)
-        )
-        val typeResolution = mapOf(
-            left.nodeId to ObjectType("Int"),
-            right.nodeId to ObjectType("Int"),
-            inclusiveRange.nodeId to ObjectType("InclusiveRange"),
-            exclRange.nodeId to ObjectType("ExclusiveRange")
-        )
-
-        val converter = createConverter(ast, typeResolution = typeResolution)
-        val hir = converter.convert()
-
-        val incRange = (hir[0] as HIRExpressionStmt).expression as HIRBinaryOp
-        val excRange = (hir[1] as HIRExpressionStmt).expression as HIRBinaryOp
-
-        assertEquals(BinaryOperator.INCLUSIVE_RANGE, incRange.operator)
-        assertEquals(BinaryOperator.EXCLUSIVE_RANGE, excRange.operator)
-    }
 
     // ========================================================================
     // IMPORT STATEMENT TESTS

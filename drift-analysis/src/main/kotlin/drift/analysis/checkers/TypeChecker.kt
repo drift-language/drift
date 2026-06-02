@@ -347,6 +347,8 @@ class TypeChecker(
         val resolvedType =
             if (expression is Literal) {
                 when (expression.value) {
+                    is drift.oldruntime.values.primaries.ParserNumeric ->
+                        resolutions.typeResolutions[expression.nodeId] ?: ObjectType("Int")
                     is drift.oldruntime.values.primaries.ParserInt -> ObjectType("Int")
                     is drift.oldruntime.values.primaries.ParserInt64 -> ObjectType("Int64")
                     is drift.oldruntime.values.primaries.ParserUInt -> ObjectType("UInt")

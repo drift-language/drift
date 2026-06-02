@@ -17,7 +17,6 @@ enum class BinaryOperator {
     ADD, SUB, MUL, DIV, MOD,
     EQ, NEQ, LT, LTE, GT, GTE,
     AND, OR,
-    INCLUSIVE_RANGE, EXCLUSIVE_RANGE
 }
 
 enum class UnaryOperator {
