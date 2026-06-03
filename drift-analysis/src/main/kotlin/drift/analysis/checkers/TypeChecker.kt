@@ -21,6 +21,7 @@ import drift.analysis.exceptions.DTCUnexpectedTypeException
 import drift.analysis.exceptions.DTCUnsupportedIterationException
 import drift.analysis.inference.TypeInference
 import drift.analysis.symbols.CallableSymbol
+import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.ast.ParserCallable
@@ -264,16 +265,30 @@ class TypeChecker(
 
         fun handleAccessor(callee: Get) {
             val receiverType = (resolutions.typeResolutions[callee.receiver.nodeId]
-                ?: throw DTCTypeResolutionNotFoundException(callee.receiver.nodeId)) as? ObjectType
-                ?: throw DTCUnexpectedCalleeException()
+                ?: throw DTCTypeResolutionNotFoundException(callee.receiver.nodeId))
 
-            val classId = symbolTable.lookupNodeId(receiverType.className)
-                ?: throw DTCClassNotFoundException(receiverType.className)
-            val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
-                ?: throw DTCUnexpectedCalleeException()
+            val methodSignature: CallableSignature = when (receiverType) {
+                is ObjectType -> {
+                    val classId = symbolTable.lookupNodeId(receiverType.className)
+                        ?: throw DTCClassNotFoundException(receiverType.className)
+                    val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
+                        ?: throw DTCUnexpectedCalleeException()
 
-            val methodSignature = classSymbol.signature.methods[callee.name]
-                ?: throw DTCRefResolutionNotFoundException()
+                    classSymbol.signature.methods[callee.name]
+                        ?: throw DTCRefResolutionNotFoundException()
+                }
+                is ClassType -> {
+                    val classId = symbolTable.lookupNodeId(receiverType.className)
+                        ?: throw DTCClassNotFoundException(receiverType.className)
+                    val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
+                        ?: throw DTCUnexpectedCalleeException()
+
+                    classSymbol.signature.staticMethods[callee.name]
+                        ?: throw DTCRefResolutionNotFoundException()
+                }
+
+                else -> throw DTCUnexpectedCalleeException()
+            }
 
             checkCallableArguments(CallableSymbol(methodSignature))
         }
