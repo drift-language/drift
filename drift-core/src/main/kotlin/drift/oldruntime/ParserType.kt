@@ -170,7 +170,10 @@ data class UnionType(val options: List<ParserType>) : ParserType {
  * @param className Object's class name
  * @param args Object arguments
  */
-data class ObjectType(val className: String, val args: Map<String, TypeArgument> = emptyMap()) : ParserType {
+data class ObjectType(
+    val className: String,
+    val args: Map<String, TypeArgument> = emptyMap())
+    : ParserType {
 
     constructor(primitive: ParserPrimitiveClass, args: Map<String, TypeArgument> = emptyMap())
     : this(primitive.className, args)
@@ -220,7 +223,8 @@ data class FunctionType(
  */
 data class ClassType(
     val className: String,
-    val generics: Map<String, ParserType> = emptyMap()) : ParserType {
+    val generics: Map<String, ParserType> = emptyMap())
+    : ParserType {
 
     override fun asString(): String {
         return if (generics.isEmpty()) "Class<$className>"
