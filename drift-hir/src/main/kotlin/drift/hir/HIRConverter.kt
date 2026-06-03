@@ -15,18 +15,14 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
+import drift.ast.statements.hooks.Hook
+import drift.ast.statements.hooks.ReturnableHook
+import drift.ast.statements.hooks.UnreturnableHook
 import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
 import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
 import drift.oldruntime.ObjectType
-import drift.oldruntime.values.primaries.ParserBool
-import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.primaries.ParserInt64
-import drift.oldruntime.values.primaries.ParserNumeric
-import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.primaries.ParserUInt
-import drift.oldruntime.values.primaries.ParserNull
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
@@ -144,6 +140,41 @@ class HIRConverter(
         return hirFunc
     }
 
+    private fun convertHook(hook: Hook) : HIRHook {
+        val hirId = allocateHirId()
+
+        val returnType =
+            if (hook is ReturnableHook) convertType(hook.returnType)
+            else HIRPrimitiveType(PrimitiveKind.VOID)
+
+        val parameters = hook.parameters.map { param ->
+            HIRParameter(
+                name = param.name,
+                type = convertType(param.type),
+                defaultValue = param.defaultValue?.let { convertExpression(it) })
+        }
+
+        val body = hook
+            .body
+            .statements
+            .map { convertStatement(it) }
+
+        val hirHook = HIRHook(
+            hirId,
+            hook.name,
+            parameters,
+            returnType,
+            body)
+
+        if (hook !is ReturnableHook && hook !is UnreturnableHook)
+            error("Unexpected hook type")
+
+        astToHirMap[hook.nodeId] = hirId
+        definitionHirIds[hook.name] = hirId
+
+        return hirHook
+    }
+
     private fun convertClass(clazz: Class) : HIRClass {
         val hirId = allocateHirId()
 
@@ -155,6 +186,7 @@ class HIRConverter(
         val fields = clazz.fields.map { convertClassField(it, isStatic = false) }
         val staticMethods = clazz.staticMethods.map { convertFunction(it, isStatic = true) }
         val methods = clazz.methods.map { convertFunction(it, isStatic = false) }
+        val hooks = clazz.hooks.map { convertHook(it) }
 
         val hirClass = HIRClass(
             hirId = hirId,
@@ -162,6 +194,7 @@ class HIRConverter(
             name = clazz.name,
             fields = fields,
             methods = methods,
+            hooks = hooks,
             staticFields = staticFields,
             staticMethods = staticMethods)
 

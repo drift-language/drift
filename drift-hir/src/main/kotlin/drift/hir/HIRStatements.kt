@@ -26,6 +26,16 @@ data class HIRFunction(
 ) : HIRStatement, HIRAnnotatable
 
 /**
+ * Hook declaration in HIR.
+ */
+data class HIRHook(
+    override val hirId: Int,
+    val name: String,
+    val parameters: List<HIRParameter>,
+    val returnType: HIRType,
+    val body: List<HIRStatement>) : HIRStatement
+
+/**
  * Function parameter.
  */
 data class HIRParameter(
@@ -55,6 +65,7 @@ data class HIRClass(
     val name: String,
     val fields: List<HIRField>,
     val methods: List<HIRFunction>,
+    val hooks: List<HIRHook>,
     val staticFields: List<HIRField>,
     val staticMethods: List<HIRFunction>
 ) : HIRStatement, HIRAnnotatable
