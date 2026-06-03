@@ -16,7 +16,7 @@ package drift.hir
 enum class BinaryOperator {
     ADD, SUB, MUL, DIV, MOD,
     EQ, NEQ, LT, LTE, GT, GTE,
-    AND, OR,
+    AND, OR
 }
 
 enum class UnaryOperator {
