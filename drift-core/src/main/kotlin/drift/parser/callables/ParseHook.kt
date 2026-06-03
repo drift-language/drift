@@ -9,7 +9,7 @@
 package drift.parser.callables
 
 import drift.ast.bindings.FunctionParameter
-import drift.ast.statements.hooks.ParserHook
+import drift.ast.statements.hooks.Hook
 import drift.ast.statements.hooks.ReturnableHook
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
@@ -50,7 +50,7 @@ import drift.oldruntime.VoidType
  */
 internal fun Parser.parseHook(
     forceParameters: Boolean = false,
-    disableReturnStatement: Boolean = false) : ParserHook {
+    disableReturnStatement: Boolean = false) : Hook {
 
     val name = expect<Token.Identifier>("hook name").value
 

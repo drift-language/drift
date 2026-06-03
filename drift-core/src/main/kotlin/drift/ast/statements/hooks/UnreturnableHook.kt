@@ -21,4 +21,4 @@ data class UnreturnableHook(
     override val annotations: MutableList<Annotation> = mutableListOf(),
     override val parameters: List<FunctionParameter> = listOf(),
     override val body: Block = Block.empty())
-    : ParserStatement(), ParserCallable, ParserHook
+    : ParserStatement(), ParserCallable, Hook

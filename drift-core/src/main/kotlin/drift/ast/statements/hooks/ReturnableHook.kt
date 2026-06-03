@@ -21,4 +21,4 @@ data class ReturnableHook(
     override val parameters: List<FunctionParameter> = listOf(),
     override val body: Block = Block.empty(),
     override val returnType: ParserType)
-    : ParserStatement(), ParserHook, ParserReturnable
+    : ParserStatement(), Hook, ParserReturnable

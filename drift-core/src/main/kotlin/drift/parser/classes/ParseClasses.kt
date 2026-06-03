@@ -9,12 +9,11 @@
 
 package drift.parser.classes
 
-import drift.ast.expressions.Literal
 import drift.ast.statements.Class
 import drift.ast.statements.Func
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Let
-import drift.ast.statements.hooks.ParserHook
+import drift.ast.statements.hooks.Hook
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.parser.Parser
 import drift.lexer.Token
@@ -27,7 +26,6 @@ import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
 import drift.parser.exceptions.DPUnsupportedAnnotationException
 import drift.parser.statements.parseLet
 import drift.parser.types.parseType
-import drift.oldruntime.values.specials.ParserNotAssigned
 
 
 /******************************************************************************
@@ -59,7 +57,7 @@ internal fun Parser.parseClass() : Class {
     val name = nameToken.value
     val fields = mutableListOf<Let>()
     val methods = mutableListOf<Func>()
-    val hooks = mutableListOf<ParserHook>()
+    val hooks = mutableListOf<Hook>()
     val staticFields = mutableListOf<Let>()
     val staticMethods = mutableListOf<Func>()
     val constructorParameters = mutableListOf<FunctionParameter>()

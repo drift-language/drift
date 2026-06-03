@@ -10,8 +10,9 @@ package drift.ast.statements.hooks
 
 import drift.ast.ParserCallable
 import drift.ast.metadata.Annotation
+import drift.ast.statements.ParserStatement
 
-interface ParserHook : ParserCallable {
+interface Hook : ParserCallable {
 
     val name: String
     val annotations: MutableList<Annotation>
