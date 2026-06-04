@@ -15,6 +15,7 @@ import drift.oldruntime.AnyType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.ParserType
 import drift.oldruntime.VoidType
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 class SymbolCollector(
     val namespace: String,
@@ -23,6 +24,8 @@ class SymbolCollector(
 
     private val refResolutions = mutableMapOf<Int, Int>()
     private val lambdaClosures = mutableMapOf<Int, Map<String, Int>>()
+
+    private val importedNamespaces = mutableSetOf<String>()
 
 
     fun collect(): CollectionResult {
@@ -49,6 +52,7 @@ class SymbolCollector(
             is For      -> collectFor(statement)
             is Class    -> collectClass(statement)
             is ExprStmt -> collectExpressionStatement(statement)
+            is Import   -> collectImport(statement)
 
             else        -> { /* TODO: Ignore or log? */ }
         }
@@ -65,7 +69,7 @@ class SymbolCollector(
         if (statement.type is ObjectType) {
             val className = (statement.type as ObjectType).className
             val nodeId = symbolTable.lookupNodeId(className)
-                ?: symbolTable.lookupNodeId("$namespace/$className")
+                ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR$className")
             nodeId?.let { refResolutions[statement.nodeId] = it }
         }
 
@@ -245,7 +249,7 @@ class SymbolCollector(
             returnType = VoidType)
         val constructorSymbol = CallableSymbol(constructorSignature)
         val signature = ClassSymbol.ClassSignature(
-            name = "$namespace/${`class`.name}",
+            name = "$namespace$NAMESPACE_SEPARATOR${`class`.name}",
             constructorMethod = constructorSymbol,
             fields = fields,
             staticFields = staticFields,
@@ -256,6 +260,11 @@ class SymbolCollector(
             nodeId = `class`.nodeId,
             signature = signature,
             hasPrimaryConstructor = `class`.hasPrimaryConstructor)
+    }
+
+    private fun collectImport(import: Import) {
+        if (import.namespace != namespace)
+            importedNamespaces.add(import.namespace)
     }
 
     /**
@@ -322,8 +331,17 @@ class SymbolCollector(
             }
 
             is Variable -> {
-                val nodeId = symbolTable.lookupNodeId(expression.name)
-                    ?: symbolTable.lookupNodeId("$namespace/${expression.name}")
+                var nodeId = symbolTable.lookupNodeId(expression.name)
+                    ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR${expression.name}")
+
+                if (nodeId == null) for (importedNamespace in importedNamespaces) {
+                    symbolTable.lookupNodeId("$importedNamespace$NAMESPACE_SEPARATOR${expression.name}")?.let {
+                        nodeId = it
+
+                        break   // NOTE: exit for loop
+                    }
+                }
+
                 nodeId?.let { refResolutions[expression.nodeId] = it }
             }
 

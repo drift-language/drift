@@ -37,7 +37,7 @@ val Project.version: String
  */
 fun runGitCommand(vararg args: String): String {
     val process = ProcessBuilder("git", *args)
-        .directory(File(".")) // répertoire de ton projet
+        .directory(File("."))
         .redirectErrorStream(true)
         .start()
 

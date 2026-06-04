@@ -24,6 +24,7 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
 import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
@@ -454,7 +455,7 @@ class HIRConverter(
         val hirId = allocateHirId()
         val receiver = convertExpression(get.receiver)
         val receiverClassName =
-            "$namespace/" +
+            "$namespace$NAMESPACE_SEPARATOR" +
             extractClassName(typeResolution[get.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, get.name)
 
@@ -475,7 +476,7 @@ class HIRConverter(
         val hirId = allocateHirId()
         val receiver = convertExpression(set.receiver)
         val receiverClassName =
-            "$namespace/" +
+            "$namespace$NAMESPACE_SEPARATOR" +
             extractClassName(typeResolution[set.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, set.name)
         val value = convertExpression(set.value)

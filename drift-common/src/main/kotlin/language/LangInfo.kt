@@ -17,4 +17,6 @@ package language
 object LangInfo {
 
     const val FILE_EXTENSION = ".drift"
+
+    const val NAMESPACE_SEPARATOR = "/"
 }

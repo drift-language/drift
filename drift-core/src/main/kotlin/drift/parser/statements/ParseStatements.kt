@@ -25,6 +25,7 @@ import drift.oldruntime.AnyType
 import drift.oldruntime.ParserType
 import drift.oldruntime.values.specials.ParserNotAssigned
 import drift.oldruntime.values.specials.ParserVoid
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 
 /******************************************************************************
@@ -384,7 +385,7 @@ internal fun Parser.parseImport() : Import {
     }
 
     return Import(
-        namespaceSteps.joinToString("."),
+        namespaceSteps.joinToString(NAMESPACE_SEPARATOR),
         namespaceSteps,
         alias,
         importParts,
