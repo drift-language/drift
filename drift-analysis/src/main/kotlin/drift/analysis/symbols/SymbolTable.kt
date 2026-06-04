@@ -9,6 +9,7 @@
 package drift.analysis.symbols
 
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
+import kotlin.collections.emptyMap
 
 data class SymbolTable(
     // Global symbol storage - symbols persist after scope pop
@@ -94,6 +95,44 @@ data class SymbolTable(
             ?: return false
 
         return getSymbol(nodeId) is ClassSymbol
+    }
+
+
+    operator fun plusAssign(other: SymbolTable) {
+        allSymbols += other.allSymbols
+
+        if (scopes.isNotEmpty() && other.scopes.isNotEmpty())
+            scopes.first().bindings += other.scopes.first().bindings
+    }
+    operator fun plusAssign(others: Collection<SymbolTable>) =
+        others.forEach { plusAssign(it) }
+
+    operator fun plus(other: SymbolTable) : SymbolTable {
+        val allSymbols = (allSymbols + other.allSymbols)
+            .toMutableMap()
+
+        val bindings: Map<String, Int> =
+            if (scopes.isNotEmpty() && other.scopes.isNotEmpty()) {
+                scopes.first().bindings + other.scopes.first().bindings
+            } else {
+                emptyMap()
+            }
+
+        val symbolTable = SymbolTable(allSymbols)
+        symbolTable
+            .scopes
+            .first()
+            .bindings += bindings
+
+        return symbolTable
+    }
+    operator fun plus(others: Collection<SymbolTable>) : SymbolTable {
+        val finalSymbolTable = this
+
+        for (currentST in others)
+            finalSymbolTable += currentST
+
+        return finalSymbolTable
     }
 
 
