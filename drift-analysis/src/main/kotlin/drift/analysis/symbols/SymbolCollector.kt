@@ -17,6 +17,7 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.VoidType
 
 class SymbolCollector(
+    val namespace: String,
     val symbolTable: SymbolTable,
     val statements: List<ParserStatement>) {
 
@@ -62,9 +63,10 @@ class SymbolCollector(
         statement.value?.let(this::collectExpression)
 
         if (statement.type is ObjectType) {
-            symbolTable.lookupNodeId((statement.type as ObjectType).className)?.let {
-                refResolutions[statement.nodeId] = it
-            }
+            val className = (statement.type as ObjectType).className
+            val nodeId = symbolTable.lookupNodeId(className)
+                ?: symbolTable.lookupNodeId("$namespace/$className")
+            nodeId?.let { refResolutions[statement.nodeId] = it }
         }
 
         val signature = VariableSymbol.VariableSignature(
@@ -243,7 +245,7 @@ class SymbolCollector(
             returnType = VoidType)
         val constructorSymbol = CallableSymbol(constructorSignature)
         val signature = ClassSymbol.ClassSignature(
-            name = `class`.name,
+            name = "$namespace/${`class`.name}",
             constructorMethod = constructorSymbol,
             fields = fields,
             staticFields = staticFields,
@@ -320,9 +322,9 @@ class SymbolCollector(
             }
 
             is Variable -> {
-                symbolTable.lookupNodeId(expression.name)?.let {
-                    refResolutions[expression.nodeId] = it
-                }
+                val nodeId = symbolTable.lookupNodeId(expression.name)
+                    ?: symbolTable.lookupNodeId("$namespace/${expression.name}")
+                nodeId?.let { refResolutions[expression.nodeId] = it }
             }
 
             else -> { }

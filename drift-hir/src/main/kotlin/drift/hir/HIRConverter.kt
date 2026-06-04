@@ -22,12 +22,14 @@ import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
 import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
+import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
  */
 class HIRConverter(
+    private val namespace: String,
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
     private val typeResolution: Map<Int, ParserType>,
@@ -451,7 +453,9 @@ class HIRConverter(
     private fun convertGet(get: Get, type: HIRType) : HIRFieldAccess {
         val hirId = allocateHirId()
         val receiver = convertExpression(get.receiver)
-        val receiverClassName = extractClassName(typeResolution[get.receiver.nodeId])
+        val receiverClassName =
+            "$namespace/" +
+            extractClassName(typeResolution[get.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, get.name)
 
         val hirGet = HIRFieldAccess(
@@ -470,7 +474,9 @@ class HIRConverter(
     private fun convertSet(set: Set, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
         val receiver = convertExpression(set.receiver)
-        val receiverClassName = extractClassName(typeResolution[set.receiver.nodeId])
+        val receiverClassName =
+            "$namespace/" +
+            extractClassName(typeResolution[set.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, set.name)
         val value = convertExpression(set.value)
 
@@ -587,7 +593,9 @@ class HIRConverter(
     private fun extractClassName(parserType: ParserType?) : String {
         return when (parserType) {
             is ObjectType -> parserType.className
-            else -> "Unknown"
+            is ClassType  -> parserType.className
+
+            else -> $$"$Unknown$"
         }
     }
 

@@ -53,7 +53,8 @@ data class SymbolTable(
 
         allSymbols[nodeId] = symbol
 
-        if (name != null) scopes.last().bindings[name] = nodeId
+        if (name != null)
+            scopes.last().bindings[name] = nodeId
     }
 
     fun addClass(
