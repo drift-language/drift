@@ -28,7 +28,7 @@ import drift.ast.expressions.Call
 import drift.ast.expressions.Get
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.Block
 import drift.ast.statements.Class
 import drift.ast.statements.ExprStmt
@@ -44,7 +44,6 @@ import drift.oldruntime.UnionType
 import drift.oldruntime.VoidType
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.specials.ParserNotAssigned
 import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -226,7 +225,7 @@ class TypeCheckerTest {
                 Let(
                     name = "x",
                     type = intValueType,
-                    value = Variable(fooLet.name),
+                    value = Reference(fooLet.name),
                     isMutable = false))
 
             symbolTable.addVariable(
@@ -616,7 +615,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with unresolved ref should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(Call(callee = calleeVar)))
 
@@ -632,7 +631,7 @@ class TypeCheckerTest {
                 name = "a",
                 type = intValueType,
                 defaultValue = Literal(ParserInt(1)))
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(
                 name = "foo",
                 parameters = listOf(param))
@@ -659,7 +658,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with too few args should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -684,7 +683,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with too many args should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = emptyList())
@@ -707,7 +706,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with wrong arg type should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -735,7 +734,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with non literal arg with resolved type mismatch should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -770,7 +769,7 @@ class TypeCheckerTest {
 
         @Test
         fun `Call with valid args should not throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -824,8 +823,8 @@ class TypeCheckerTest {
         }
 
         private fun buildMethodCall(methodName: String, args: List<Argument> = emptyList())
-            : Triple<Variable, Call, Call> {
-            val innerVar = Variable("A")
+            : Triple<Reference, Call, Call> {
+            val innerVar = Reference("A")
             val receiverCall = Call(callee = innerVar)
             val outerCall = Call(callee = Get(receiver = receiverCall, name = methodName), args = args)
             return Triple(innerVar, receiverCall, outerCall)
@@ -1083,7 +1082,7 @@ class TypeCheckerTest {
 
         @Test
         fun `For with valid iterable should not throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,
@@ -1105,7 +1104,7 @@ class TypeCheckerTest {
 
         @Test
         fun `For with missing type resolution should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
             val resolutions = TypeInference.TypeInferenceResult.empty()
 
             val ast: List<ParserStatement> = listOf(
@@ -1119,7 +1118,7 @@ class TypeCheckerTest {
 
         @Test
         fun `For with non-ObjectType iterable should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to VoidType),
@@ -1136,7 +1135,7 @@ class TypeCheckerTest {
 
         @Test
         fun `For with unregistered iterable class should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to ObjectType("Unknown")),
@@ -1153,7 +1152,7 @@ class TypeCheckerTest {
 
         @Test
         fun `For with iterable class missing iterate method should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,

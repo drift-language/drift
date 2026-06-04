@@ -330,7 +330,7 @@ class SymbolCollector(
                 expression.values.forEach { collectExpression(it) }
             }
 
-            is Variable -> {
+            is Reference -> {
                 var nodeId = symbolTable.lookupNodeId(expression.name)
                     ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR${expression.name}")
 
@@ -423,7 +423,7 @@ class SymbolCollector(
         names: MutableSet<String>) {
 
         when (expression) {
-            is Variable -> names.add(expression.name)
+            is Reference -> names.add(expression.name)
             is Binary -> {
                 collectVariableNamesInExpression(expression.left, names)
                 collectVariableNamesInExpression(expression.right, names)

@@ -2,7 +2,7 @@ package drift.parser
 
 import drift.ast.expressions.Get
 import drift.ast.expressions.Set
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.ExprStmt
 import drift.lexer.lex
 import org.junit.jupiter.api.Assertions.*
@@ -27,13 +27,13 @@ class GetSetParserTest {
         @Test
         fun `receiver is captured`() {
             val get = parseExpr("obj.field") as Get
-            assertTrue(get.receiver is Variable)
+            assertTrue(get.receiver is Reference)
         }
 
         @Test
         fun `receiver name is correct`() {
             val get = parseExpr("obj.field") as Get
-            assertEquals("obj", (get.receiver as Variable).name)
+            assertEquals("obj", (get.receiver as Reference).name)
         }
 
         @Test
@@ -64,7 +64,7 @@ class GetSetParserTest {
         @Test
         fun `receiver is captured`() {
             val set = parseExpr("obj.field = 5") as Set
-            assertTrue(set.receiver is Variable)
+            assertTrue(set.receiver is Reference)
         }
 
         @Test

@@ -26,7 +26,7 @@ class ForParserTest {
 
 
     @Nested
-    inner class IterationVariableTests {
+    inner class IterationReferenceTests {
 
         @Test
         fun `no iteration variable`() {

@@ -120,11 +120,11 @@ class ExpressionParserTest {
 
 
     @Nested
-    inner class VariableTests {
+    inner class ReferenceTests {
 
         @Test
         fun `variable access`() {
-            val expr = parseExpr("x") as Variable
+            val expr = parseExpr("x") as Reference
             assertEquals("x", expr.name)
         }
     }
@@ -155,14 +155,14 @@ class ExpressionParserTest {
         fun `member access`() {
             val expr = parseExpr("obj.field") as Get
             assertEquals("field", expr.name)
-            assertEquals("obj", (expr.receiver as Variable).name)
+            assertEquals("obj", (expr.receiver as Reference).name)
         }
 
         @Test
         fun `member assignment`() {
             val expr = parseExpr("obj.field = 1") as Set
             assertEquals("field", expr.name)
-            assertEquals("obj", (expr.receiver as Variable).name)
+            assertEquals("obj", (expr.receiver as Reference).name)
         }
     }
 
@@ -203,7 +203,7 @@ class ExpressionParserTest {
         @Test
         fun `ternary expression`() {
             val expr = parseExpr("a ? 1 : 2") as Conditional
-            assertEquals("a", (expr.condition as Variable).name)
+            assertEquals("a", (expr.condition as Reference).name)
         }
 
         @Test

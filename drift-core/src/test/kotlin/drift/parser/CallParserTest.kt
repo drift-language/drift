@@ -1,7 +1,7 @@
 package drift.parser
 
 import drift.ast.expressions.Call
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.ExprStmt
 import drift.lexer.lex
 import org.junit.jupiter.api.Assertions.*
@@ -20,13 +20,13 @@ class CallParserTest {
         @Test
         fun `callee is captured`() {
             val call = parseCall("foo()")
-            assertTrue(call.callee is Variable)
+            assertTrue(call.callee is Reference)
         }
 
         @Test
         fun `callee name is correct`() {
             val call = parseCall("foo()")
-            assertEquals("foo", (call.callee as Variable).name)
+            assertEquals("foo", (call.callee as Reference).name)
         }
     }
 

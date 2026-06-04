@@ -248,7 +248,7 @@ class TypeChecker(
             }
         }
 
-        fun handleVariable(callee: Variable) {
+        fun handleVariable(callee: Reference) {
             val calleeDefId = refResolutions[callee.nodeId]
                 ?: throw DTCRefResolutionNotFoundException()
 
@@ -297,7 +297,7 @@ class TypeChecker(
         checkExpression(callee)
 
         when (callee) {
-            is Variable -> handleVariable(callee)
+            is Reference -> handleVariable(callee)
             is Get      -> handleAccessor(callee)
 
             else        -> throw DTCUnexpectedCalleeException()

@@ -7,7 +7,6 @@ import drift.ast.statements.hooks.UnreturnableHook
 import drift.oldruntime.AnyType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.specials.ParserNotAssigned
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -28,7 +27,7 @@ class SymbolCollectorTest {
 
 
     @Nested
-    inner class VariableTests {
+    inner class ReferenceTests {
 
         @Test
         fun `Let should be registered as a variable symbol`() {
@@ -150,7 +149,7 @@ class SymbolCollectorTest {
         @Test
         fun `Variable reference resolves to definition nodeId`() {
             val let = Let(name = "x", type = AnyType, value = Literal(ParserInt(1)), isMutable = false)
-            val ref = Variable("x")
+            val ref = Reference("x")
             val result = collect(let, ExprStmt(ref))
             assertEquals(let.nodeId, result.resolutions[ref.nodeId])
         }
@@ -165,7 +164,7 @@ class SymbolCollectorTest {
 
         @Test
         fun `Reference to undefined name has no resolution`() {
-            val ref = Variable("undefined")
+            val ref = Reference("undefined")
             val result = collect(ExprStmt(ref))
             assertNull(result.resolutions[ref.nodeId])
         }
@@ -178,7 +177,7 @@ class SymbolCollectorTest {
         @Test
         fun `Lambda captures outer variable in closure`() {
             val outer = Let(name = "x", type = AnyType, value = Literal(ParserInt(1)), isMutable = false)
-            val lambda = Lambda(body = Block(listOf(ExprStmt(Variable("x")))))
+            val lambda = Lambda(body = Block(listOf(ExprStmt(Reference("x")))))
             val result = collect(outer, ExprStmt(lambda))
             assertEquals(outer.nodeId, result.lambdaClosures[lambda.nodeId]?.get("x"))
         }
@@ -188,7 +187,7 @@ class SymbolCollectorTest {
             val param = FunctionParameter(name = "x", type = AnyType)
             val lambda = Lambda(
                 parameters = listOf(param),
-                body = Block(listOf(ExprStmt(Variable("x")))))
+                body = Block(listOf(ExprStmt(Reference("x")))))
             val result = collect(ExprStmt(lambda))
             assertFalse(result.lambdaClosures[lambda.nodeId]?.containsKey("x") == true)
         }

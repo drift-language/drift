@@ -19,9 +19,9 @@ package drift.ast.expressions
 
 
 /**
- * A variable is represented by a name
+ * A named reference AST node.
  *
- * @property name Variable name
+ * @property name Reference's name
  */
-data class Variable(
+data class Reference(
     val name: String) : ParserExpression()
