@@ -9,13 +9,13 @@
 package drift.analysis.symbols
 
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
+import language.LangInfo.NAMESPACE_SEPARATOR
 import kotlin.collections.emptyMap
 
 data class SymbolTable(
     // Global symbol storage - symbols persist after scope pop
     val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
-    // Scopes for name-binding resolution
     private val scopes: MutableList<Scope> = mutableListOf()
 
 
@@ -32,6 +32,9 @@ data class SymbolTable(
         if (scopes.size > 1)
             scopes.removeLast()
     }
+
+    fun isTopLevel() = scopes.size == 1
+
 
     fun addVariable(
         nodeId: Int,
@@ -79,6 +82,35 @@ data class SymbolTable(
                         instead of throwing an exception. Should not throwing be the
                         responsibility of the caller?
          */
+    }
+
+    /**
+     * Access to the main scope's bindings and return its
+     * binding map, filtered by the provided namespace.
+     *
+     * @param namespace Namespace used to filter the binding map.
+     * @return Binding map (qualified name: node ID) composed of all structures
+     *         related to the provided namespace.
+     */
+    fun getAllSymbolsByNamespace(namespace: String) : Map<String, Int> {
+        if (scopes.isEmpty())
+            error("None active scope, structural error")
+
+        return scopes
+            .first()
+            .bindings
+            .filter { it.key.startsWith("$namespace$NAMESPACE_SEPARATOR") }
+    }
+
+
+    /**
+     * Add or replace a binding of the last scope.
+     *
+     * @param name Binding name, to prefix with namespace if top-level.
+     * @param nodeId Bound node ID
+     */
+    fun addBinding(name: String, nodeId: Int) {
+        scopes.last().bindings[name] = nodeId
     }
 
 
@@ -137,6 +169,7 @@ data class SymbolTable(
 
 
     private class Scope {
+
         val bindings = mutableMapOf<String, Int>()
     }
 }
