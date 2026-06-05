@@ -70,6 +70,7 @@ class SymbolCollector(
             val className = (statement.type as ObjectType).className
             val nodeId = symbolTable.lookupNodeId(className)
                 ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR$className")
+
             nodeId?.let { refResolutions[statement.nodeId] = it }
         }
 
@@ -77,9 +78,13 @@ class SymbolCollector(
             type = statement.type,
             isMutable = statement.isMutable)
 
+        val name =
+            if (symbolTable.isTopLevel()) "$namespace$NAMESPACE_SEPARATOR${statement.name}"
+            else statement.name
+
         symbolTable.addVariable(
             nodeId = statement.nodeId,
-            name = statement.name,
+            name = name,
             signature = signature)
     }
 
