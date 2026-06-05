@@ -78,7 +78,10 @@ class TypeChecker(
         checkType(let.type)
 
         val letValue = let.value
+
         if (letValue != null) {
+            checkExpression(letValue)
+
             val compatibleTypes = compareTypesInLiteralContext(
                 let.type,
                 letValue)
@@ -177,6 +180,7 @@ class TypeChecker(
             is Set          -> checkSet(expression)
             is Conditional  -> checkConditional(expression)
             is Lambda       -> checkLambda(expression)
+            is Reference    -> checkReference(expression)
             is drift.ast.expressions.Array  -> checkListLiteral(expression)
 
             else -> { /* Undefined behavior. */ }
@@ -248,7 +252,7 @@ class TypeChecker(
             }
         }
 
-        fun handleVariable(callee: Reference) {
+        fun handleReference(callee: Reference) {
             val calleeDefId = refResolutions[callee.nodeId]
                 ?: throw DTCRefResolutionNotFoundException()
 
@@ -297,7 +301,7 @@ class TypeChecker(
         checkExpression(callee)
 
         when (callee) {
-            is Reference -> handleVariable(callee)
+            is Reference -> handleReference(callee)
             is Get      -> handleAccessor(callee)
 
             else        -> throw DTCUnexpectedCalleeException()
@@ -338,6 +342,10 @@ class TypeChecker(
             .forEach(this::checkStatement)
 
         callableContextScopes.removeLast()
+    }
+    private fun checkReference(reference: Reference) {
+        if (!refResolutions.contains(reference.nodeId))
+            throw DTCRefResolutionNotFoundException()
     }
     private fun checkListLiteral(array: drift.ast.expressions.Array) {
         array.values.forEach(this::checkExpression)
