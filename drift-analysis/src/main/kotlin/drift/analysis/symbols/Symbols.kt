@@ -23,7 +23,6 @@ data class VariableSymbol(
         val isMutable: Boolean)
 }
 
-
 data class CallableSymbol(
     val signature: CallableSignature = CallableSignature()) : Symbol() {
 
@@ -49,4 +48,12 @@ data class ClassSymbol(
         val staticFields: LinkedHashMap<String, ParserType> = linkedMapOf(),
         val methods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf(),
         val staticMethods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf())
+}
+
+data class ModuleSymbol(
+    val signature: ModuleSignature) : Symbol() {
+
+    data class ModuleSignature(
+        val name: String,
+        val symbols: Map<String, Int> = mapOf())
 }
