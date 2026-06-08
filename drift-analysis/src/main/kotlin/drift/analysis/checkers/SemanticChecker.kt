@@ -41,12 +41,11 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.UnionType
 import drift.oldruntime.UnknownType
 import drift.oldruntime.VoidType
-import language.LangInfo
 import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
 
 
-class TypeChecker(
+class SemanticChecker(
     val namespace: String,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
