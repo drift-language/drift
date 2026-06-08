@@ -183,7 +183,10 @@ class TypeChecker(
             is Reference    -> checkReference(expression)
             is drift.ast.expressions.Array  -> checkListLiteral(expression)
 
-            else -> { /* Undefined behavior. */ }
+            else -> {
+                /* Undefined behavior. */
+                println("[WARNING]\tUnhandled expression checking for: ${expression::class.qualifiedName}")
+            }
         }
     }
 
