@@ -18,6 +18,15 @@ data class SymbolTable(
 
     private val scopes: MutableList<Scope> = mutableListOf()
 
+    /**
+     * A synthetic ID permits identifying a synthetic node
+     * in the [SymbolTable].
+     *
+     * Synthetic IDs are negative to avoid any collision with
+     * AST ones.
+     */
+    private var currentSyntheticId = -1
+
 
     init {
         pushScope()
@@ -34,6 +43,8 @@ data class SymbolTable(
     }
 
     fun isTopLevel() = scopes.size == 1
+
+    fun allocateSyntheticId() = currentSyntheticId--
 
 
     fun addVariable(
@@ -73,6 +84,19 @@ data class SymbolTable(
         scopes.last().bindings[signature.name] = nodeId
     }
 
+    fun addModule(
+        nodeId: Int,
+        signature: ModuleSymbol.ModuleSignature) {
+
+        val symbol = ModuleSymbol(signature)
+
+        allSymbols[nodeId] = symbol
+
+        scopes.first().bindings[signature.name] = nodeId
+        // NOTE: first scope because an import statement
+        //  can only be done on top-level.
+    }
+
 
     fun getSymbol(nodeId: Int) : Symbol {
         return allSymbols[nodeId]
@@ -92,7 +116,7 @@ data class SymbolTable(
      * @return Binding map (qualified name: node ID) composed of all structures
      *         related to the provided namespace.
      */
-    fun getAllSymbolsByNamespace(namespace: String) : Map<String, Int> {
+    fun getBindingsByNamespace(namespace: String) : Map<String, Int> {
         if (scopes.isEmpty())
             error("None active scope, structural error")
 
