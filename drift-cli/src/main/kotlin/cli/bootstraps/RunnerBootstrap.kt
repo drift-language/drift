@@ -8,34 +8,109 @@
  ******************************************************************************/
 package drift.cli.bootstraps
 
-import drift.analysis.inference.TypeInference
+import com.github.ajalt.mordant.rendering.TextColors.brightGreen
+import com.github.ajalt.mordant.rendering.TextColors.brightRed
+import com.github.ajalt.mordant.rendering.TextColors.cyan
+import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.magenta
+import com.github.ajalt.mordant.rendering.TextColors.red
+import com.github.ajalt.mordant.rendering.TextColors.yellow
+import com.github.ajalt.mordant.rendering.TextStyles.bold
+import com.github.ajalt.mordant.rendering.TextStyles.italic
 import drift.analysis.symbols.SymbolCollector
+import drift.analysis.symbols.SymbolTable
 import drift.ast.statements.ParserStatement
 import drift.bootstrap.Bootstrap
+import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
+import sugar.hasDriftExtension
+import sugar.removeDriftExtension
+import java.io.File
 
 
-class RunnerBootstrap(val source: String) : Bootstrap() {
+class RunnerBootstrap(
+    sourceRoot: File,
+    namespace: String,
+    val source: String)
+    : Bootstrap(sourceRoot, namespace) {
 
     val hir: MutableList<HIRStatement> = mutableListOf()
 
 
     override fun boot() {
-        val tokens = bootLexer(source)
-        val ast = bootParser(tokens)
-        val analysis = bootAnalysis(ast)
+        CompilationMemory
+            .imported
+            .clear()
 
-        hir += bootHIRConverter(ast, analysis)
+        val collection = bootCollectionPass()
+        bootCompilationPass(collection)
     }
 
-    override fun bootAnalysis(ast: List<ParserStatement>): AnalysisResult {
-        bootValidation(ast)
+    override fun bootCollectionPass(): SymbolCollector.CollectionResult {
+        if (!sourceRoot.isDirectory())
+            error("Source root path must target the source directory")
 
-        val collection = bootSymbolCollection(ast)
-        val inference = bootTypeInference(ast, collection.resolutions)
+        CompilationMemory
+            .imported
+            .add(namespace)
 
-        bootCheck(ast, collection.resolutions, inference)
+        val childSymbolTables: List<SymbolTable> = sourceRoot
+            .walkTopDown()
+            .filter {
+                val currentFileRelativePath = it
+                    .toRelativeString(sourceRoot)
+                val isDriftFile = currentFileRelativePath
+                    .hasDriftExtension()
+                val currentNamespace = currentFileRelativePath
+                    .removeDriftExtension()
+                val isAlreadyImported = CompilationMemory
+                    .imported
+                    .contains(currentNamespace)
 
-        return AnalysisResult(inference, collection)
+                return@filter it.isFile &&
+                        isDriftFile &&
+                        !isAlreadyImported &&
+                        currentNamespace != namespace
+            }
+            .map { element ->
+                val currentNamespace = element
+                    .toRelativeString(sourceRoot)
+                    .removeDriftExtension()
+
+                val source = element.readText()
+
+                val childBootstrap = RunnerBootstrap(
+                    sourceRoot, currentNamespace, source)
+
+                childBootstrap.bootCollectionPass()
+
+                return@map childBootstrap.symbolTable
+            }
+            .toList()
+
+        val tokens = bootLexer(source)
+        ast = bootParser(tokens)
+
+        bootValidation()
+
+        val collection = bootSymbolCollection()
+
+        symbolTable += childSymbolTables
+
+        return collection
+    }
+
+    override fun bootCompilationPass(
+        collection: SymbolCollector.CollectionResult) {
+
+        val inference = bootTypeInference(collection.resolutions)
+
+        bootCheck(collection.resolutions, inference)
+
+        val analysis = AnalysisResult(
+            collection = collection,
+            inference = inference)
+
+        hir.addAll(bootHIRConverter(analysis))
     }
 }
