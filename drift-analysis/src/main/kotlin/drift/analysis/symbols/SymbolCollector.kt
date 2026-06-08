@@ -95,10 +95,14 @@ class SymbolCollector(
      * 1. Save the function in the [symbolTable]
      * 2. Open a new [SymbolTable.Scope]
      * 3. Add parameters to scope
-     * 4. Collect the function's body
-     * 5. Close the scope
+     * 4. Inject ``$this`` variable
+     * 5. Collect the function's body
+     * 6. Close the scope
+     *
+     * @param receiverClass Class definition node, it must only be provided
+     *                      for instance methods.
      */
-    private fun collectFunction(func: Func) {
+    private fun collectFunction(func: Func, receiverClass: Class? = null) {
         val parameterTypes = func.parameters.map {
             CallableSymbol.CallableSignature.Parameter(
                 name = it.name,
@@ -130,6 +134,17 @@ class SymbolCollector(
                 signature = signature)      // NOTE: Callable Parameters are immutable!
 
             parameter.defaultValue?.let { collectExpression(it) }
+        }
+
+        if (receiverClass != null) {
+            val thisSignature = VariableSymbol.VariableSignature(
+                type = ObjectType("$namespace$NAMESPACE_SEPARATOR${receiverClass.name}"),
+                isMutable = false)
+
+            symbolTable.addVariable(
+                nodeId = symbolTable.allocateSyntheticId(),
+                name = $$"$this",
+                signature = thisSignature)
         }
 
         func
@@ -219,7 +234,7 @@ class SymbolCollector(
         fun prepareMethods(source: List<Func>) : LinkedHashMap<String, CallableSymbol.CallableSignature> {
             return source
                 .associate { method ->
-                    collectFunction(method)
+                    collectFunction(method, `class`)
 
                     val parameterTypes = method.parameters.map {
                         CallableSymbol.CallableSignature.Parameter(
