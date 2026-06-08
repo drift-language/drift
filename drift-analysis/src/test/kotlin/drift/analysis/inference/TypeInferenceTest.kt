@@ -22,6 +22,7 @@ import drift.oldruntime.*
 import drift.oldruntime.values.primaries.*
 import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -2043,6 +2044,76 @@ class TypeInferenceTest {
             val inference = TypeInference(ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[method.nodeId])
+        }
+    }
+
+
+    @Nested
+    inner class ImportTests {
+
+        private val importedNamespace = "test/users"
+
+        private fun tableWithVar(qualifiedName: String, let: Let, type: ParserType): SymbolTable {
+            val st = SymbolTable()
+            st.addVariable(
+                nodeId = let.nodeId,
+                name = qualifiedName,
+                signature = VariableSymbol.VariableSignature(type, false))
+            return st
+        }
+
+
+        @Test
+        fun `selectively imported variable reference infers its declared type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, intOT)
+
+            val ref = Reference("myValue")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                st,
+                mapOf(ref.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(intOT, inference.typeResolutions[ref.nodeId])
+        }
+
+        @Test
+        fun `aliased imported variable reference infers its original type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, stringOT)
+
+            val alias = Reference("mv")
+            val inference = TypeInference(
+                listOf(ExprStmt(alias)),
+                st,
+                mapOf(alias.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(stringOT, inference.typeResolutions[alias.nodeId])
+        }
+
+        @Test
+        fun `wildcard imported variable reference infers its declared type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, boolOT)
+
+            val ref = Reference("myValue")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                st,
+                mapOf(ref.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(boolOT, inference.typeResolutions[ref.nodeId])
+        }
+
+        @Test
+        fun `unresolved imported reference has no type resolution`() {
+            val ref = Reference("notImported")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                SymbolTable(),
+                emptyMap()).infer()
+
+            assertNull(inference.typeResolutions[ref.nodeId])
         }
     }
 }

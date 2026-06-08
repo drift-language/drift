@@ -57,7 +57,7 @@ class TypeCheckerTest {
     inner class LetTests {
 
         private lateinit var symbolTable: SymbolTable
-        private val refResolutions = mapOf<Int, Int>()
+        private var refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
 
         private val intClassDeclaration = Class(name = "Int")
@@ -79,6 +79,7 @@ class TypeCheckerTest {
         @BeforeEach
         fun setUp() {
             symbolTable = SymbolTable()
+            refResolutions = mapOf()
 
             symbolTable.addClass(
                 nodeId = intClassDeclaration.nodeId,
@@ -216,22 +217,21 @@ class TypeCheckerTest {
                 type = intValueType,
                 value = Literal(ParserInt(1)),
                 isMutable = false)
+            val fooRef = Reference(fooLet.name)
             val fooSignature = VariableSymbol.VariableSignature(
                 type = intValueType,
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
-                Let(
-                    name = "x",
-                    type = intValueType,
-                    value = Reference(fooLet.name),
-                    isMutable = false))
+                Let(name = "x", type = intValueType, value = fooRef, isMutable = false))
 
             symbolTable.addVariable(
                 nodeId = fooLet.nodeId,
                 name = fooLet.name,
                 signature = fooSignature)
+
+            refResolutions = mapOf(fooRef.nodeId to fooLet.nodeId)
 
             assertDoesNotThrow {
                 TypeChecker(ast, symbolTable, refResolutions, resolutions)
@@ -1061,8 +1061,9 @@ class TypeCheckerTest {
     inner class ForTests {
 
         private lateinit var symbolTable: SymbolTable
-        private val refResolutions = mapOf<Int, Int>()
+        private var refResolutions = mapOf<Int, Int>()
 
+        private val myListLet = Let(name = "myList", type = AnyType, isMutable = false)
         private val listClassDeclaration = Class(name = "List")
         private val listClassWithIterate = ClassSymbol.ClassSignature(
             name = listClassDeclaration.name,
@@ -1077,12 +1078,14 @@ class TypeCheckerTest {
         @BeforeEach
         fun setUp() {
             symbolTable = SymbolTable()
+            refResolutions = mapOf()
         }
 
 
         @Test
         fun `For with valid iterable should not throw`() {
             val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,
@@ -1105,6 +1108,7 @@ class TypeCheckerTest {
         @Test
         fun `For with missing type resolution should throw`() {
             val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
             val resolutions = TypeInference.TypeInferenceResult.empty()
 
             val ast: List<ParserStatement> = listOf(
@@ -1119,6 +1123,7 @@ class TypeCheckerTest {
         @Test
         fun `For with non-ObjectType iterable should throw`() {
             val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to VoidType),
@@ -1136,6 +1141,7 @@ class TypeCheckerTest {
         @Test
         fun `For with unregistered iterable class should throw`() {
             val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to ObjectType("Unknown")),
@@ -1153,6 +1159,7 @@ class TypeCheckerTest {
         @Test
         fun `For with iterable class missing iterate method should throw`() {
             val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,
@@ -1397,6 +1404,124 @@ class TypeCheckerTest {
 
             assertDoesNotThrow {
                 TypeChecker(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+    }
+
+
+    @Nested
+    inner class ImportTests {
+
+        private lateinit var symbolTable: SymbolTable
+        private var refResolutions = mapOf<Int, Int>()
+
+        private val intClassDeclaration = Class(name = "Int")
+        private val intClassSignature = ClassSymbol.ClassSignature(
+            name = intClassDeclaration.name,
+            constructorMethod = CallableSymbol())
+        private val intValueType = ObjectType(className = intClassDeclaration.name)
+
+        private val stringClassDeclaration = Class(name = "String")
+        private val stringClassSignature = ClassSymbol.ClassSignature(
+            name = stringClassDeclaration.name,
+            constructorMethod = CallableSymbol())
+        private val stringValueType = ObjectType(className = stringClassDeclaration.name)
+
+        private val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+
+        @BeforeEach
+        fun setUp() {
+            symbolTable = SymbolTable()
+            refResolutions = mapOf()
+
+            symbolTable.addClass(nodeId = intClassDeclaration.nodeId, signature = intClassSignature, hasPrimaryConstructor = false)
+            symbolTable.addClass(nodeId = stringClassDeclaration.nodeId, signature = stringClassSignature, hasPrimaryConstructor = false)
+            symbolTable.addVariable(
+                nodeId = importedLet.nodeId,
+                name = "main/myValue",
+                signature = VariableSymbol.VariableSignature(intValueType, false))
+        }
+
+
+        @Test
+        fun `Reference to imported symbol with valid resolution should not throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+
+            assertDoesNotThrow {
+                TypeChecker(listOf(ExprStmt(ref)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Reference to unresolved import should throw`() {
+            val ref = Reference("notImported")
+
+            assertThrows<DTCRefResolutionNotFoundException> {
+                TypeChecker(listOf(ExprStmt(ref)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Reference to aliased imported symbol should not throw`() {
+            val alias = Reference("mv")
+            refResolutions = mapOf(alias.nodeId to importedLet.nodeId)
+
+            assertDoesNotThrow {
+                TypeChecker(listOf(ExprStmt(alias)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Let with imported value matching declared type should not throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val typeResolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(ref.nodeId to intValueType))
+
+            val ast: List<ParserStatement> = listOf(
+                Let(name = "x", type = intValueType, value = ref, isMutable = false))
+
+            assertDoesNotThrow {
+                TypeChecker(ast, symbolTable, refResolutions, typeResolutions).check()
+            }
+        }
+
+        @Test
+        fun `Let with imported value mismatching declared type should throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val typeResolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(ref.nodeId to intValueType))
+
+            val ast: List<ParserStatement> = listOf(
+                Let(name = "x", type = stringValueType, value = ref, isMutable = false))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                TypeChecker(ast, symbolTable, refResolutions, typeResolutions).check()
+            }
+        }
+
+        @Test
+        fun `Get on accessor import receiver with valid resolution should not throw`() {
+            val moduleLet = Let(name = "users", type = AnyType, isMutable = false)
+            val moduleRef = Reference("users")
+            refResolutions = mapOf(moduleRef.nodeId to moduleLet.nodeId)
+
+            val get = Get(receiver = moduleRef, name = "MyClass")
+
+            assertDoesNotThrow {
+                TypeChecker(listOf(ExprStmt(get)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Get on accessor import with unresolved receiver should throw`() {
+            val moduleRef = Reference("users")
+            val get = Get(receiver = moduleRef, name = "MyClass")
+
+            assertThrows<DTCRefResolutionNotFoundException> {
+                TypeChecker(listOf(ExprStmt(get)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
             }
         }
     }

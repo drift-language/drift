@@ -24,7 +24,7 @@ class ImportParserTest {
         @Test
         fun `dotted namespace`() {
             val import = parse("import foo.bar.baz")
-            assertEquals("foo.bar.baz", import.namespace)
+            assertEquals("foo/bar/baz", import.namespace)
             assertEquals(listOf("foo", "bar", "baz"), import.steps)
         }
     }

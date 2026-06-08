@@ -26,13 +26,14 @@ class HIRConverterTest {
 
     private fun createConverter(
         ast: List<ParserStatement>,
+        namespace: String = "test",
         symbolTable: SymbolTable = SymbolTable(),
         typeResolution: Map<Int, ParserType> = emptyMap(),
         lambdaClosures: Map<Int, Map<String, Int>> = emptyMap()) : HIRConverter {
 
         HIRConverter.resetIds()
 
-        return HIRConverter(ast, symbolTable, typeResolution, lambdaClosures)
+        return HIRConverter(namespace, ast, symbolTable, typeResolution, lambdaClosures)
     }
 
     // ========================================================================
