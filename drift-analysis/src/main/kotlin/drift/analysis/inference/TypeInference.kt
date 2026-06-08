@@ -202,7 +202,7 @@ class TypeInference(
 
     private fun inferExpression(expression: ParserExpression?) : ParserType {
         return when (expression) {
-            is Reference -> inferVariable(expression)
+            is Reference -> inferReference(expression)
             is Literal -> inferLiteral(expression)
             is Unary -> inferUnary(expression)
             is Binary -> inferBinary(expression)
@@ -218,7 +218,7 @@ class TypeInference(
         }
     }
 
-    private fun inferVariable(reference: Reference) : ParserType {
+    private fun inferReference(reference: Reference) : ParserType {
         val referenceNodeId = reference.nodeId
         val definitionNodeId = refResolutions[referenceNodeId]
             ?: return UnknownType // TODO: throw
