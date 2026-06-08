@@ -12,6 +12,7 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
 import drift.oldruntime.AnyType
+import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.ParserType
 import drift.oldruntime.VoidType
@@ -307,9 +308,10 @@ class SymbolCollector(
             }
 
             is Assign -> {
-                symbolTable.lookupNodeId(expression.name)?.let {
-                    refResolutions[expression.nodeId] = it
-                }
+                val nodeId = symbolTable.lookupNodeId(expression.name)
+                    ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR${expression.name}")
+
+                nodeId?.let { refResolutions[expression.nodeId] = it }
 
                 collectExpression(expression.value)
             }
@@ -336,16 +338,8 @@ class SymbolCollector(
             }
 
             is Reference -> {
-                var nodeId = symbolTable.lookupNodeId(expression.name)
+                val nodeId = symbolTable.lookupNodeId(expression.name)
                     ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR${expression.name}")
-
-                if (nodeId == null) for (importedNamespace in importedNamespaces) {
-                    symbolTable.lookupNodeId("$importedNamespace$NAMESPACE_SEPARATOR${expression.name}")?.let {
-                        nodeId = it
-
-                        break   // NOTE: exit for loop
-                    }
-                }
 
                 nodeId?.let { refResolutions[expression.nodeId] = it }
             }
@@ -379,7 +373,9 @@ class SymbolCollector(
         val varNamesInLambda = findVariableNamesInLambda(lambda)
 
         for (varName in varNamesInLambda) {
-            val defId = symbolTable.lookupNodeId(varName) ?: continue
+            val defId = symbolTable.lookupNodeId(varName)
+                ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR$varName")
+                ?: continue
 
             if (!parameterNames.contains(varName)) {
                 capturedVars[varName] = defId
