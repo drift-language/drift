@@ -40,9 +40,11 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.UnionType
 import drift.oldruntime.UnknownType
 import drift.oldruntime.VoidType
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 
 class TypeChecker(
+    val namespace: String,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
     val refResolutions: Map<Int, Int>,
@@ -451,7 +453,7 @@ class TypeChecker(
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
-            is ObjectType -> if (!symbolTable.hasClass(type.className)) {
+            is ObjectType -> if (!symbolTable.hasClass("$namespace$NAMESPACE_SEPARATOR${type.className}")) {
                 throw DTCClassNotFoundException(type.className)
             }
 
