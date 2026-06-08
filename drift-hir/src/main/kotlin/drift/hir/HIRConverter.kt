@@ -357,7 +357,7 @@ class HIRConverter(
 
     private fun convertVariable(reference: Reference, type: HIRType) : HIRVariableRef {
         val hirId = allocateHirId()
-        val definitionHirId = definitionHirIds[reference.name] ?: -1
+        val definitionHirId = definitionHirIds[reference.name]
 
         val hirVar = HIRVariableRef(
             hirId = hirId,
@@ -454,9 +454,7 @@ class HIRConverter(
     private fun convertGet(get: Get, type: HIRType) : HIRFieldAccess {
         val hirId = allocateHirId()
         val receiver = convertExpression(get.receiver)
-        val receiverClassName =
-            "$namespace$NAMESPACE_SEPARATOR" +
-            extractClassName(typeResolution[get.receiver.nodeId])
+        val receiverClassName = extractClassName(typeResolution[get.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, get.name)
 
         val hirGet = HIRFieldAccess(
@@ -475,9 +473,7 @@ class HIRConverter(
     private fun convertSet(set: Set, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
         val receiver = convertExpression(set.receiver)
-        val receiverClassName =
-            "$namespace$NAMESPACE_SEPARATOR" +
-            extractClassName(typeResolution[set.receiver.nodeId])
+        val receiverClassName = extractClassName(typeResolution[set.receiver.nodeId])
         val fieldOffset = computeFieldOffset(receiverClassName, set.name)
         val value = convertExpression(set.value)
 
@@ -536,7 +532,7 @@ class HIRConverter(
 
         val captures = lambdaClosures[lambda.nodeId] ?: emptyMap()
         val capturedVariables = captures.map { (name, definitionNodeId) ->
-            val definitionHirId = astToHirMap[definitionNodeId] ?: -1
+            val definitionHirId = astToHirMap[definitionNodeId]
             val captureType = typeResolution[definitionNodeId]?.let { convertType(it) } ?: HIRAnyType
 
             HIRCapturedVariable(
