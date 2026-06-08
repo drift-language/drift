@@ -51,7 +51,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class TypeCheckerTest {
+class SemanticCheckerTest {
 
     @Nested
     inner class LetTests {
@@ -107,7 +107,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -123,7 +123,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -152,7 +152,7 @@ class TypeCheckerTest {
                 hasPrimaryConstructor = false)
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -168,7 +168,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -184,7 +184,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -205,7 +205,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -234,7 +234,7 @@ class TypeCheckerTest {
             refResolutions = mapOf(fooRef.nodeId to fooLet.nodeId)
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -250,7 +250,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -266,7 +266,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -282,7 +282,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -298,7 +298,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -322,7 +322,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -338,7 +338,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -377,7 +377,7 @@ class TypeCheckerTest {
                 Func(name = "foo", returnType = intValueType))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -388,7 +388,7 @@ class TypeCheckerTest {
                 Func(name = "foo", returnType = ObjectType("Unknown")))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -403,7 +403,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = intValueType))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -417,7 +417,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = ObjectType("Unknown")))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -435,7 +435,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserInt(0))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -453,7 +453,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserString("hello"))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -478,7 +478,7 @@ class TypeCheckerTest {
                             defaultValue = binary))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -516,7 +516,7 @@ class TypeCheckerTest {
                 Return(value = Literal(ParserInt(1))))
 
             assertThrows<DTCUnexpectedReturnStatementException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -532,7 +532,7 @@ class TypeCheckerTest {
                         Return(value = Literal(ParserInt(1)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -548,7 +548,7 @@ class TypeCheckerTest {
                         Return(value = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -571,7 +571,7 @@ class TypeCheckerTest {
                         Return(value = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -608,7 +608,7 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = Literal(ParserInt(1)))))
 
             assertThrows<DTCUnexpectedCalleeException> {
-                TypeChecker(ast, symbolTable, emptyMap(), resolutions)
+                SemanticChecker(ast, symbolTable, emptyMap(), resolutions)
                     .check()
             }
         }
@@ -620,7 +620,7 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = calleeVar)))
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(ast, symbolTable, emptyMap(), resolutions)
+                SemanticChecker(ast, symbolTable, emptyMap(), resolutions)
                     .check()
             }
         }
@@ -651,7 +651,7 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = calleeVar)))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -676,7 +676,7 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = calleeVar)))
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -699,7 +699,7 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -727,7 +727,7 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -762,7 +762,7 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -790,7 +790,7 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -850,7 +850,7 @@ class TypeCheckerTest {
 )
 
             assertDoesNotThrow {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -873,7 +873,7 @@ class TypeCheckerTest {
                 hasPrimaryConstructor = false)
 
             assertThrows<DTCTypeResolutionNotFoundException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -899,7 +899,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCUnexpectedCalleeException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -925,7 +925,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -951,7 +951,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -984,7 +984,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1013,7 +1013,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1047,7 +1047,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(
+                SemanticChecker(
                     listOf(intClassDeclaration, ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1100,7 +1100,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1115,7 +1115,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCTypeResolutionNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1133,7 +1133,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCUnsupportedIterationException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1151,7 +1151,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1174,7 +1174,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCUnsupportedIterationException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1213,7 +1213,7 @@ class TypeCheckerTest {
                 ExprStmt(Lambda(returnType = intValueType)))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1224,7 +1224,7 @@ class TypeCheckerTest {
                 ExprStmt(Lambda(returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1238,7 +1238,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = intValueType)))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1251,7 +1251,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = ObjectType("Unknown"))))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1268,7 +1268,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserInt(0)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1285,7 +1285,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1309,7 +1309,7 @@ class TypeCheckerTest {
                             defaultValue = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker(ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1349,7 +1349,7 @@ class TypeCheckerTest {
                     Let(name = "x", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1361,7 +1361,7 @@ class TypeCheckerTest {
                     Let(name = "count", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1373,7 +1373,7 @@ class TypeCheckerTest {
                     Func(name = "get", returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1385,7 +1385,7 @@ class TypeCheckerTest {
                     Func(name = "create", returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1403,7 +1403,7 @@ class TypeCheckerTest {
                     Func(name = "create", returnType = intValueType)))
 
             assertDoesNotThrow {
-                TypeChecker(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
     }
@@ -1449,7 +1449,7 @@ class TypeCheckerTest {
             refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
 
             assertDoesNotThrow {
-                TypeChecker(listOf(ExprStmt(ref)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+                SemanticChecker(listOf(ExprStmt(ref)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
             }
         }
 
@@ -1458,7 +1458,7 @@ class TypeCheckerTest {
             val ref = Reference("notImported")
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(listOf(ExprStmt(ref)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
+                SemanticChecker(listOf(ExprStmt(ref)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
             }
         }
 
@@ -1468,7 +1468,7 @@ class TypeCheckerTest {
             refResolutions = mapOf(alias.nodeId to importedLet.nodeId)
 
             assertDoesNotThrow {
-                TypeChecker(listOf(ExprStmt(alias)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+                SemanticChecker(listOf(ExprStmt(alias)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
             }
         }
 
@@ -1483,7 +1483,7 @@ class TypeCheckerTest {
                 Let(name = "x", type = intValueType, value = ref, isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, typeResolutions).check()
+                SemanticChecker(ast, symbolTable, refResolutions, typeResolutions).check()
             }
         }
 
@@ -1498,7 +1498,7 @@ class TypeCheckerTest {
                 Let(name = "x", type = stringValueType, value = ref, isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, typeResolutions).check()
+                SemanticChecker(ast, symbolTable, refResolutions, typeResolutions).check()
             }
         }
 
@@ -1511,7 +1511,7 @@ class TypeCheckerTest {
             val get = Get(receiver = moduleRef, name = "MyClass")
 
             assertDoesNotThrow {
-                TypeChecker(listOf(ExprStmt(get)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+                SemanticChecker(listOf(ExprStmt(get)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
             }
         }
 
@@ -1521,7 +1521,7 @@ class TypeCheckerTest {
             val get = Get(receiver = moduleRef, name = "MyClass")
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(listOf(ExprStmt(get)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
+                SemanticChecker(listOf(ExprStmt(get)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
             }
         }
     }

@@ -9,7 +9,7 @@
 
 package drift.bootstrap
 
-import drift.analysis.checkers.TypeChecker
+import drift.analysis.checkers.SemanticChecker
 import drift.analysis.inference.TypeInference
 import drift.analysis.semantic.classes.ClassValidator
 import drift.analysis.symbols.SymbolCollector
@@ -109,14 +109,14 @@ abstract class Bootstrap(
         refResolutions: Map<Int, Int>,
         resolutions: TypeInference.TypeInferenceResult) {
 
-        val typeChecker = TypeChecker(
+        val semanticChecker = SemanticChecker(
             namespace = namespace,
             ast = ast,
             symbolTable = symbolTable,
             refResolutions = refResolutions,
             resolutions = resolutions)
 
-        typeChecker.check()
+        semanticChecker.check()
     }
 
 
