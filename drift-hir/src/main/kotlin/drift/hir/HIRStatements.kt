@@ -39,10 +39,10 @@ data class HIRHook(
  * Function parameter.
  */
 data class HIRParameter(
+    override val hirId: Int,
     val name: String,
     val type: HIRType,
-    val defaultValue: HIRExpression? = null
-)
+    val defaultValue: HIRExpression? = null) : HIRNode
 
 /**
  * Variable declaration (let/var).

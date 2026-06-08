@@ -11,6 +11,7 @@ package drift.hir
 
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
+import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
@@ -115,17 +116,14 @@ class HIRConverter(
 
         val returnType = convertType(function.returnType)
 
-        val parameters = function.parameters.map { param ->
-            HIRParameter(
-                name = param.name,
-                type = convertType(param.type),
-                defaultValue = param.defaultValue?.let { convertExpression(it) })
-        }
+        val parameters = function
+            .parameters
+            .map(this::convertParameter)
 
         val body = function
             .body
             .statements
-            .map { convertStatement(it) }
+            .map(this::convertStatement)
 
         val hirFunc = HIRFunction(
             hirId = hirId,
@@ -149,17 +147,14 @@ class HIRConverter(
             if (hook is ReturnableHook) convertType(hook.returnType)
             else HIRPrimitiveType(PrimitiveKind.VOID)
 
-        val parameters = hook.parameters.map { param ->
-            HIRParameter(
-                name = param.name,
-                type = convertType(param.type),
-                defaultValue = param.defaultValue?.let { convertExpression(it) })
-        }
+        val parameters = hook
+            .parameters
+            .map(this::convertParameter)
 
         val body = hook
             .body
             .statements
-            .map { convertStatement(it) }
+            .map(this::convertStatement)
 
         val hirHook = HIRHook(
             hirId,
@@ -175,6 +170,19 @@ class HIRConverter(
         definitionHirIds[hook.name] = hirId
 
         return hirHook
+    }
+
+    private fun convertParameter(param: FunctionParameter) : HIRParameter {
+        val paramHirId = allocateHirId()
+
+        astToHirMap[param.nodeId] = paramHirId
+        definitionHirIds[param.name] = paramHirId
+
+        return HIRParameter(
+            hirId = paramHirId,
+            name = param.name,
+            type = convertType(param.type),
+            defaultValue = param.defaultValue?.let { convertExpression(it) })
     }
 
     private fun convertClass(clazz: Class) : HIRClass {

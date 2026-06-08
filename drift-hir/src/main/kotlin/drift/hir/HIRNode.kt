@@ -18,6 +18,7 @@ import drift.hir.metadata.HIRAnnotation
  * Every HIR node has a unique identifier for tracking and reference purposes.
  */
 sealed interface HIRNode {
+
     val hirId: Int
 }
 
@@ -43,5 +44,6 @@ sealed interface HIRAnnotatable {
  * This makes HIR self-contained - backends don't need external type lookups.
  */
 sealed interface HIRExpression : HIRNode {
+
     val type: HIRType
 }
