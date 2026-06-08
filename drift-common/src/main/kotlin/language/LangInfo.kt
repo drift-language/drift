@@ -19,4 +19,6 @@ object LangInfo {
     const val FILE_EXTENSION = ".drift"
 
     const val NAMESPACE_SEPARATOR = "/"
+
+    const val INJECTED_VAR_PREFIX = "$"
 }

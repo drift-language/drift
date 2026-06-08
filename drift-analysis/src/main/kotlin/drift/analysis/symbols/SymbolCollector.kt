@@ -16,6 +16,8 @@ import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.ParserType
 import drift.oldruntime.VoidType
+import language.LangInfo
+import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
 
 class SymbolCollector(
@@ -143,7 +145,7 @@ class SymbolCollector(
 
             symbolTable.addVariable(
                 nodeId = symbolTable.allocateSyntheticId(),
-                name = $$"$this",
+                name = "${INJECTED_VAR_PREFIX}this",
                 signature = thisSignature)
         }
 
