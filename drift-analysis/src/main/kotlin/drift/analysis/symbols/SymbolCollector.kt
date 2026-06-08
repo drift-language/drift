@@ -269,8 +269,81 @@ class SymbolCollector(
     }
 
     private fun collectImport(import: Import) {
+        if (importedNamespaces.contains(import.namespace))
+            return
+
         if (import.namespace != namespace)
             importedNamespaces.add(import.namespace)
+
+        fun handleWithWildcard() {
+            val importedNodeIds = symbolTable
+                .getBindingsByNamespace(import.namespace)
+            val excludedImportNamespaces = mutableSetOf<String>()
+
+            import.parts
+                ?.filter { it.alias != null }
+                ?.forEach { part ->
+                    val qualifiedName = "${import.namespace}$NAMESPACE_SEPARATOR${part.source}"
+                    val nodeId = importedNodeIds[qualifiedName]
+                        ?: return@forEach
+                    val importNewQualifiedName = "$namespace$NAMESPACE_SEPARATOR${part.alias!!}"
+
+                    symbolTable.addBinding(importNewQualifiedName, nodeId)
+                    excludedImportNamespaces.add(qualifiedName)
+                }
+
+            importedNodeIds
+                .filter { (importedNamespace, _) -> !excludedImportNamespaces.contains(importedNamespace) }
+                .forEach { (importedNamespace, importedNodeId) ->
+                    val simpleName = importedNamespace.substringAfterLast(NAMESPACE_SEPARATOR)
+                    symbolTable.addBinding("$namespace$NAMESPACE_SEPARATOR$simpleName", importedNodeId)
+                }
+        }
+        fun handleWithoutWildcard() {
+            if (import.parts == null) return
+
+            import.parts
+                ?.forEach { part ->
+                    val namespaceEnding =
+                        if (part.alias == null) part.source
+                        else part.alias
+                    val originalQualifiedName = "${import.namespace}$NAMESPACE_SEPARATOR${part.source}"
+                    val qualifiedName = "${namespace}$NAMESPACE_SEPARATOR$namespaceEnding"
+
+                    val importedNodeId = symbolTable
+                        .lookupNodeId(originalQualifiedName)
+                        ?: error("Undefined imported structure")
+
+                    symbolTable.addBinding(qualifiedName, importedNodeId)
+                }
+        }
+        fun handleImportByAccessor() {
+            val importedNodeIds = symbolTable
+                .getBindingsByNamespace(import.namespace)
+                .map { (importedNamespace, importedNodeId) ->
+                    val newNamespace = importedNamespace
+                        .substringAfterLast(NAMESPACE_SEPARATOR)
+
+                    newNamespace to importedNodeId
+                }
+                .toMap()
+
+            val moduleQualifiedName =
+                namespace +
+                NAMESPACE_SEPARATOR +
+                import.namespace.substringAfterLast(NAMESPACE_SEPARATOR)
+            val signature = ModuleSymbol.ModuleSignature(
+                name = moduleQualifiedName,
+                symbols = importedNodeIds)
+
+            symbolTable.addModule(
+                nodeId = import.nodeId,
+                signature = signature)
+        }
+
+        if (import.wildcard) handleWithWildcard()
+        else if (import.parts != null) handleWithoutWildcard()
+        else handleImportByAccessor()
     }
 
     /**
