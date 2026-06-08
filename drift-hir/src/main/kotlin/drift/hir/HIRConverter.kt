@@ -24,7 +24,6 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
 import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
-import language.LangInfo.NAMESPACE_SEPARATOR
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
@@ -596,7 +595,7 @@ class HIRConverter(
         }
     }
 
-    private fun computeFieldOffset(className: String, fieldName: String) : Int {
+    private fun computeFieldOffset(className: String, memberName: String) : Int {
         val classId = symbolTable.lookupNodeId(className)
             ?: return -1
 
@@ -608,7 +607,16 @@ class HIRConverter(
         var offset = 0
 
         for (field in symbol.signature.fields) {
-            if (field.key == fieldName) return offset
+            if (field.key == memberName)
+                return offset
+
+            offset += 8
+        }
+
+        for (method in symbol.signature.methods) {
+            if (method.key == memberName)
+                return offset
+
             offset += 8
         }
 
