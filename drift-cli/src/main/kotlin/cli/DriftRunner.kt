@@ -25,6 +25,7 @@ import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.cli.bootstraps.RunnerBootstrap
 import language.LangInfo
+import language.LangInfo.NAMESPACE_SEPARATOR
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
@@ -100,6 +101,7 @@ class Run : CliktCommand(name = "run") {
         val namespace = sourceRootPath
             .relativize(entryPathObj)
             .toString()
+            .replace(File.separator, NAMESPACE_SEPARATOR)
             .removeDriftExtension()
 
         val source = entryFile.readText()

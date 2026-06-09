@@ -16,6 +16,7 @@ import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
 import drift.cli.bootstraps.RunnerTestBootstrap
 import language.LangInfo
+import language.LangInfo.NAMESPACE_SEPARATOR
 import project.loadConfig
 import sugar.removeDriftExtension
 import java.io.File
@@ -68,6 +69,7 @@ fun main(args: Array<String>) {
     val namespace = sourceRootPath
         .relativize(file.absoluteFile.toPath())
         .toString()
+        .replace(File.separator, NAMESPACE_SEPARATOR)
         .removeDriftExtension()
 
     RunnerTestBootstrap(

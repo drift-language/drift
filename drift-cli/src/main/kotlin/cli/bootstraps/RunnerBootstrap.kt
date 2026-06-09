@@ -13,6 +13,7 @@ import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
+import language.LangInfo.NAMESPACE_SEPARATOR
 import sugar.hasDriftExtension
 import sugar.removeDriftExtension
 import java.io.File
@@ -57,6 +58,7 @@ class RunnerBootstrap(
             .filter {
                 val currentFileRelativePath = it
                     .toRelativeString(sourceRoot)
+                    .replace(File.separator, NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
                     .hasDriftExtension()
                 val currentNamespace = currentFileRelativePath
@@ -73,6 +75,7 @@ class RunnerBootstrap(
             .map { element ->
                 val currentNamespace = element
                     .toRelativeString(sourceRoot)
+                    .replace(File.separator, NAMESPACE_SEPARATOR)
                     .removeDriftExtension()
 
                 val source = element.readText()
