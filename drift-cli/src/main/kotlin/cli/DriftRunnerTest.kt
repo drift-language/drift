@@ -66,7 +66,7 @@ fun main(args: Array<String>) {
         error("Source root must be a directory")
 
     val namespace = sourceRootPath
-        .relativize(Path.of(args[0]))
+        .relativize(file.absoluteFile.toPath())
         .toString()
         .removeDriftExtension()
 
