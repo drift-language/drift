@@ -9,13 +9,23 @@
 package drift.analysis.symbols
 
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
+import language.LangInfo.NAMESPACE_SEPARATOR
+import kotlin.collections.emptyMap
 
 data class SymbolTable(
     // Global symbol storage - symbols persist after scope pop
     val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
-    // Scopes for name-binding resolution
     private val scopes: MutableList<Scope> = mutableListOf()
+
+    /**
+     * A synthetic ID permits identifying a synthetic node
+     * in the [SymbolTable].
+     *
+     * Synthetic IDs are negative to avoid any collision with
+     * AST ones.
+     */
+    private var currentSyntheticId = -1
 
 
     init {
@@ -31,6 +41,11 @@ data class SymbolTable(
         if (scopes.size > 1)
             scopes.removeLast()
     }
+
+    fun isTopLevel() = scopes.size == 1
+
+    fun allocateSyntheticId() = currentSyntheticId--
+
 
     fun addVariable(
         nodeId: Int,
@@ -53,7 +68,8 @@ data class SymbolTable(
 
         allSymbols[nodeId] = symbol
 
-        if (name != null) scopes.last().bindings[name] = nodeId
+        if (name != null)
+            scopes.last().bindings[name] = nodeId
     }
 
     fun addClass(
@@ -68,6 +84,19 @@ data class SymbolTable(
         scopes.last().bindings[signature.name] = nodeId
     }
 
+    fun addModule(
+        nodeId: Int,
+        signature: ModuleSymbol.ModuleSignature) {
+
+        val symbol = ModuleSymbol(signature)
+
+        allSymbols[nodeId] = symbol
+
+        scopes.first().bindings[signature.name] = nodeId
+        // NOTE: first scope because an import statement
+        //  can only be done on top-level.
+    }
+
 
     fun getSymbol(nodeId: Int) : Symbol {
         return allSymbols[nodeId]
@@ -77,6 +106,35 @@ data class SymbolTable(
                         instead of throwing an exception. Should not throwing be the
                         responsibility of the caller?
          */
+    }
+
+    /**
+     * Access to the main scope's bindings and return its
+     * binding map, filtered by the provided namespace.
+     *
+     * @param namespace Namespace used to filter the binding map.
+     * @return Binding map (qualified name: node ID) composed of all structures
+     *         related to the provided namespace.
+     */
+    fun getBindingsByNamespace(namespace: String) : Map<String, Int> {
+        if (scopes.isEmpty())
+            error("None active scope, structural error")
+
+        return scopes
+            .first()
+            .bindings
+            .filter { it.key.startsWith("$namespace$NAMESPACE_SEPARATOR") }
+    }
+
+
+    /**
+     * Add or replace a binding of the last scope.
+     *
+     * @param name Binding name, to prefix with namespace if top-level.
+     * @param nodeId Bound node ID
+     */
+    fun addBinding(name: String, nodeId: Int) {
+        scopes.last().bindings[name] = nodeId
     }
 
 
@@ -96,7 +154,46 @@ data class SymbolTable(
     }
 
 
+    operator fun plusAssign(other: SymbolTable) {
+        allSymbols += other.allSymbols
+
+        if (scopes.isNotEmpty() && other.scopes.isNotEmpty())
+            scopes.first().bindings += other.scopes.first().bindings
+    }
+    operator fun plusAssign(others: Collection<SymbolTable>) =
+        others.forEach { plusAssign(it) }
+
+    operator fun plus(other: SymbolTable) : SymbolTable {
+        val allSymbols = (allSymbols + other.allSymbols)
+            .toMutableMap()
+
+        val bindings: Map<String, Int> =
+            if (scopes.isNotEmpty() && other.scopes.isNotEmpty()) {
+                scopes.first().bindings + other.scopes.first().bindings
+            } else {
+                emptyMap()
+            }
+
+        val symbolTable = SymbolTable(allSymbols)
+        symbolTable
+            .scopes
+            .first()
+            .bindings += bindings
+
+        return symbolTable
+    }
+    operator fun plus(others: Collection<SymbolTable>) : SymbolTable {
+        val finalSymbolTable = this
+
+        for (currentST in others)
+            finalSymbolTable += currentST
+
+        return finalSymbolTable
+    }
+
+
     private class Scope {
+
         val bindings = mutableMapOf<String, Int>()
     }
 }

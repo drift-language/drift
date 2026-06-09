@@ -1,10 +1,9 @@
 package drift.parser
 
 import drift.ast.expressions.Literal
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.Return
 import drift.lexer.lex
-import drift.oldruntime.values.specials.ParserVoid
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,7 +26,7 @@ class ReturnParserTest {
         @Test
         fun `return with variable`() {
             val ret = parseReturn("return x")
-            assertTrue(ret.value is Variable)
+            assertTrue(ret.value is Reference)
         }
 
         @Test

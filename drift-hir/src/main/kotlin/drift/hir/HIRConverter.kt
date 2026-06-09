@@ -11,6 +11,7 @@ package drift.hir
 
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
+import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
@@ -22,12 +23,14 @@ import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
 import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
+import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
  */
 class HIRConverter(
+    private val namespace: String,
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
     private val typeResolution: Map<Int, ParserType>,
@@ -113,17 +116,14 @@ class HIRConverter(
 
         val returnType = convertType(function.returnType)
 
-        val parameters = function.parameters.map { param ->
-            HIRParameter(
-                name = param.name,
-                type = convertType(param.type),
-                defaultValue = param.defaultValue?.let { convertExpression(it) })
-        }
+        val parameters = function
+            .parameters
+            .map(this::convertParameter)
 
         val body = function
             .body
             .statements
-            .map { convertStatement(it) }
+            .map(this::convertStatement)
 
         val hirFunc = HIRFunction(
             hirId = hirId,
@@ -147,17 +147,14 @@ class HIRConverter(
             if (hook is ReturnableHook) convertType(hook.returnType)
             else HIRPrimitiveType(PrimitiveKind.VOID)
 
-        val parameters = hook.parameters.map { param ->
-            HIRParameter(
-                name = param.name,
-                type = convertType(param.type),
-                defaultValue = param.defaultValue?.let { convertExpression(it) })
-        }
+        val parameters = hook
+            .parameters
+            .map(this::convertParameter)
 
         val body = hook
             .body
             .statements
-            .map { convertStatement(it) }
+            .map(this::convertStatement)
 
         val hirHook = HIRHook(
             hirId,
@@ -173,6 +170,19 @@ class HIRConverter(
         definitionHirIds[hook.name] = hirId
 
         return hirHook
+    }
+
+    private fun convertParameter(param: FunctionParameter) : HIRParameter {
+        val paramHirId = allocateHirId()
+
+        astToHirMap[param.nodeId] = paramHirId
+        definitionHirIds[param.name] = paramHirId
+
+        return HIRParameter(
+            hirId = paramHirId,
+            name = param.name,
+            type = convertType(param.type),
+            defaultValue = param.defaultValue?.let { convertExpression(it) })
     }
 
     private fun convertClass(clazz: Class) : HIRClass {
@@ -323,7 +333,7 @@ class HIRConverter(
 
         return when (expr) {
             is Literal -> convertLiteral(expr, type)
-            is Variable -> convertVariable(expr, type)
+            is Reference -> convertVariable(expr, type)
             is Binary -> convertBinary(expr, type)
             is Unary -> convertUnary(expr, type)
             is Call -> convertCall(expr, type)
@@ -352,17 +362,17 @@ class HIRConverter(
         return hirLiteral
     }
 
-    private fun convertVariable(variable: Variable, type: HIRType) : HIRVariableRef {
+    private fun convertVariable(reference: Reference, type: HIRType) : HIRVariableRef {
         val hirId = allocateHirId()
-        val definitionHirId = definitionHirIds[variable.name] ?: -1
+        val definitionHirId = definitionHirIds[reference.name]
 
         val hirVar = HIRVariableRef(
             hirId = hirId,
             type = type,
-            name = variable.name,
+            name = reference.name,
             definitionHirId = definitionHirId)
 
-        astToHirMap[variable.nodeId] = hirId
+        astToHirMap[reference.nodeId] = hirId
 
         return hirVar
     }
@@ -529,7 +539,7 @@ class HIRConverter(
 
         val captures = lambdaClosures[lambda.nodeId] ?: emptyMap()
         val capturedVariables = captures.map { (name, definitionNodeId) ->
-            val definitionHirId = astToHirMap[definitionNodeId] ?: -1
+            val definitionHirId = astToHirMap[definitionNodeId]
             val captureType = typeResolution[definitionNodeId]?.let { convertType(it) } ?: HIRAnyType
 
             HIRCapturedVariable(
@@ -587,11 +597,13 @@ class HIRConverter(
     private fun extractClassName(parserType: ParserType?) : String {
         return when (parserType) {
             is ObjectType -> parserType.className
-            else -> "Unknown"
+            is ClassType  -> parserType.className
+
+            else -> $$"$Unknown$"
         }
     }
 
-    private fun computeFieldOffset(className: String, fieldName: String) : Int {
+    private fun computeFieldOffset(className: String, memberName: String) : Int {
         val classId = symbolTable.lookupNodeId(className)
             ?: return -1
 
@@ -603,7 +615,16 @@ class HIRConverter(
         var offset = 0
 
         for (field in symbol.signature.fields) {
-            if (field.key == fieldName) return offset
+            if (field.key == memberName)
+                return offset
+
+            offset += 8
+        }
+
+        for (method in symbol.signature.methods) {
+            if (method.key == memberName)
+                return offset
+
             offset += 8
         }
 

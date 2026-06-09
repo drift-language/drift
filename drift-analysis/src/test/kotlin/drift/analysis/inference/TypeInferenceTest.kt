@@ -11,8 +11,6 @@ package drift.analysis.inference
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
 import drift.analysis.exceptions.DIRUnexpectedExpressionException
 import drift.analysis.exceptions.DIRUnexpectedTypeException
-import drift.analysis.exceptions.DIRUnexpectedUnknownTypeException
-import drift.analysis.exceptions.DIRUnexpectedVoidTypeException
 import drift.analysis.exceptions.DIRUnsupportedOperationException
 import drift.analysis.symbols.CallableSymbol
 import drift.analysis.symbols.ClassSymbol
@@ -22,10 +20,9 @@ import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.oldruntime.*
 import drift.oldruntime.values.primaries.*
-import drift.oldruntime.values.specials.ParserNotAssigned
 import drift.oldruntime.values.primaries.ParserNull
-import drift.oldruntime.values.specials.ParserVoid
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -489,14 +486,14 @@ class TypeInferenceTest {
                 val function = Func(
                     name = "foo",
                     returnType = ObjectType(ParserPrimitiveClass.Int.className))
-                val variable = Variable(name = function.name)
-                val call = Call(callee = variable)
+                val reference = Reference(name = function.name)
+                val call = Call(callee = reference)
                 val ast: List<ParserStatement> = listOf(function, ExprStmt(call))
                 val symbol = CallableSymbol()
 
                 val symbolTable = SymbolTable(mutableMapOf(
                     function.nodeId to symbol))
-                val refResolutions = mapOf(variable.nodeId to function.nodeId)
+                val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
                 val inference = TypeInference(ast, symbolTable, refResolutions)
                     .infer()
@@ -509,14 +506,14 @@ class TypeInferenceTest {
             @Test
             fun `Function returning implicitly an integer should return ObjectType(Int)`() {
                 val function = Func(name = "foo")
-                val variable = Variable(name = function.name)
-                val call = Call(callee = variable)
+                val reference = Reference(name = function.name)
+                val call = Call(callee = reference)
                 val ast: List<ParserStatement> = listOf(function, ExprStmt(call))
                 val symbol = CallableSymbol()
 
                 val symbolTable = SymbolTable(
                     mutableMapOf(function.nodeId to symbol))
-                val refResolutions = mapOf(variable.nodeId to function.nodeId)
+                val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
                 val inference = TypeInference(ast, symbolTable, refResolutions)
                     .infer()
@@ -532,21 +529,21 @@ class TypeInferenceTest {
                 val function = Func(
                     name = "foo",
                     returnType = returnType)
-                val variable = Variable(name = function.name)
-                val call = Call(callee = variable)
+                val reference = Reference(name = function.name)
+                val call = Call(callee = reference)
                 val ast: List<ParserStatement> = listOf(function, ExprStmt(call))
                 val symbol = CallableSymbol()
 
                 val symbolTable = SymbolTable(
                     mutableMapOf(function.nodeId to symbol))
-                val refResolutions = mapOf(variable.nodeId to function.nodeId)
+                val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
                 val inference = TypeInference(ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     FunctionType(returnType = returnType),
-                    inference.typeResolutions[variable.nodeId])
+                    inference.typeResolutions[reference.nodeId])
             }
         }
 
@@ -556,8 +553,8 @@ class TypeInferenceTest {
             @Test
             fun `Class call should return ObjectType(ClassName)`() {
                 val clazz = Class(name = "Foo")
-                val variable = Variable(name = clazz.name)
-                val call = Call(callee = variable)
+                val reference = Reference(name = clazz.name)
+                val call = Call(callee = reference)
 
                 val ast = listOf<ParserStatement>(ExprStmt(call))
                 val initSymbol = CallableSymbol()
@@ -569,7 +566,7 @@ class TypeInferenceTest {
 
                 val symbolTable = SymbolTable(mutableMapOf(
                     clazz.nodeId to classSymbol))
-                val refResolutions = mapOf(variable.nodeId to clazz.nodeId)
+                val refResolutions = mapOf(reference.nodeId to clazz.nodeId)
 
                 val inference = TypeInference(ast, symbolTable, refResolutions)
                     .infer()
@@ -592,7 +589,7 @@ class TypeInferenceTest {
                     methods = linkedMapOf(
                         "f" to CallableSymbol.CallableSignature(returnType = intOT)))
 
-                val innerVar = Variable("A")
+                val innerVar = Reference("A")
                 val receiverCall = Call(callee = innerVar)
                 val get = Get(receiver = receiverCall, name = "f")
                 val outerCall = Call(callee = get)
@@ -619,7 +616,7 @@ class TypeInferenceTest {
                     constructorMethod = CallableSymbol(),
                     fields = linkedMapOf("x" to intOT))
 
-                val innerVar = Variable("A")
+                val innerVar = Reference("A")
                 val receiverCall = Call(callee = innerVar)
                 val get = Get(receiver = receiverCall, name = "x")
                 val outerCall = Call(callee = get)
@@ -640,16 +637,16 @@ class TypeInferenceTest {
         }
 
         @Nested
-        inner class VariableContextTests {
+        inner class ReferenceContextTests {
 
             @Test
             fun `Call on variable storing a callable should return callable return type`() {
                 val function = Func(
                     name = "foo",
                     returnType = intOT)
-                val callVar = Variable(
+                val callVar = Reference(
                     name = "callVar")
-                val letVar = Variable(
+                val letVar = Reference(
                     name = "letVar")
                 val let = Let(
                     name = "fooFunction",
@@ -688,7 +685,7 @@ class TypeInferenceTest {
                     type = AnyType,
                     value = Literal(ParserInt(1)),
                     isMutable = false)
-                val letVar = Variable(
+                val letVar = Reference(
                     name = "letVar")
                 val call = Call(letVar)
 
@@ -1527,7 +1524,7 @@ class TypeInferenceTest {
                         "foo" to stringOT)),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val get = Get(
@@ -1607,7 +1604,7 @@ class TypeInferenceTest {
                         "foo" to CallableSymbol.CallableSignature())),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val get = Get(
@@ -1673,7 +1670,7 @@ class TypeInferenceTest {
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val get = Get(
@@ -1781,7 +1778,7 @@ class TypeInferenceTest {
                         "foo" to stringOT)),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val set = Set(
@@ -1849,7 +1846,7 @@ class TypeInferenceTest {
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val set = Set(
@@ -1933,7 +1930,7 @@ class TypeInferenceTest {
                         "foo" to stringOT)),
                 hasPrimaryConstructor = false)
 
-            val receiver = Variable(
+            val receiver = Reference(
                 name = "String")
 
             val set = Set(
@@ -2047,6 +2044,76 @@ class TypeInferenceTest {
             val inference = TypeInference(ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[method.nodeId])
+        }
+    }
+
+
+    @Nested
+    inner class ImportTests {
+
+        private val importedNamespace = "test/users"
+
+        private fun tableWithVar(qualifiedName: String, let: Let, type: ParserType): SymbolTable {
+            val st = SymbolTable()
+            st.addVariable(
+                nodeId = let.nodeId,
+                name = qualifiedName,
+                signature = VariableSymbol.VariableSignature(type, false))
+            return st
+        }
+
+
+        @Test
+        fun `selectively imported variable reference infers its declared type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, intOT)
+
+            val ref = Reference("myValue")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                st,
+                mapOf(ref.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(intOT, inference.typeResolutions[ref.nodeId])
+        }
+
+        @Test
+        fun `aliased imported variable reference infers its original type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, stringOT)
+
+            val alias = Reference("mv")
+            val inference = TypeInference(
+                listOf(ExprStmt(alias)),
+                st,
+                mapOf(alias.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(stringOT, inference.typeResolutions[alias.nodeId])
+        }
+
+        @Test
+        fun `wildcard imported variable reference infers its declared type`() {
+            val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+            val st = tableWithVar("$importedNamespace/myValue", importedLet, boolOT)
+
+            val ref = Reference("myValue")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                st,
+                mapOf(ref.nodeId to importedLet.nodeId)).infer()
+
+            assertEquals(boolOT, inference.typeResolutions[ref.nodeId])
+        }
+
+        @Test
+        fun `unresolved imported reference has no type resolution`() {
+            val ref = Reference("notImported")
+            val inference = TypeInference(
+                listOf(ExprStmt(ref)),
+                SymbolTable(),
+                emptyMap()).infer()
+
+            assertNull(inference.typeResolutions[ref.nodeId])
         }
     }
 }

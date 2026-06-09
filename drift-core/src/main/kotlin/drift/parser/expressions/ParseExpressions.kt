@@ -107,7 +107,7 @@ internal fun Parser.parseBinary(minPrecedence: Int) : ParserExpression {
                 val right = parseBinary(precedence + 1)
 
                 when (left) {
-                    is Variable -> Assign(left.name, right)
+                    is Reference -> Assign(left.name, right)
                     is Get -> Set(left.receiver, left.name, right)
                     else -> throw DPInvalidAssignmentTargetException()
                 }
@@ -240,7 +240,7 @@ internal fun Parser.parseVariable() : ParserExpression {
 
     advance(false)
 
-    return Variable(name.value)
+    return Reference(name.value)
 }
 
 

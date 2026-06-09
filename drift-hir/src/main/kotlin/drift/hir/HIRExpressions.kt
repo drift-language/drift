@@ -37,7 +37,7 @@ data class HIRVariableRef(
     override val hirId: Int,
     override val type: HIRType,
     val name: String,
-    val definitionHirId: Int
+    val definitionHirId: Int?
 ) : HIRExpression
 
 // ============================================================================
@@ -150,5 +150,5 @@ data class HIRLambdaParameter(
 data class HIRCapturedVariable(
     val name: String,
     val type: HIRType,
-    val definitionHirId: Int
+    val definitionHirId: Int?
 )

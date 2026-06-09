@@ -24,6 +24,7 @@ import drift.analysis.symbols.CallableSymbol
 import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
+import drift.analysis.symbols.VariableSymbol
 import drift.ast.ParserCallable
 import drift.ast.ParserReturnable
 import drift.ast.expressions.*
@@ -40,9 +41,12 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.UnionType
 import drift.oldruntime.UnknownType
 import drift.oldruntime.VoidType
+import language.LangInfo.INJECTED_VAR_PREFIX
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 
-class TypeChecker(
+class SemanticChecker(
+    val namespace: String,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
     val refResolutions: Map<Int, Int>,
@@ -78,7 +82,10 @@ class TypeChecker(
         checkType(let.type)
 
         val letValue = let.value
+
         if (letValue != null) {
+            checkExpression(letValue)
+
             val compatibleTypes = compareTypesInLiteralContext(
                 let.type,
                 letValue)
@@ -177,9 +184,13 @@ class TypeChecker(
             is Set          -> checkSet(expression)
             is Conditional  -> checkConditional(expression)
             is Lambda       -> checkLambda(expression)
+            is Reference    -> checkReference(expression)
             is drift.ast.expressions.Array  -> checkListLiteral(expression)
 
-            else -> { /* Undefined behavior. */ }
+            else -> {
+                /* Undefined behavior. */
+                println("[WARNING]\tUnhandled expression checking for: ${expression::class.qualifiedName}")
+            }
         }
     }
 
@@ -248,7 +259,7 @@ class TypeChecker(
             }
         }
 
-        fun handleVariable(callee: Variable) {
+        fun handleReference(callee: Reference) {
             val calleeDefId = refResolutions[callee.nodeId]
                 ?: throw DTCRefResolutionNotFoundException()
 
@@ -297,13 +308,27 @@ class TypeChecker(
         checkExpression(callee)
 
         when (callee) {
-            is Variable -> handleVariable(callee)
+            is Reference -> handleReference(callee)
             is Get      -> handleAccessor(callee)
 
             else        -> throw DTCUnexpectedCalleeException()
         }
     }
-    private fun checkAssign(assign: Assign) = checkExpression(assign.value)
+    private fun checkAssign(assign: Assign) {
+        if (assign.name.startsWith(INJECTED_VAR_PREFIX))
+            error("Injected variables are immutable")
+
+        val structureNodeId = symbolTable.lookupNodeId(assign.name)
+            ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR${assign.name}")
+            ?: error("Assign variable not found")
+        val structure = symbolTable.getSymbol(structureNodeId) as? VariableSymbol
+            ?: error("Only variables can be assigned")
+
+        if (!structure.signature.isMutable)
+            error("Variable '${assign.name}' is immutable")
+
+        checkExpression(assign.value)
+    }
     private fun checkGet(get: Get) = checkExpression(get.receiver)
     private fun checkSet(set: Set) {
         checkExpression(set.receiver)
@@ -338,6 +363,10 @@ class TypeChecker(
             .forEach(this::checkStatement)
 
         callableContextScopes.removeLast()
+    }
+    private fun checkReference(reference: Reference) {
+        if (!refResolutions.contains(reference.nodeId))
+            throw DTCRefResolutionNotFoundException()
     }
     private fun checkListLiteral(array: drift.ast.expressions.Array) {
         array.values.forEach(this::checkExpression)
@@ -440,7 +469,7 @@ class TypeChecker(
         when (type) {
             is OptionalType -> checkType(type.inner)
             is UnionType -> type.options.forEach { checkType(it) }
-            is ObjectType -> if (!symbolTable.hasClass(type.className)) {
+            is ObjectType -> if (!symbolTable.hasClass("$namespace$NAMESPACE_SEPARATOR${type.className}")) {
                 throw DTCClassNotFoundException(type.className)
             }
 

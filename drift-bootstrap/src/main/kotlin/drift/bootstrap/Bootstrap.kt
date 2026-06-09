@@ -9,7 +9,7 @@
 
 package drift.bootstrap
 
-import drift.analysis.checkers.TypeChecker
+import drift.analysis.checkers.SemanticChecker
 import drift.analysis.inference.TypeInference
 import drift.analysis.semantic.classes.ClassValidator
 import drift.analysis.symbols.SymbolCollector
@@ -21,16 +21,57 @@ import drift.hir.HIRStatement
 import drift.lexer.Token
 import drift.lexer.lex
 import drift.parser.Parser
+import java.io.File
 
 
-abstract class Bootstrap {
+/**
+ * A bootstrap is a build orchestrator.
+ * It handles each step and data structure from
+ * the source code to the compilation end.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
+abstract class Bootstrap(
+    protected val sourceRoot: File,
+    protected val namespace: String) {
 
+    protected lateinit var ast: List<ParserStatement>
     protected val symbolTable = SymbolTable()
 
 
+    /**
+     * This method is the entry point of the bootstrap
+     * class.
+     *
+     * It handles both main build passes:
+     * - Collection
+     * - Compilation
+     */
     abstract fun boot()
 
-    protected abstract fun bootAnalysis(ast: List<ParserStatement>) : AnalysisResult
+    /**
+     * Collection is the first pass of the build
+     * process.
+     *
+     * It contains many steps:
+     * - Lexing
+     * - Parsing
+     * - Structure validation
+     * - Symbol collection
+     */
+    protected abstract fun bootCollectionPass(): SymbolCollector.CollectionResult
+
+    /**
+     * Compilation is the second and last pass of
+     * the build process.
+     *
+     * It contains many steps:
+     * - Type handling (inference and checking)
+     * - High Intermediate Representation (HIR)
+     * - Backend
+     */
+    protected abstract fun bootCompilationPass(
+        collection: SymbolCollector.CollectionResult)
 
 
     protected fun bootLexer(source: String) : List<Token> {
@@ -44,7 +85,7 @@ abstract class Bootstrap {
     }
 
 
-    protected fun bootValidation(ast: List<ParserStatement>) {
+    protected fun bootValidation() {
         ast.forEach { node ->
             when (node) {
                 is Class -> ClassValidator(node).validate()
@@ -52,13 +93,12 @@ abstract class Bootstrap {
         }
     }
 
-    protected fun bootSymbolCollection(ast: List<ParserStatement>) : SymbolCollector.CollectionResult {
-        return SymbolCollector(symbolTable, ast)
+    protected fun bootSymbolCollection() : SymbolCollector.CollectionResult {
+        return SymbolCollector(namespace, symbolTable, ast)
             .collect()
     }
 
     protected fun bootTypeInference(
-        ast: List<ParserStatement>,
         refResolutions: Map<Int, Int>) : TypeInference.TypeInferenceResult {
 
         return TypeInference(ast, symbolTable, refResolutions)
@@ -66,26 +106,26 @@ abstract class Bootstrap {
     }
 
     protected fun bootCheck(
-        ast: List<ParserStatement>,
         refResolutions: Map<Int, Int>,
         resolutions: TypeInference.TypeInferenceResult) {
 
-        val typeChecker = TypeChecker(
+        val semanticChecker = SemanticChecker(
+            namespace = namespace,
             ast = ast,
             symbolTable = symbolTable,
             refResolutions = refResolutions,
             resolutions = resolutions)
 
-        typeChecker.check()
+        semanticChecker.check()
     }
 
 
     protected fun bootHIRConverter(
-        ast: List<ParserStatement>,
         analysis: AnalysisResult)
         : List<HIRStatement> {
 
         val converter = HIRConverter(
+            namespace = namespace,
             ast = ast,
             symbolTable = symbolTable,
             typeResolution = analysis.inference.typeResolutions,

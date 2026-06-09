@@ -26,13 +26,14 @@ class HIRConverterTest {
 
     private fun createConverter(
         ast: List<ParserStatement>,
+        namespace: String = "test",
         symbolTable: SymbolTable = SymbolTable(),
         typeResolution: Map<Int, ParserType> = emptyMap(),
         lambdaClosures: Map<Int, Map<String, Int>> = emptyMap()) : HIRConverter {
 
         HIRConverter.resetIds()
 
-        return HIRConverter(ast, symbolTable, typeResolution, lambdaClosures)
+        return HIRConverter(namespace, ast, symbolTable, typeResolution, lambdaClosures)
     }
 
     // ========================================================================
@@ -139,7 +140,7 @@ class HIRConverterTest {
             isMutable = true)
 
         // Then reference it
-        val varRef = Variable("y")
+        val varRef = Reference("y")
         val exprStmt = ExprStmt(varRef)
 
         val ast = listOf(let, exprStmt)
@@ -318,7 +319,7 @@ class HIRConverterTest {
     fun `convert function with parameters`() {
         val param1 = FunctionParameter("a", isPositional = true, type = ObjectType("Int"))
         val param2 = FunctionParameter("b", isPositional = true, type = ObjectType("Int"))
-        val returnExpr = Binary(Variable("a"), "+", Variable("b"))
+        val returnExpr = Binary(Reference("a"), "+", Reference("b"))
 
         val function = Func(
             name = "add",
@@ -618,9 +619,9 @@ class HIRConverterTest {
 
     @Test
     fun `convert simple for loop`() {
-        val iterable = Variable("items")
+        val iterable = Reference("items")
         val forVar = ForVariable("item")
-        val body = Block(listOf(ExprStmt(Variable("item"))))
+        val body = Block(listOf(ExprStmt(Reference("item"))))
         val forLoop = For(iterable, listOf(forVar), body)
         val ast = listOf(forLoop)
 
@@ -663,7 +664,7 @@ class HIRConverterTest {
     @Test
     fun `convert lambda with parameters`() {
         val param = FunctionParameter("x", isPositional = true, type = ObjectType("Int"))
-        val body = Block(listOf(ExprStmt(Variable("x"))))
+        val body = Block(listOf(ExprStmt(Reference("x"))))
         val lambda = Lambda(
             parameters = listOf(param),
             body = body,
@@ -692,7 +693,7 @@ class HIRConverterTest {
             value = Literal(ParserInt(5)),
             isMutable = false)
 
-        val body = Block(listOf(ExprStmt(Variable("y"))))
+        val body = Block(listOf(ExprStmt(Reference("y"))))
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
@@ -720,7 +721,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert function call without arguments`() {
-        val callee = Variable("greet")
+        val callee = Reference("greet")
         val call = Call(callee, emptyList())
         val exprStmt = ExprStmt(call)
         val ast = listOf(exprStmt)
@@ -738,7 +739,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert function call with arguments`() {
-        val callee = Variable("add")
+        val callee = Reference("add")
         val arg1 = Argument(null, Literal(ParserInt(1)))
         val arg2 = Argument(null, Literal(ParserInt(2)))
         val call = Call(callee, listOf(arg1, arg2))
@@ -760,7 +761,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert function call with named arguments`() {
-        val callee = Variable("create")
+        val callee = Reference("create")
         val arg1 = Argument("name", Literal(ParserString("Alice")))
         val arg2 = Argument("age", Literal(ParserInt(30)))
         val call = Call(callee, listOf(arg1, arg2))
@@ -787,7 +788,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert field get expression`() {
-        val receiver = Variable("user")
+        val receiver = Reference("user")
         val get = Get(receiver, "name")
         val exprStmt = ExprStmt(get)
         val ast = listOf(exprStmt)
@@ -806,7 +807,7 @@ class HIRConverterTest {
 
     @Test
     fun `convert field set expression`() {
-        val receiver = Variable("user")
+        val receiver = Reference("user")
         val set = Set(receiver, "name", Literal(ParserString("Bob")))
         val exprStmt = ExprStmt(set)
         val ast = listOf(exprStmt)

@@ -1,27 +1,23 @@
 /******************************************************************************
  * Drift Programming Language                                                 *
  *                                                                            *
- * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
  *                                                                            *
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-
-package drift.ast.expressions
-
-
-/******************************************************************************
- * DRIFT VARIABLE AST NODE
- *
- * Data class representing a literal in an AST.
- ******************************************************************************/
-
+package drift.bootstrap
 
 
 /**
- * A variable is represented by a name
+ * This object hosts some collections caching compilation
+ * useful data, accessible for all [Bootstrap] instances for
+ * example.
  *
- * @property name Variable name
+ * @author Jonathan (GitHub: belicfr)
  */
-data class Variable(
-    val name: String) : ParserExpression()
+object CompilationMemory {
+
+    /** This set stores all already imported modules. */
+    val imported = mutableSetOf<String>()
+}

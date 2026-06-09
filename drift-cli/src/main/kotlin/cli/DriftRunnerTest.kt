@@ -15,8 +15,13 @@ import com.github.ajalt.mordant.rendering.TextStyles.bold
 import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
 import drift.cli.bootstraps.RunnerTestBootstrap
+import language.LangInfo
+import language.LangInfo.NAMESPACE_SEPARATOR
 import project.loadConfig
+import sugar.removeDriftExtension
 import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 
 fun main(args: Array<String>) {
     val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
@@ -47,12 +52,30 @@ fun main(args: Array<String>) {
         cliError("File not found: ${args[0]}", t)
     }
 
+    val projectRoot = File("examples")
+
     val source = file.readText()
-    val config = loadConfig(File("examples"))
+    val config = loadConfig(projectRoot)
 
+    val sourceRootPath = projectRoot
+        .absoluteFile
+        .resolve(config.structure.root)
+        .toPath()
+    val sourceRoot = sourceRootPath.toFile()
 
-    val bootstrap = RunnerTestBootstrap(source)
-    bootstrap.boot()
+    if (!sourceRoot.isDirectory)
+        error("Source root must be a directory")
+
+    val namespace = sourceRootPath
+        .relativize(file.absoluteFile.toPath())
+        .toString()
+        .replace(File.separator, NAMESPACE_SEPARATOR)
+        .removeDriftExtension()
+
+    RunnerTestBootstrap(
+        sourceRoot = sourceRoot,
+        namespace = namespace,
+        source = source).boot()
 
 
     t.run {

@@ -2,7 +2,7 @@ package drift.parser
 
 import drift.ast.expressions.Assign
 import drift.ast.expressions.Literal
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.ExprStmt
 import drift.lexer.lex
 import org.junit.jupiter.api.Assertions.*
@@ -44,7 +44,7 @@ class AssignParserTest {
         @Test
         fun `variable value`() {
             val assign = parseAssign("x = y")
-            assertTrue(assign.value is Variable)
+            assertTrue(assign.value is Reference)
         }
 
         @Test

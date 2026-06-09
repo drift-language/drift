@@ -13,6 +13,7 @@ dependencies {
     testImplementation(kotlin("test"))
 
     implementation(project(":drift-core"))
+    implementation(project(":drift-common"))
 }
 
 kotlin {

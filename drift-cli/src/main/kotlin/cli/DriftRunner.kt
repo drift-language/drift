@@ -24,9 +24,14 @@ import java.nio.file.Paths
 import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.cli.bootstraps.RunnerBootstrap
+import language.LangInfo
+import language.LangInfo.NAMESPACE_SEPARATOR
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
+import sugar.removeDriftExtension
+import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 import kotlin.run
 
 /******************************************************************************
@@ -58,10 +63,11 @@ class Run : CliktCommand(name = "run") {
             cliError(e.message, t)
         }
 
-        val entryPath = Paths
+        val entryPathObj = Paths
             .get("$projectDir/${config.structure.root}/${config.structure.entry}.drift")
             .normalize()
             .toAbsolutePath()
+        val entryPath = entryPathObj
             .toString()
 
         val entryFile = File(entryPath)
@@ -82,8 +88,27 @@ class Run : CliktCommand(name = "run") {
             println(bold("Entry: $entryPath\n"))
         }
 
+        val sourceRootPath = projectDir
+            .absoluteFile
+            .resolve(config.structure.root)
+            .toPath()
+        val sourceRoot = sourceRootPath
+            .toFile()
+
+        if (!sourceRoot.isDirectory)
+            error("Source root must be a directory")
+
+        val namespace = sourceRootPath
+            .relativize(entryPathObj)
+            .toString()
+            .replace(File.separator, NAMESPACE_SEPARATOR)
+            .removeDriftExtension()
+
         val source = entryFile.readText()
-        RunnerBootstrap(source).boot()
+        RunnerBootstrap(
+            sourceRoot = sourceRoot,
+            namespace = namespace,
+            source = source).boot()
 
         t.run {
             println()

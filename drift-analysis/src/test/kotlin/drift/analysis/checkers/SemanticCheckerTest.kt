@@ -28,7 +28,7 @@ import drift.ast.expressions.Call
 import drift.ast.expressions.Get
 import drift.ast.expressions.Lambda
 import drift.ast.expressions.Literal
-import drift.ast.expressions.Variable
+import drift.ast.expressions.Reference
 import drift.ast.statements.Block
 import drift.ast.statements.Class
 import drift.ast.statements.ExprStmt
@@ -44,7 +44,6 @@ import drift.oldruntime.UnionType
 import drift.oldruntime.VoidType
 import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.specials.ParserNotAssigned
 import drift.oldruntime.values.primaries.ParserNull
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -52,18 +51,18 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class TypeCheckerTest {
+class SemanticCheckerTest {
 
     @Nested
     inner class LetTests {
 
         private lateinit var symbolTable: SymbolTable
-        private val refResolutions = mapOf<Int, Int>()
+        private var refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(
             className = intClassDeclaration.name)
@@ -71,7 +70,7 @@ class TypeCheckerTest {
         private val stringClassDeclaration = Class(
             name = "String")
         private val stringClassSignature = ClassSymbol.ClassSignature(
-            name = stringClassDeclaration.name,
+            name = "test/${stringClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val stringValueType = ObjectType(
             className = stringClassDeclaration.name)
@@ -80,6 +79,7 @@ class TypeCheckerTest {
         @BeforeEach
         fun setUp() {
             symbolTable = SymbolTable()
+            refResolutions = mapOf()
 
             symbolTable.addClass(
                 nodeId = intClassDeclaration.nodeId,
@@ -107,7 +107,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -123,7 +123,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -133,7 +133,7 @@ class TypeCheckerTest {
             val secondTypeClass = Class(
                 name = "Int64")
             val secondTypeClassSignature = ClassSymbol.ClassSignature(
-                name = secondTypeClass.name,
+                name = "test/${secondTypeClass.name}",
                 constructorMethod = CallableSymbol())
             val expectedTypes = listOf(
                 ObjectType(className = intClassDeclaration.name),
@@ -152,7 +152,7 @@ class TypeCheckerTest {
                 hasPrimaryConstructor = false)
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -168,7 +168,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -184,7 +184,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -205,7 +205,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -217,25 +217,24 @@ class TypeCheckerTest {
                 type = intValueType,
                 value = Literal(ParserInt(1)),
                 isMutable = false)
+            val fooRef = Reference(fooLet.name)
             val fooSignature = VariableSymbol.VariableSignature(
                 type = intValueType,
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
-                Let(
-                    name = "x",
-                    type = intValueType,
-                    value = Variable(fooLet.name),
-                    isMutable = false))
+                Let(name = "x", type = intValueType, value = fooRef, isMutable = false))
 
             symbolTable.addVariable(
                 nodeId = fooLet.nodeId,
                 name = fooLet.name,
                 signature = fooSignature)
 
+            refResolutions = mapOf(fooRef.nodeId to fooLet.nodeId)
+
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -251,7 +250,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -267,7 +266,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -283,7 +282,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -299,7 +298,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -323,7 +322,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -339,7 +338,7 @@ class TypeCheckerTest {
                     isMutable = false))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -355,7 +354,7 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
@@ -378,7 +377,7 @@ class TypeCheckerTest {
                 Func(name = "foo", returnType = intValueType))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -389,7 +388,7 @@ class TypeCheckerTest {
                 Func(name = "foo", returnType = ObjectType("Unknown")))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -404,7 +403,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = intValueType))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -418,7 +417,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = ObjectType("Unknown")))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -436,7 +435,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserInt(0))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -454,7 +453,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserString("hello"))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -479,7 +478,7 @@ class TypeCheckerTest {
                             defaultValue = binary))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -495,7 +494,7 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
@@ -517,7 +516,7 @@ class TypeCheckerTest {
                 Return(value = Literal(ParserInt(1))))
 
             assertThrows<DTCUnexpectedReturnStatementException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -533,7 +532,7 @@ class TypeCheckerTest {
                         Return(value = Literal(ParserInt(1)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -549,7 +548,7 @@ class TypeCheckerTest {
                         Return(value = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -572,7 +571,7 @@ class TypeCheckerTest {
                         Return(value = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -587,7 +586,7 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
@@ -609,19 +608,19 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = Literal(ParserInt(1)))))
 
             assertThrows<DTCUnexpectedCalleeException> {
-                TypeChecker(ast, symbolTable, emptyMap(), resolutions)
+                SemanticChecker("test",ast, symbolTable, emptyMap(), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with unresolved ref should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(Call(callee = calleeVar)))
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(ast, symbolTable, emptyMap(), resolutions)
+                SemanticChecker("test",ast, symbolTable, emptyMap(), resolutions)
                     .check()
             }
         }
@@ -632,7 +631,7 @@ class TypeCheckerTest {
                 name = "a",
                 type = intValueType,
                 defaultValue = Literal(ParserInt(1)))
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(
                 name = "foo",
                 parameters = listOf(param))
@@ -652,14 +651,14 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = calleeVar)))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with too few args should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -677,14 +676,14 @@ class TypeCheckerTest {
                 ExprStmt(Call(callee = calleeVar)))
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with too many args should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = emptyList())
@@ -700,14 +699,14 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with wrong arg type should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -728,14 +727,14 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with non literal arg with resolved type mismatch should throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -763,14 +762,14 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
 
         @Test
         fun `Call with valid args should not throw`() {
-            val calleeVar = Variable("foo")
+            val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
             val funcSignature = CallableSymbol.CallableSignature(
                 parameterTypes = listOf(
@@ -791,7 +790,7 @@ class TypeCheckerTest {
                     args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
+                SemanticChecker("test",ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
                     .check()
             }
         }
@@ -805,12 +804,12 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
         private val aClassDeclaration = Class(name = "A")
-        private val aValueType = ObjectType(className = aClassDeclaration.name)
+        private val aValueType = ObjectType(className = "test/${aClassDeclaration.name}")
 
 
         @BeforeEach
@@ -824,8 +823,8 @@ class TypeCheckerTest {
         }
 
         private fun buildMethodCall(methodName: String, args: List<Argument> = emptyList())
-            : Triple<Variable, Call, Call> {
-            val innerVar = Variable("A")
+            : Triple<Reference, Call, Call> {
+            val innerVar = Reference("A")
             val receiverCall = Call(callee = innerVar)
             val outerCall = Call(callee = Get(receiver = receiverCall, name = methodName), args = args)
             return Triple(innerVar, receiverCall, outerCall)
@@ -837,7 +836,7 @@ class TypeCheckerTest {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol(),
                 methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
 
@@ -851,7 +850,7 @@ class TypeCheckerTest {
 )
 
             assertDoesNotThrow {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -864,7 +863,7 @@ class TypeCheckerTest {
             val (innerVar, _, outerCall) = buildMethodCall("t")
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol(),
                 methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
 
@@ -874,7 +873,7 @@ class TypeCheckerTest {
                 hasPrimaryConstructor = false)
 
             assertThrows<DTCTypeResolutionNotFoundException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -887,7 +886,7 @@ class TypeCheckerTest {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol())
 
             symbolTable.addClass(
@@ -900,7 +899,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCUnexpectedCalleeException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -913,7 +912,7 @@ class TypeCheckerTest {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol())
 
             symbolTable.addClass(
@@ -926,7 +925,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -939,7 +938,7 @@ class TypeCheckerTest {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("nonExistent")
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol())
 
             symbolTable.addClass(
@@ -952,7 +951,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCRefResolutionNotFoundException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -971,7 +970,7 @@ class TypeCheckerTest {
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol(),
                 methods = linkedMapOf("t" to methodSignature))
 
@@ -985,7 +984,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1000,7 +999,7 @@ class TypeCheckerTest {
                 listOf(Argument(name = null, expr = Literal(ParserInt(1)))))
 
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol(),
                 methods = linkedMapOf("t" to CallableSymbol.CallableSignature(parameterTypes = emptyList())))
 
@@ -1014,7 +1013,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCInvalidArgsCountException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1034,7 +1033,7 @@ class TypeCheckerTest {
                         type = intValueType,
                         isRequired = true)))
             val aClassSignature = ClassSymbol.ClassSignature(
-                name = aClassDeclaration.name,
+                name = "test/${aClassDeclaration.name}",
                 constructorMethod = CallableSymbol(),
                 methods = linkedMapOf("t" to methodSignature))
 
@@ -1048,7 +1047,7 @@ class TypeCheckerTest {
 )
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(
+                SemanticChecker("test",
                     listOf(intClassDeclaration, ExprStmt(outerCall)),
                     symbolTable,
                     mapOf(innerVar.nodeId to aClassDeclaration.nodeId),
@@ -1062,28 +1061,31 @@ class TypeCheckerTest {
     inner class ForTests {
 
         private lateinit var symbolTable: SymbolTable
-        private val refResolutions = mapOf<Int, Int>()
+        private var refResolutions = mapOf<Int, Int>()
 
+        private val myListLet = Let(name = "myList", type = AnyType, isMutable = false)
         private val listClassDeclaration = Class(name = "List")
         private val listClassWithIterate = ClassSymbol.ClassSignature(
-            name = listClassDeclaration.name,
+            name = "test/${listClassDeclaration.name}",
             constructorMethod = CallableSymbol(),
             methods = linkedMapOf("iterate" to CallableSymbol.CallableSignature()))
         private val listClassWithoutIterate = ClassSymbol.ClassSignature(
-            name = listClassDeclaration.name,
+            name = "test/${listClassDeclaration.name}",
             constructorMethod = CallableSymbol())
-        private val listType = ObjectType(className = listClassDeclaration.name)
+        private val listType = ObjectType(className = "test/${listClassDeclaration.name}")
 
 
         @BeforeEach
         fun setUp() {
             symbolTable = SymbolTable()
+            refResolutions = mapOf()
         }
 
 
         @Test
         fun `For with valid iterable should not throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,
@@ -1098,28 +1100,30 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
 
         @Test
         fun `For with missing type resolution should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
             val resolutions = TypeInference.TypeInferenceResult.empty()
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCTypeResolutionNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
 
         @Test
         fun `For with non-ObjectType iterable should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to VoidType),
@@ -1129,14 +1133,15 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCUnsupportedIterationException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
 
         @Test
         fun `For with unregistered iterable class should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             val resolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(iterable.nodeId to ObjectType("Unknown")),
@@ -1146,14 +1151,15 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
 
         @Test
         fun `For with iterable class missing iterate method should throw`() {
-            val iterable = Variable("myList")
+            val iterable = Reference("myList")
+            refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             symbolTable.addClass(
                 nodeId = listClassDeclaration.nodeId,
@@ -1168,7 +1174,7 @@ class TypeCheckerTest {
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
 
             assertThrows<DTCUnsupportedIterationException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1184,7 +1190,7 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
@@ -1207,7 +1213,7 @@ class TypeCheckerTest {
                 ExprStmt(Lambda(returnType = intValueType)))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1218,7 +1224,7 @@ class TypeCheckerTest {
                 ExprStmt(Lambda(returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1232,7 +1238,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = intValueType)))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1245,7 +1251,7 @@ class TypeCheckerTest {
                         FunctionParameter(name = "x", type = ObjectType("Unknown"))))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1262,7 +1268,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserInt(0)))))))
 
             assertDoesNotThrow {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1279,7 +1285,7 @@ class TypeCheckerTest {
                             defaultValue = Literal(ParserString("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1303,7 +1309,7 @@ class TypeCheckerTest {
                             defaultValue = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> {
-                TypeChecker(ast, symbolTable, refResolutions, resolutions)
+                SemanticChecker("test",ast, symbolTable, refResolutions, resolutions)
                     .check()
             }
         }
@@ -1319,7 +1325,7 @@ class TypeCheckerTest {
 
         private val intClassDeclaration = Class(name = "Int")
         private val intClassSignature = ClassSymbol.ClassSignature(
-            name = intClassDeclaration.name,
+            name = "test/${intClassDeclaration.name}",
             constructorMethod = CallableSymbol())
         private val intValueType = ObjectType(className = intClassDeclaration.name)
 
@@ -1343,7 +1349,7 @@ class TypeCheckerTest {
                     Let(name = "x", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker("test",listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1355,7 +1361,7 @@ class TypeCheckerTest {
                     Let(name = "count", type = ObjectType("Unknown"), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker("test",listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1367,7 +1373,7 @@ class TypeCheckerTest {
                     Func(name = "get", returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker("test",listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1379,7 +1385,7 @@ class TypeCheckerTest {
                     Func(name = "create", returnType = ObjectType("Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
-                TypeChecker(listOf(clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker("test",listOf(clazz), symbolTable, refResolutions, resolutions).check()
             }
         }
 
@@ -1397,7 +1403,125 @@ class TypeCheckerTest {
                     Func(name = "create", returnType = intValueType)))
 
             assertDoesNotThrow {
-                TypeChecker(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
+                SemanticChecker("test",listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions).check()
+            }
+        }
+    }
+
+
+    @Nested
+    inner class ImportTests {
+
+        private lateinit var symbolTable: SymbolTable
+        private var refResolutions = mapOf<Int, Int>()
+
+        private val intClassDeclaration = Class(name = "Int")
+        private val intClassSignature = ClassSymbol.ClassSignature(
+            name = "test/${intClassDeclaration.name}",
+            constructorMethod = CallableSymbol())
+        private val intValueType = ObjectType(className = intClassDeclaration.name)
+
+        private val stringClassDeclaration = Class(name = "String")
+        private val stringClassSignature = ClassSymbol.ClassSignature(
+            name = "test/${stringClassDeclaration.name}",
+            constructorMethod = CallableSymbol())
+        private val stringValueType = ObjectType(className = stringClassDeclaration.name)
+
+        private val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+
+        @BeforeEach
+        fun setUp() {
+            symbolTable = SymbolTable()
+            refResolutions = mapOf()
+
+            symbolTable.addClass(nodeId = intClassDeclaration.nodeId, signature = intClassSignature, hasPrimaryConstructor = false)
+            symbolTable.addClass(nodeId = stringClassDeclaration.nodeId, signature = stringClassSignature, hasPrimaryConstructor = false)
+            symbolTable.addVariable(
+                nodeId = importedLet.nodeId,
+                name = "main/myValue",
+                signature = VariableSymbol.VariableSignature(intValueType, false))
+        }
+
+
+        @Test
+        fun `Reference to imported symbol with valid resolution should not throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+
+            assertDoesNotThrow {
+                SemanticChecker("test",listOf(ExprStmt(ref)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Reference to unresolved import should throw`() {
+            val ref = Reference("notImported")
+
+            assertThrows<DTCRefResolutionNotFoundException> {
+                SemanticChecker("test",listOf(ExprStmt(ref)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Reference to aliased imported symbol should not throw`() {
+            val alias = Reference("mv")
+            refResolutions = mapOf(alias.nodeId to importedLet.nodeId)
+
+            assertDoesNotThrow {
+                SemanticChecker("test",listOf(ExprStmt(alias)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Let with imported value matching declared type should not throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val typeResolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(ref.nodeId to intValueType))
+
+            val ast: List<ParserStatement> = listOf(
+                Let(name = "x", type = intValueType, value = ref, isMutable = false))
+
+            assertDoesNotThrow {
+                SemanticChecker("test",ast, symbolTable, refResolutions, typeResolutions).check()
+            }
+        }
+
+        @Test
+        fun `Let with imported value mismatching declared type should throw`() {
+            val ref = Reference("myValue")
+            refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val typeResolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(ref.nodeId to intValueType))
+
+            val ast: List<ParserStatement> = listOf(
+                Let(name = "x", type = stringValueType, value = ref, isMutable = false))
+
+            assertThrows<DTCUnexpectedTypeException> {
+                SemanticChecker("test",ast, symbolTable, refResolutions, typeResolutions).check()
+            }
+        }
+
+        @Test
+        fun `Get on accessor import receiver with valid resolution should not throw`() {
+            val moduleLet = Let(name = "users", type = AnyType, isMutable = false)
+            val moduleRef = Reference("users")
+            refResolutions = mapOf(moduleRef.nodeId to moduleLet.nodeId)
+
+            val get = Get(receiver = moduleRef, name = "MyClass")
+
+            assertDoesNotThrow {
+                SemanticChecker("test",listOf(ExprStmt(get)), symbolTable, refResolutions, TypeInference.TypeInferenceResult.empty()).check()
+            }
+        }
+
+        @Test
+        fun `Get on accessor import with unresolved receiver should throw`() {
+            val moduleRef = Reference("users")
+            val get = Get(receiver = moduleRef, name = "MyClass")
+
+            assertThrows<DTCRefResolutionNotFoundException> {
+                SemanticChecker("test",listOf(ExprStmt(get)), symbolTable, emptyMap(), TypeInference.TypeInferenceResult.empty()).check()
             }
         }
     }

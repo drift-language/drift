@@ -202,7 +202,7 @@ class TypeInference(
 
     private fun inferExpression(expression: ParserExpression?) : ParserType {
         return when (expression) {
-            is Variable -> inferVariable(expression)
+            is Reference -> inferReference(expression)
             is Literal -> inferLiteral(expression)
             is Unary -> inferUnary(expression)
             is Binary -> inferBinary(expression)
@@ -218,8 +218,8 @@ class TypeInference(
         }
     }
 
-    private fun inferVariable(variable: Variable) : ParserType {
-        val referenceNodeId = variable.nodeId
+    private fun inferReference(reference: Reference) : ParserType {
+        val referenceNodeId = reference.nodeId
         val definitionNodeId = refResolutions[referenceNodeId]
             ?: return UnknownType // TODO: throw
 
@@ -469,7 +469,7 @@ class TypeInference(
         val callee = call.callee
 
 
-        fun handleVariable(callee: Variable): ParserType {
+        fun handleVariable(callee: Reference): ParserType {
             val defId = refResolutions[callee.nodeId]
                 ?: return UnknownType       // NOTE: if there isn't any ref, the structure
                                             //  isn't initialized (none ref linked to declaration)
@@ -531,7 +531,7 @@ class TypeInference(
         inferExpression(callee)
 
         return when (callee) {
-            is Variable -> handleVariable(callee)
+            is Reference -> handleVariable(callee)
             is Get      -> handleAccessor(callee)
 
             else        -> throw DTCUnexpectedCalleeException()
