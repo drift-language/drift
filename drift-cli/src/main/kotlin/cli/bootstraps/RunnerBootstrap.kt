@@ -8,18 +8,8 @@
  ******************************************************************************/
 package drift.cli.bootstraps
 
-import com.github.ajalt.mordant.rendering.TextColors.brightGreen
-import com.github.ajalt.mordant.rendering.TextColors.brightRed
-import com.github.ajalt.mordant.rendering.TextColors.cyan
-import com.github.ajalt.mordant.rendering.TextColors.green
-import com.github.ajalt.mordant.rendering.TextColors.magenta
-import com.github.ajalt.mordant.rendering.TextColors.red
-import com.github.ajalt.mordant.rendering.TextColors.yellow
-import com.github.ajalt.mordant.rendering.TextStyles.bold
-import com.github.ajalt.mordant.rendering.TextStyles.italic
 import drift.analysis.symbols.SymbolCollector
 import drift.analysis.symbols.SymbolTable
-import drift.ast.statements.ParserStatement
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
@@ -36,6 +26,9 @@ class RunnerBootstrap(
 
     val hir: MutableList<HIRStatement> = mutableListOf()
 
+    private lateinit var collectionResult: SymbolCollector.CollectionResult
+    private val childrenBootstraps = mutableSetOf<RunnerBootstrap>()
+
 
     override fun boot() {
         CompilationMemory
@@ -44,6 +37,11 @@ class RunnerBootstrap(
 
         val collection = bootCollectionPass()
         bootCompilationPass(collection)
+
+        childrenBootstraps.forEach {
+            it.symbolTable += symbolTable
+            it.bootCompilationPass(it.collectionResult)
+        }
     }
 
     override fun bootCollectionPass(): SymbolCollector.CollectionResult {
@@ -82,12 +80,20 @@ class RunnerBootstrap(
                 val childBootstrap = RunnerBootstrap(
                     sourceRoot, currentNamespace, source)
 
-                childBootstrap.bootCollectionPass()
+                childBootstrap.bootHandleFile()
+
+                childrenBootstraps.add(childBootstrap)
 
                 return@map childBootstrap.symbolTable
             }
             .toList()
 
+        symbolTable += childSymbolTables
+
+        return bootHandleFile()
+    }
+
+    private fun bootHandleFile() : SymbolCollector.CollectionResult {
         val tokens = bootLexer(source)
         ast = bootParser(tokens)
 
@@ -95,7 +101,7 @@ class RunnerBootstrap(
 
         val collection = bootSymbolCollection()
 
-        symbolTable += childSymbolTables
+        collectionResult = collection
 
         return collection
     }

@@ -30,6 +30,9 @@ class RunnerTestBootstrap(
 
     private val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
 
+    private lateinit var collectionResult: SymbolCollector.CollectionResult
+    private val childrenBootstraps = mutableSetOf<RunnerTestBootstrap>()
+
 
     override fun boot() {
         CompilationMemory
@@ -38,6 +41,11 @@ class RunnerTestBootstrap(
 
         val collection = bootCollectionPass()
         bootCompilationPass(collection)
+
+        childrenBootstraps.forEach {
+            it.symbolTable += symbolTable
+            it.bootCompilationPass(it.collectionResult)
+        }
     }
 
     override fun bootCollectionPass(): SymbolCollector.CollectionResult {
@@ -79,7 +87,9 @@ class RunnerTestBootstrap(
                 val childBootstrap = RunnerTestBootstrap(
                     sourceRoot, currentNamespace, source)
 
-                childBootstrap.bootCollectionPass()
+                childBootstrap.bootHandleFile()
+
+                childrenBootstraps.add(childBootstrap)
 
                 return@map childBootstrap.symbolTable
             }
@@ -87,10 +97,12 @@ class RunnerTestBootstrap(
 
         println();println()
 
-
         symbolTable += childSymbolTables
 
+        return bootHandleFile()
+    }
 
+    private fun bootHandleFile() : SymbolCollector.CollectionResult {
         val tokens = bootLexer(source)
         t.println(
             bold(yellow("[TOKENS]\t\t")) +
@@ -105,6 +117,8 @@ class RunnerTestBootstrap(
         bootValidation()
 
         val collection = bootSymbolCollection()
+
+        collectionResult = collection
 
         t.println(
             bold(magenta("[SYM COLLECTION]\t")) +
