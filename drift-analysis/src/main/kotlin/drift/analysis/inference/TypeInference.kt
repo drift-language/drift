@@ -513,12 +513,15 @@ class TypeInference(
             if (type !is FunctionType)
                 throw DIRUnexpectedTypeException()
 
-            type.paramTypes.zip(call.args).forEach { (paramType, arg) ->
-                val argExpr = arg.expr
-                if (argExpr is Literal && argExpr.value is ParserNumeric) {
-                    typeResolutions[argExpr.nodeId] = paramType
+            type.paramTypes
+                .zip(call.args)
+                .forEach { (paramType, arg) ->
+                    val argExpr = arg.expr
+
+                    if (argExpr is Literal && argExpr.value is ParserNumeric) {
+                        typeResolutions[argExpr.nodeId] = paramType
+                    }
                 }
-            }
 
             typeResolutions[call.nodeId] = type.returnType
 
@@ -531,10 +534,10 @@ class TypeInference(
         inferExpression(callee)
 
         return when (callee) {
-            is Reference -> handleVariable(callee)
-            is Get      -> handleAccessor(callee)
+            is Reference    -> handleVariable(callee)
+            is Get          -> handleAccessor(callee)
 
-            else        -> throw DTCUnexpectedCalleeException()
+            else            -> throw DTCUnexpectedCalleeException()
         }
     }
 
