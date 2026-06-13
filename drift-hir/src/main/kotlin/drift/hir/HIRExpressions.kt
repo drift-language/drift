@@ -79,14 +79,53 @@ data class HIRArgument(
 // OBJECT ACCESS
 // ============================================================================
 
+sealed interface HIRAccess : HIRExpression
+
+
+sealed interface HIRStaticAccess : HIRAccess {
+
+    val receiverClassName: String
+    val memberName: String
+}
+
+data class HIRStaticFieldAccess(
+    override val hirId: Int,
+    override val type: HIRType,
+    override val receiverClassName: String,
+    override val memberName: String) : HIRStaticAccess
+
+data class HIRStaticMethodAccess(
+    override val hirId: Int,
+    override val type: HIRType,
+    override val receiverClassName: String,
+    override val memberName: String,
+    val definitionHirId: Int) : HIRStaticAccess
+
+
+sealed interface HIRInstanceAccess : HIRAccess {
+
+    val receiver: HIRExpression
+    val receiverClassName: String
+    val memberName: String
+    val memberOffset: Int
+}
+
 data class HIRFieldAccess(
     override val hirId: Int,
     override val type: HIRType,
-    val receiver: HIRExpression,
-    val fieldName: String,
-    val fieldOffset: Int,
-    val receiverClassName: String
-) : HIRExpression
+    override val receiver: HIRExpression,
+    override val receiverClassName: String,
+    override val memberName: String,
+    override val memberOffset: Int) : HIRInstanceAccess
+
+data class HIRMethodAccess(
+    override val hirId: Int,
+    override val type: HIRType,
+    override val receiver: HIRExpression,
+    override val receiverClassName: String,
+    override val memberName: String,
+    override val memberOffset: Int,
+    val definitionHirId: Int) : HIRInstanceAccess
 
 // ============================================================================
 // ASSIGNMENT
