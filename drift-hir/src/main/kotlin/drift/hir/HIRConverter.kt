@@ -25,6 +25,7 @@ import drift.oldruntime.ParserType
 import drift.oldruntime.AnyType
 import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
@@ -33,6 +34,7 @@ class HIRConverter(
     private val namespace: String,
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
+    private val refResolutions: Map<Int, Int>,
     private val typeResolution: Map<Int, ParserType>,
     private val lambdaClosures: Map<Int, Map<String, Int>>) {
 
@@ -49,7 +51,8 @@ class HIRConverter(
 
 
     private val astToHirMap = mutableMapOf<Int, Int>()
-    private val definitionHirIds = mutableMapOf<String, Int>()
+
+    private val classMethodHirIds = mutableMapOf<String, Int>()
 
 
     fun convert() : List<HIRStatement> {
@@ -102,12 +105,16 @@ class HIRConverter(
             isMutable = let.isMutable)
 
         astToHirMap[let.nodeId] = hirId
-        definitionHirIds[let.name] = hirId
 
         return hirVar
     }
 
-    private fun convertFunction(function: Func, isStatic: Boolean) : HIRFunction {
+    private fun convertFunction(
+        function: Func,
+        isStatic: Boolean,
+        receiverQualifiedName: String? = null)
+    : HIRFunction {
+
         val hirId = allocateHirId()
 
         val annotations = function.annotations
@@ -125,17 +132,23 @@ class HIRConverter(
             .statements
             .map(this::convertStatement)
 
+        val name =
+            if (receiverQualifiedName != null) "$receiverQualifiedName$NAMESPACE_SEPARATOR${function.name}"
+            else function.name
+
         val hirFunc = HIRFunction(
             hirId = hirId,
             annotations = annotations,
-            name = function.name,
+            name = name,
             parameters = parameters,
             returnType = returnType,
             body = body,
             isStatic = isStatic)
 
         astToHirMap[function.nodeId] = hirId
-        definitionHirIds[function.name] = hirId
+
+        if (receiverQualifiedName != null)
+            classMethodHirIds[name] = hirId
 
         return hirFunc
     }
@@ -167,7 +180,6 @@ class HIRConverter(
             error("Unexpected hook type")
 
         astToHirMap[hook.nodeId] = hirId
-        definitionHirIds[hook.name] = hirId
 
         return hirHook
     }
@@ -176,7 +188,6 @@ class HIRConverter(
         val paramHirId = allocateHirId()
 
         astToHirMap[param.nodeId] = paramHirId
-        definitionHirIds[param.name] = paramHirId
 
         return HIRParameter(
             hirId = paramHirId,
@@ -192,10 +203,22 @@ class HIRConverter(
             .map(this::convertAnnotation)
             .toMutableList()
 
+        val classQualifiedName = "$namespace$NAMESPACE_SEPARATOR${clazz.name}"
+
         val staticFields = clazz.staticFields.map { convertClassField(it, isStatic = true) }
         val fields = clazz.fields.map { convertClassField(it, isStatic = false) }
-        val staticMethods = clazz.staticMethods.map { convertFunction(it, isStatic = true) }
-        val methods = clazz.methods.map { convertFunction(it, isStatic = false) }
+        val staticMethods = clazz.staticMethods.map {
+            convertFunction(
+                it,
+                isStatic = true,
+                receiverQualifiedName = classQualifiedName)
+        }
+        val methods = clazz.methods.map {
+            convertFunction(
+                it,
+                isStatic = false,
+                receiverQualifiedName = classQualifiedName)
+        }
         val hooks = clazz.hooks.map { convertHook(it) }
 
         val hirClass = HIRClass(
@@ -209,7 +232,6 @@ class HIRConverter(
             staticMethods = staticMethods)
 
         astToHirMap[clazz.nodeId] = hirId
-        definitionHirIds[clazz.name] = hirId
 
         return hirClass
     }
@@ -337,7 +359,7 @@ class HIRConverter(
             is Binary -> convertBinary(expr, type)
             is Unary -> convertUnary(expr, type)
             is Call -> convertCall(expr, type)
-            is Get -> convertGet(expr, type)
+            is Get -> convertGet(expr)
             is Set -> convertSet(expr, type)
             is Assign -> convertAssign(expr, type)
             is Conditional -> convertConditional(expr, type)
@@ -364,7 +386,8 @@ class HIRConverter(
 
     private fun convertVariable(reference: Reference, type: HIRType) : HIRVariableRef {
         val hirId = allocateHirId()
-        val definitionHirId = definitionHirIds[reference.name]
+
+        val definitionHirId = getDefinitionHirIdFromRefResolutions(reference.nodeId)
 
         val hirVar = HIRVariableRef(
             hirId = hirId,
@@ -458,23 +481,91 @@ class HIRConverter(
         return hirCall
     }
 
-    private fun convertGet(get: Get, type: HIRType) : HIRFieldAccess {
+    private fun convertGet(get: Get) : HIRAccess {
         val hirId = allocateHirId()
+
         val receiver = convertExpression(get.receiver)
-        val receiverClassName = extractClassName(typeResolution[get.receiver.nodeId])
+        val receiverType = typeResolution[get.receiver.nodeId]
+        val receiverClassName = extractClassName(receiverType)
+        val receiverClassNodeId = symbolTable.lookupNodeId(receiverClassName)
+            ?: error("Class '$receiverClassName' not found")
+        val receiverStructure = symbolTable.getSymbol(receiverClassNodeId)
+        val receiverClass = receiverStructure as? ClassSymbol
+            ?: error("Unexpected receiver type")
+
         val fieldOffset = computeFieldOffset(receiverClassName, get.name)
 
-        val hirGet = HIRFieldAccess(
-            hirId = hirId,
-            type = type,
-            receiver = receiver,
-            fieldName = get.name,
-            fieldOffset = fieldOffset,
-            receiverClassName = receiverClassName)
+
+        fun handleStaticMember() : HIRStaticAccess {
+            with(receiverClass.signature) {
+                staticFields[get.name]?.let {
+                    return HIRStaticFieldAccess(
+                        hirId = hirId,
+                        type = convertType(it),
+                        receiverClassName = receiverClassName,
+                        memberName = get.name)
+                }
+
+                staticMethods[get.name]?.let {
+                    val methodQualifiedName =
+                        "$receiverClassName$NAMESPACE_SEPARATOR${get.name}"
+                    val definitionHirId = classMethodHirIds[methodQualifiedName]
+                        ?: error("Undefined static method")
+
+                    return HIRStaticMethodAccess(
+                        hirId = hirId,
+                        type = convertType(it.returnType),
+                        receiverClassName = receiverClassName,
+                        memberName = get.name,
+                        definitionHirId = definitionHirId)
+                }
+
+                error("Member not found in static context")
+            }
+        }
+        fun handleInstanceMember() : HIRInstanceAccess {
+            with(receiverClass.signature) {
+                fields[get.name]?.let {
+                    return HIRFieldAccess(
+                        hirId = hirId,
+                        type = convertType(it),
+                        receiver = receiver,
+                        receiverClassName = receiverClassName,
+                        memberName = get.name,
+                        memberOffset = fieldOffset)
+                }
+
+                methods[get.name]?.let {
+                    val methodQualifiedName =
+                        "$receiverClassName$NAMESPACE_SEPARATOR${get.name}"
+                    val definitionHirId = classMethodHirIds[methodQualifiedName]
+                        ?: error("Undefined instance method")
+
+                    return HIRMethodAccess(
+                        hirId = hirId,
+                        type = convertType(it.returnType),
+                        receiver = receiver,
+                        receiverClassName = receiverClassName,
+                        memberName = get.name,
+                        memberOffset = fieldOffset,
+                        definitionHirId = definitionHirId)
+                }
+
+                error("Member not found in instance context")
+            }
+        }
+
+
+        val accessNode: HIRAccess = when (receiverType) {
+            is ClassType    -> handleStaticMember()
+            is ObjectType   -> handleInstanceMember()
+
+            else            -> error("Unexpected receiver type")
+        }
 
         astToHirMap[get.nodeId] = hirId
 
-        return hirGet
+        return accessNode
     }
 
     private fun convertSet(set: Set, type: HIRType) : HIRAssign {
@@ -607,10 +698,8 @@ class HIRConverter(
         val classId = symbolTable.lookupNodeId(className)
             ?: return -1
 
-        val symbol = symbolTable.getSymbol(classId)
-
-        if (symbol !is ClassSymbol)
-            return -1
+        val symbol = symbolTable.getSymbol(classId) as? ClassSymbol
+            ?: return -1
 
         var offset = 0
 
@@ -629,5 +718,13 @@ class HIRConverter(
         }
 
         return -1
+    }
+
+    private fun getDefinitionHirIdFromRefResolutions(refNodeId: Int) : Int {
+        val definitionNodeId = refResolutions[refNodeId]
+            ?: error("Undefined reference")
+
+        return astToHirMap[definitionNodeId]
+            ?: error("Reference definition not found")
     }
 }

@@ -128,6 +128,7 @@ abstract class Bootstrap(
             namespace = namespace,
             ast = ast,
             symbolTable = symbolTable,
+            refResolutions = analysis.collection.resolutions,
             typeResolution = analysis.inference.typeResolutions,
             lambdaClosures = analysis.collection.lambdaClosures)
 
