@@ -526,7 +526,7 @@ class HIRConverter(
         fun handleInstanceMember() : HIRInstanceAccess {
             with(receiverClass.signature) {
                 fields[get.name]?.let {
-                    return HIRFieldAccess(
+                    return HIRInstanceFieldAccess(
                         hirId = hirId,
                         type = convertType(it),
                         receiver = receiver,
@@ -541,7 +541,7 @@ class HIRConverter(
                     val definitionHirId = classMethodHirIds[methodQualifiedName]
                         ?: error("Undefined instance method")
 
-                    return HIRMethodAccess(
+                    return HIRInstanceMethodAccess(
                         hirId = hirId,
                         type = convertType(it.returnType),
                         receiver = receiver,

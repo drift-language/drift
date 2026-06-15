@@ -800,7 +800,7 @@ class HIRConverterTest {
         val converter = createConverter(ast, typeResolution = typeResolution)
         val hir = converter.convert()
 
-        val fieldAccess = (hir[0] as HIRExpressionStmt).expression as HIRFieldAccess
+        val fieldAccess = (hir[0] as HIRExpressionStmt).expression as HIRInstanceFieldAccess
         assertEquals("name", fieldAccess.fieldName)
         assertEquals("User", fieldAccess.receiverClassName)
     }

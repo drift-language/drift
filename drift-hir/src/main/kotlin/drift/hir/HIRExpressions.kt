@@ -79,9 +79,27 @@ data class HIRArgument(
 // OBJECT ACCESS
 // ============================================================================
 
+/**
+ * This interface represents any member access expression.
+ */
 sealed interface HIRAccess : HIRExpression
 
+/**
+ * This marker interface represents all field accesses:
+ * from a static context or an instance.
+ */
+sealed interface HIRFieldAccess
 
+/**
+ * This marker interface represents all method accesses:
+ * from a static context or an instance.
+ */
+sealed interface HIRMethodAccess
+
+/**
+ * This interface represents member access
+ * in a static context.
+ */
 sealed interface HIRStaticAccess : HIRAccess {
 
     val receiverClassName: String
@@ -92,16 +110,20 @@ data class HIRStaticFieldAccess(
     override val hirId: Int,
     override val type: HIRType,
     override val receiverClassName: String,
-    override val memberName: String) : HIRStaticAccess
+    override val memberName: String) : HIRStaticAccess, HIRFieldAccess
 
 data class HIRStaticMethodAccess(
     override val hirId: Int,
     override val type: HIRType,
     override val receiverClassName: String,
     override val memberName: String,
-    val definitionHirId: Int) : HIRStaticAccess
+    val definitionHirId: Int) : HIRStaticAccess, HIRMethodAccess
 
 
+/**
+ * This interface represents member access
+ * in an instance.
+ */
 sealed interface HIRInstanceAccess : HIRAccess {
 
     val receiver: HIRExpression
@@ -110,22 +132,22 @@ sealed interface HIRInstanceAccess : HIRAccess {
     val memberOffset: Int
 }
 
-data class HIRFieldAccess(
+data class HIRInstanceFieldAccess(
     override val hirId: Int,
     override val type: HIRType,
     override val receiver: HIRExpression,
     override val receiverClassName: String,
     override val memberName: String,
-    override val memberOffset: Int) : HIRInstanceAccess
+    override val memberOffset: Int) : HIRInstanceAccess, HIRFieldAccess
 
-data class HIRMethodAccess(
+data class HIRInstanceMethodAccess(
     override val hirId: Int,
     override val type: HIRType,
     override val receiver: HIRExpression,
     override val receiverClassName: String,
     override val memberName: String,
     override val memberOffset: Int,
-    val definitionHirId: Int) : HIRInstanceAccess
+    val definitionHirId: Int) : HIRInstanceAccess, HIRMethodAccess
 
 // ============================================================================
 // ASSIGNMENT
