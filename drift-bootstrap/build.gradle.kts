@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":drift-analysis"))
     implementation(project(":drift-core"))
     implementation(project(":drift-hir"))
+    implementation(project(":drift-common"))
 }
 
 kotlin {

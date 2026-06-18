@@ -6,29 +6,43 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.cli.bootstraps
 
+package drift.bootstrap.impl
+
+import drift.analysis.inference.TypeInference
 import drift.analysis.symbols.SymbolCollector
 import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
-import language.LangInfo.NAMESPACE_SEPARATOR
+import drift.lexer.Token
+import language.LangInfo
 import sugar.hasDriftExtension
 import sugar.removeDriftExtension
 import java.io.File
 
 
-class RunnerBootstrap(
+class RunnerTestBootstrap(
     sourceRoot: File,
     namespace: String,
     val source: String)
     : Bootstrap(sourceRoot, namespace) {
 
-    val hir: MutableList<HIRStatement> = mutableListOf()
+    private val childrenBootstraps = mutableSetOf<RunnerTestBootstrap>()
 
-    private lateinit var collectionResult: SymbolCollector.CollectionResult
-    private val childrenBootstraps = mutableSetOf<RunnerBootstrap>()
+    val parsedAst get() = ast
+
+    lateinit var tokens: List<Token>
+        private set
+
+    lateinit var collection: SymbolCollector.CollectionResult
+        private set
+
+    lateinit var inference: TypeInference.TypeInferenceResult
+        private set
+
+    lateinit var hir: List<HIRStatement>
+        private set
 
 
     override fun boot() {
@@ -41,7 +55,7 @@ class RunnerBootstrap(
 
         childrenBootstraps.forEach {
             it.symbolTable += symbolTable
-            it.bootCompilationPass(it.collectionResult)
+            it.bootCompilationPass(it.collection)
         }
     }
 
@@ -58,7 +72,7 @@ class RunnerBootstrap(
             .filter {
                 val currentFileRelativePath = it
                     .toRelativeString(sourceRoot)
-                    .replace(File.separator, NAMESPACE_SEPARATOR)
+                    .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
                     .hasDriftExtension()
                 val currentNamespace = currentFileRelativePath
@@ -68,19 +82,19 @@ class RunnerBootstrap(
                     .contains(currentNamespace)
 
                 return@filter it.isFile &&
-                        isDriftFile &&
-                        !isAlreadyImported &&
-                        currentNamespace != namespace
+                    isDriftFile &&
+                    !isAlreadyImported &&
+                    currentNamespace != namespace
             }
             .map { element ->
                 val currentNamespace = element
                     .toRelativeString(sourceRoot)
-                    .replace(File.separator, NAMESPACE_SEPARATOR)
+                    .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                     .removeDriftExtension()
 
                 val source = element.readText()
 
-                val childBootstrap = RunnerBootstrap(
+                val childBootstrap = RunnerTestBootstrap(
                     sourceRoot, currentNamespace, source)
 
                 childBootstrap.bootHandleFile()
@@ -97,14 +111,12 @@ class RunnerBootstrap(
     }
 
     private fun bootHandleFile() : SymbolCollector.CollectionResult {
-        val tokens = bootLexer(source)
+        tokens = bootLexer(source)
         ast = bootParser(tokens)
 
         bootValidation()
 
-        val collection = bootSymbolCollection()
-
-        collectionResult = collection
+        collection = bootSymbolCollection()
 
         return collection
     }
@@ -112,7 +124,7 @@ class RunnerBootstrap(
     override fun bootCompilationPass(
         collection: SymbolCollector.CollectionResult) {
 
-        val inference = bootTypeInference(collection.resolutions)
+        inference = bootTypeInference(collection.resolutions)
 
         bootCheck(collection.resolutions, inference)
 
@@ -120,6 +132,12 @@ class RunnerBootstrap(
             collection = collection,
             inference = inference)
 
-        hir.addAll(bootHIRConverter(analysis))
+        hir = bootHIRConverter(analysis)
+
+        /*
+         *      BACKEND IMPLEMENTATION: JVM
+         *
+         * todo
+         */
     }
 }

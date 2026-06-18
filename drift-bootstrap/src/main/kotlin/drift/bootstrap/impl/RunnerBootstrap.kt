@@ -6,33 +6,30 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.cli.bootstraps
 
-import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.TextColors.*
-import com.github.ajalt.mordant.rendering.TextStyles.bold
-import com.github.ajalt.mordant.rendering.TextStyles.italic
-import com.github.ajalt.mordant.terminal.Terminal
+package drift.bootstrap.impl
+
 import drift.analysis.symbols.SymbolCollector
 import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
-import language.LangInfo.NAMESPACE_SEPARATOR
+import drift.hir.HIRStatement
+import language.LangInfo
 import sugar.hasDriftExtension
 import sugar.removeDriftExtension
 import java.io.File
 
 
-class RunnerTestBootstrap(
+class RunnerBootstrap(
     sourceRoot: File,
     namespace: String,
     val source: String)
     : Bootstrap(sourceRoot, namespace) {
 
-    private val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
+    val hir: MutableList<HIRStatement> = mutableListOf()
 
     private lateinit var collectionResult: SymbolCollector.CollectionResult
-    private val childrenBootstraps = mutableSetOf<RunnerTestBootstrap>()
+    private val childrenBootstraps = mutableSetOf<RunnerBootstrap>()
 
 
     override fun boot() {
@@ -53,7 +50,6 @@ class RunnerTestBootstrap(
         if (!sourceRoot.isDirectory())
             error("Source root path must target the source directory")
 
-
         CompilationMemory
             .imported
             .add(namespace)
@@ -63,7 +59,7 @@ class RunnerTestBootstrap(
             .filter {
                 val currentFileRelativePath = it
                     .toRelativeString(sourceRoot)
-                    .replace(File.separator, NAMESPACE_SEPARATOR)
+                    .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
                     .hasDriftExtension()
                 val currentNamespace = currentFileRelativePath
@@ -73,21 +69,19 @@ class RunnerTestBootstrap(
                     .contains(currentNamespace)
 
                 return@filter it.isFile &&
-                    isDriftFile &&
-                    !isAlreadyImported &&
-                    currentNamespace != namespace
+                        isDriftFile &&
+                        !isAlreadyImported &&
+                        currentNamespace != namespace
             }
             .map { element ->
                 val currentNamespace = element
                     .toRelativeString(sourceRoot)
-                    .replace(File.separator, NAMESPACE_SEPARATOR)
+                    .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                     .removeDriftExtension()
 
                 val source = element.readText()
 
-                println("[BOOTSTRAP]\tImporting: $currentNamespace")
-
-                val childBootstrap = RunnerTestBootstrap(
+                val childBootstrap = RunnerBootstrap(
                     sourceRoot, currentNamespace, source)
 
                 childBootstrap.bootHandleFile()
@@ -98,8 +92,6 @@ class RunnerTestBootstrap(
             }
             .toList()
 
-        println();println()
-
         symbolTable += childSymbolTables
 
         return bootHandleFile()
@@ -107,31 +99,13 @@ class RunnerTestBootstrap(
 
     private fun bootHandleFile() : SymbolCollector.CollectionResult {
         val tokens = bootLexer(source)
-        t.println(
-            bold(yellow("[TOKENS]\t\t")) +
-                    italic(tokens.toString()))
-
-
         ast = bootParser(tokens)
-        t.println(
-            bold(red("[AST]\t\t\t")) +
-                    italic(ast.toString()))
 
         bootValidation()
 
         val collection = bootSymbolCollection()
 
         collectionResult = collection
-
-        t.println(
-            bold(magenta("[SYM COLLECTION]\t")) +
-                    italic(collection.toString()))
-
-        t.println(
-            bold(cyan("[SYM TABLE]\t\t")) +
-                    italic(symbolTable.toString()))
-
-        println("[BOOTSTRAP]\tSYMTABLE from $namespace = $symbolTable")
 
         return collection
     }
@@ -141,23 +115,12 @@ class RunnerTestBootstrap(
 
         val inference = bootTypeInference(collection.resolutions)
 
-        t.println(
-            bold(brightRed("[TYPE INFERENCE]\t")) +
-                    italic(inference.toString()))
-
         bootCheck(collection.resolutions, inference)
-
-        t.println(
-            bold(brightGreen("[TYPE CHECKING]\t\t")) +
-                    italic("Passed (none exception)."))
 
         val analysis = AnalysisResult(
             collection = collection,
             inference = inference)
 
-        val hir = bootHIRConverter(analysis)
-        t.println(
-            bold(green("[HIR]\t\t\t")) +
-                    italic(hir.toString()))
+        hir.addAll(bootHIRConverter(analysis))
     }
 }

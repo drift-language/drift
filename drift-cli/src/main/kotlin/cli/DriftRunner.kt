@@ -23,15 +23,12 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import drift.DriftVersion
-import drift.cli.bootstraps.RunnerBootstrap
-import language.LangInfo
+import drift.bootstrap.impl.RunnerBootstrap
 import language.LangInfo.NAMESPACE_SEPARATOR
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
 import sugar.removeDriftExtension
-import java.nio.file.Path
-import kotlin.io.path.absolutePathString
 import kotlin.run
 
 /******************************************************************************

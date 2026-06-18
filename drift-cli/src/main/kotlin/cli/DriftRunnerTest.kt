@@ -12,16 +12,14 @@ import com.github.ajalt.mordant.rendering.AnsiLevel
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextColors.Companion.rgb
 import com.github.ajalt.mordant.rendering.TextStyles.bold
+import com.github.ajalt.mordant.rendering.TextStyles.italic
 import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
-import drift.cli.bootstraps.RunnerTestBootstrap
-import language.LangInfo
+import drift.bootstrap.impl.RunnerTestBootstrap
 import language.LangInfo.NAMESPACE_SEPARATOR
 import project.loadConfig
 import sugar.removeDriftExtension
 import java.io.File
-import java.nio.file.Path
-import kotlin.io.path.absolutePathString
 
 fun main(args: Array<String>) {
     val t = Terminal(ansiLevel = AnsiLevel.TRUECOLOR)
@@ -72,13 +70,26 @@ fun main(args: Array<String>) {
         .replace(File.separator, NAMESPACE_SEPARATOR)
         .removeDriftExtension()
 
-    RunnerTestBootstrap(
+    val bootstrap = RunnerTestBootstrap(
         sourceRoot = sourceRoot,
         namespace = namespace,
-        source = source).boot()
+        source = source)
 
+    bootstrap.boot()
 
     t.run {
+        println(bold(yellow("[TOKENS]\t\t")) +
+                italic(bootstrap.tokens.toString()))
+        println(bold(red("[AST]\t\t\t")) +
+                italic(bootstrap.parsedAst.toString()))
+        println(bold(magenta("[SYM COLLECTION]\t")) +
+                italic(bootstrap.collection.toString()))
+        println(bold(brightRed("[TYPE INFERENCE]\t")) +
+                italic(bootstrap.inference.toString()))
+        println(bold(brightGreen("[TYPE CHECKING]\t\t")) +
+                italic("Passed (none exception)."))
+        println(bold(green("[HIR]\t\t\t")) +
+                italic(bootstrap.hir.toString()))
         println("\n——————\n")
     }
 
