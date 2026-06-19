@@ -2,6 +2,7 @@
   "name": "Example",
   "structure": {
     "root": "./src",
-    "entry": "main"
+    "entry": "main",
+    "output": "./dist"
   }
 }

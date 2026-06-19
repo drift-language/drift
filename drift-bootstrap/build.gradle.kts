@@ -16,6 +16,8 @@ dependencies {
     implementation(project(":drift-core"))
     implementation(project(":drift-hir"))
     implementation(project(":drift-common"))
+
+    implementation("fr.belic.drift:drift-jvm:2026.0")
 }
 
 kotlin {

@@ -15,6 +15,7 @@ import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
 import language.LangInfo
+import language.Namespace
 import sugar.hasDriftExtension
 import sugar.removeDriftExtension
 import java.io.File
@@ -22,7 +23,7 @@ import java.io.File
 
 class RunnerBootstrap(
     sourceRoot: File,
-    namespace: String,
+    namespace: Namespace,
     val source: String)
     : Bootstrap(sourceRoot, namespace) {
 
@@ -62,8 +63,8 @@ class RunnerBootstrap(
                     .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
                     .hasDriftExtension()
-                val currentNamespace = currentFileRelativePath
-                    .removeDriftExtension()
+                val currentNamespace = Namespace(currentFileRelativePath
+                    .removeDriftExtension())
                 val isAlreadyImported = CompilationMemory
                     .imported
                     .contains(currentNamespace)
@@ -74,10 +75,10 @@ class RunnerBootstrap(
                         currentNamespace != namespace
             }
             .map { element ->
-                val currentNamespace = element
+                val currentNamespace = Namespace(element
                     .toRelativeString(sourceRoot)
                     .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
-                    .removeDriftExtension()
+                    .removeDriftExtension())
 
                 val source = element.readText()
 

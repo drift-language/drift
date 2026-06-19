@@ -33,12 +33,14 @@ data class ProjectConfig(
     val name: String = "Unnamed Project",
     val structure: ProjectStructure = ProjectStructure(
         "./src",
-        "main"))
+        "main",
+        "./dist"))
 
 @Serializable
 data class ProjectStructure(
     val root: String,
-    val entry: String)
+    val entry: String,
+    val output: String)
 
 
 class DriftProjectLoadingException(

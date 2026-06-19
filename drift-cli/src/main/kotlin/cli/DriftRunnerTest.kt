@@ -17,6 +17,7 @@ import com.github.ajalt.mordant.terminal.Terminal
 import drift.DriftVersion
 import drift.bootstrap.impl.RunnerTestBootstrap
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 import project.loadConfig
 import sugar.removeDriftExtension
 import java.io.File
@@ -61,19 +62,24 @@ fun main(args: Array<String>) {
         .toPath()
     val sourceRoot = sourceRootPath.toFile()
 
+    val outputRoot = projectRoot
+        .absoluteFile
+        .resolve(config.structure.output)
+
     if (!sourceRoot.isDirectory)
         error("Source root must be a directory")
 
-    val namespace = sourceRootPath
+    val namespace = Namespace(sourceRootPath
         .relativize(file.absoluteFile.toPath())
         .toString()
         .replace(File.separator, NAMESPACE_SEPARATOR)
-        .removeDriftExtension()
+        .removeDriftExtension())
 
     val bootstrap = RunnerTestBootstrap(
         sourceRoot = sourceRoot,
         namespace = namespace,
-        source = source)
+        source = source,
+        output = outputRoot)
 
     bootstrap.boot()
 

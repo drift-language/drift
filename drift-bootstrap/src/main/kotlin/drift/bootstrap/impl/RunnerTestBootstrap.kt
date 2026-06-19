@@ -15,8 +15,10 @@ import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
 import drift.hir.HIRStatement
+import drift.jvm.BackendBootstrap
 import drift.lexer.Token
 import language.LangInfo
+import language.Namespace
 import sugar.hasDriftExtension
 import sugar.removeDriftExtension
 import java.io.File
@@ -24,8 +26,9 @@ import java.io.File
 
 class RunnerTestBootstrap(
     sourceRoot: File,
-    namespace: String,
-    val source: String)
+    namespace: Namespace,
+    val source: String,
+    val output: File)
     : Bootstrap(sourceRoot, namespace) {
 
     private val childrenBootstraps = mutableSetOf<RunnerTestBootstrap>()
@@ -75,8 +78,8 @@ class RunnerTestBootstrap(
                     .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
                     .hasDriftExtension()
-                val currentNamespace = currentFileRelativePath
-                    .removeDriftExtension()
+                val currentNamespace = Namespace(currentFileRelativePath
+                    .removeDriftExtension())
                 val isAlreadyImported = CompilationMemory
                     .imported
                     .contains(currentNamespace)
@@ -87,15 +90,15 @@ class RunnerTestBootstrap(
                     currentNamespace != namespace
             }
             .map { element ->
-                val currentNamespace = element
+                val currentNamespace = Namespace(element
                     .toRelativeString(sourceRoot)
                     .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
-                    .removeDriftExtension()
+                    .removeDriftExtension())
 
                 val source = element.readText()
 
                 val childBootstrap = RunnerTestBootstrap(
-                    sourceRoot, currentNamespace, source)
+                    sourceRoot, currentNamespace, source, output)
 
                 childBootstrap.bootHandleFile()
 
@@ -134,10 +137,12 @@ class RunnerTestBootstrap(
 
         hir = bootHIRConverter(analysis)
 
+
         /*
          *      BACKEND IMPLEMENTATION: JVM
-         *
-         * todo
          */
+
+        BackendBootstrap(namespace, output)
+            .boot(hir)
     }
 }

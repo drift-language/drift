@@ -3,6 +3,8 @@ plugins {
 }
 rootProject.name = "drift"
 
+includeBuild("../drift-jvm")
+
 
 include("drift-common")
 include("drift-cli")
