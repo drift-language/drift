@@ -21,6 +21,7 @@ import drift.hir.HIRStatement
 import drift.lexer.Token
 import drift.lexer.lex
 import drift.parser.Parser
+import language.Namespace
 import java.io.File
 
 
@@ -33,7 +34,7 @@ import java.io.File
  */
 abstract class Bootstrap(
     protected val sourceRoot: File,
-    protected val namespace: String) {
+    protected val namespace: Namespace) {
 
     protected lateinit var ast: List<ParserStatement>
     protected val symbolTable = SymbolTable()

@@ -11,6 +11,7 @@ package drift.hir
 
 import drift.ast.metadata.Annotation
 import drift.hir.metadata.HIRAnnotation
+import language.Namespace
 
 /**
  * Function declaration in HIR.
@@ -110,7 +111,7 @@ data class HIRExpressionStmt(
  */
 data class HIRImport(
     override val hirId: Int,
-    val namespace: String,
+    val namespace: Namespace,
     val steps: List<String>,
     val alias: String? = null,
     val parts: List<HIRImportPart>? = null,

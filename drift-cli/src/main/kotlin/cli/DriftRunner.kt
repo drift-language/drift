@@ -25,6 +25,7 @@ import kotlin.system.exitProcess
 import drift.DriftVersion
 import drift.bootstrap.impl.RunnerBootstrap
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 import project.DriftProjectLoadingException
 import project.ProjectConfig
 import project.loadConfig
@@ -95,11 +96,11 @@ class Run : CliktCommand(name = "run") {
         if (!sourceRoot.isDirectory)
             error("Source root must be a directory")
 
-        val namespace = sourceRootPath
+        val namespace = Namespace(sourceRootPath
             .relativize(entryPathObj)
             .toString()
             .replace(File.separator, NAMESPACE_SEPARATOR)
-            .removeDriftExtension()
+            .removeDriftExtension())
 
         val source = entryFile.readText()
         RunnerBootstrap(

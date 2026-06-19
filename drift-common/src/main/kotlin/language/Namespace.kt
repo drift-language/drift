@@ -6,20 +6,30 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
-package drift.bootstrap
 
-import language.Namespace
+package language
+
+import language.LangInfo.NAMESPACE_SEPARATOR
 
 
 /**
- * This object hosts some collections caching compilation
- * useful data, accessible for all [Bootstrap] instances for
- * example.
+ * Representation of a namespace in the Drift Programming Language.
+ * A namespace is a path that represents where a class or package can be located
+ * inside the Drift virtual file system.
  *
+ * In practice, the path is represented as a string separated by a separator
+ * (cf. [NAMESPACE_SEPARATOR]).
+ * 
  * @author Jonathan (GitHub: belicfr)
+ * @see NAMESPACE_SEPARATOR
  */
-object CompilationMemory {
+data class Namespace(
+    val namespace: String) {
 
-    /** This set stores all already imported modules. */
-    val imported = mutableSetOf<Namespace>()
+    fun getFilename() : String =
+        namespace.substringAfterLast(NAMESPACE_SEPARATOR)
+
+    operator fun plus(other: String) = namespace + other
+
+    override fun toString(): String = namespace
 }

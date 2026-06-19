@@ -43,10 +43,11 @@ import drift.oldruntime.UnknownType
 import drift.oldruntime.VoidType
 import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 
 
 class SemanticChecker(
-    val namespace: String,
+    val namespace: Namespace,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
     val refResolutions: Map<Int, Int>,
@@ -324,7 +325,7 @@ class SemanticChecker(
         val structure = symbolTable.getSymbol(structureNodeId) as? VariableSymbol
             ?: error("Only variables can be assigned")
 
-        if (!structure.signature.isMutable)
+        if (!structure.signature.isMutable)     // TODO: except N/A lets
             error("Variable '${assign.name}' is immutable")
 
         checkExpression(assign.value)

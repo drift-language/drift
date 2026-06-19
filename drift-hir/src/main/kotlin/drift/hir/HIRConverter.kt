@@ -26,12 +26,13 @@ import drift.oldruntime.AnyType
 import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 
 /**
  * Converter from Drift AST to HIR (High-level Intermediate Representation).
  */
 class HIRConverter(
-    private val namespace: String,
+    private val namespace: Namespace,
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
     private val refResolutions: Map<Int, Int>,
@@ -334,7 +335,7 @@ class HIRConverter(
 
         val hirImport = HIRImport(
             hirId = hirId,
-            namespace = importStmt.namespace,
+            namespace = Namespace(importStmt.namespace),
             steps = importStmt.steps,
             alias = importStmt.alias,
             parts = hirImportParts,

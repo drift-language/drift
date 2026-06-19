@@ -19,9 +19,10 @@ import drift.oldruntime.VoidType
 import language.LangInfo
 import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 
 class SymbolCollector(
-    val namespace: String,
+    val namespace: Namespace,
     val symbolTable: SymbolTable,
     val statements: List<ParserStatement>) {
 
@@ -289,7 +290,7 @@ class SymbolCollector(
         if (importedNamespaces.contains(import.namespace))
             return
 
-        if (import.namespace != namespace)
+        if (import.namespace != namespace.namespace)
             importedNamespaces.add(import.namespace)
 
         fun handleWithWildcard() {
