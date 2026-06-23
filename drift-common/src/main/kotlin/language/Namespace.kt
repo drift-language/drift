@@ -24,12 +24,14 @@ import language.LangInfo.NAMESPACE_SEPARATOR
  * @see NAMESPACE_SEPARATOR
  */
 data class Namespace(
-    val namespace: String) {
+    private val namespace: String) {
+
+    fun getQualifiedName() : String = namespace
 
     fun getFilename() : String =
         namespace.substringAfterLast(NAMESPACE_SEPARATOR)
 
     operator fun plus(other: String) = namespace + other
 
-    override fun toString(): String = namespace
+    override fun toString(): String = getQualifiedName()
 }

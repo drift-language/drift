@@ -696,6 +696,9 @@ class HIRConverter(
     }
 
     private fun computeFieldOffset(className: String, memberName: String) : Int {
+        /*
+        TODO: -1 is ambiguous: class retrieving error, static member...
+         */
         val classId = symbolTable.lookupNodeId(className)
             ?: return -1
 

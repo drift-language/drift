@@ -290,7 +290,7 @@ class SymbolCollector(
         if (importedNamespaces.contains(import.namespace))
             return
 
-        if (import.namespace != namespace.namespace)
+        if (import.namespace != namespace.getQualifiedName())
             importedNamespaces.add(import.namespace)
 
         fun handleWithWildcard() {

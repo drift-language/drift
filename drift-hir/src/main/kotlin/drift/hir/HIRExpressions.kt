@@ -157,8 +157,7 @@ data class HIRAssign(
     override val hirId: Int,
     override val type: HIRType,
     val target: AssignTarget,
-    val value: HIRExpression
-) : HIRExpression
+    val value: HIRExpression) : HIRExpression
 
 sealed interface AssignTarget
 
@@ -166,8 +165,7 @@ data class VariableTarget(val name: String) : AssignTarget
 data class FieldTarget(
     val receiver: HIRExpression,
     val fieldName: String,
-    val fieldOffset: Int
-) : AssignTarget
+    val fieldOffset: Int) : AssignTarget
 
 // ============================================================================
 // CONTROL FLOW
