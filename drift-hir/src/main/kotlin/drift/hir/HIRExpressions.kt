@@ -33,7 +33,7 @@ data class HIRLiteral(
     val value: Any?
 ) : HIRExpression
 
-data class HIRVariableRef(
+data class HIRReference(
     override val hirId: Int,
     override val type: HIRType,
     val name: String,
