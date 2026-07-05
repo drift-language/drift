@@ -8,6 +8,8 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
+import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
+import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
@@ -78,12 +80,18 @@ class SymbolCollector(
             nodeId?.let { refResolutions[statement.nodeId] = it }
         }
 
+        val isTopLevel = symbolTable.isTopLevel()
+
+        val scope: VariableSymbol.VariableSignature.Scope =
+            if (isTopLevel) TopLevelScope(namespace)
+            else LocalScope
         val signature = VariableSymbol.VariableSignature(
             type = statement.type,
-            isMutable = statement.isMutable)
+            isMutable = statement.isMutable,
+            scope = scope)
 
         val name =
-            if (symbolTable.isTopLevel()) "$namespace$NAMESPACE_SEPARATOR${statement.name}"
+            if (isTopLevel) "$namespace$NAMESPACE_SEPARATOR${statement.name}"
             else statement.name
 
         symbolTable.addVariable(
@@ -129,7 +137,8 @@ class SymbolCollector(
         func.parameters.forEach { parameter ->
             val signature = VariableSymbol.VariableSignature(
                 type = parameter.type,
-                isMutable = false)
+                isMutable = false,
+                scope = LocalScope)
 
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,
@@ -142,7 +151,8 @@ class SymbolCollector(
         if (receiverClass != null) {
             val thisSignature = VariableSymbol.VariableSignature(
                 type = ObjectType("$namespace$NAMESPACE_SEPARATOR${receiverClass.name}"),
-                isMutable = false)
+                isMutable = false,
+                scope = LocalScope)
 
             symbolTable.addVariable(
                 nodeId = symbolTable.allocateSyntheticId(),
@@ -211,7 +221,8 @@ class SymbolCollector(
         `for`.variables.forEach { variable ->
             val signature = VariableSymbol.VariableSignature(
                 type = AnyType,
-                isMutable = false)
+                isMutable = false,
+                scope = LocalScope)
 
             symbolTable.addVariable(
                 nodeId = variable.nodeId,
@@ -447,7 +458,8 @@ class SymbolCollector(
         lambda.parameters.forEach { parameter ->
             val signature = VariableSymbol.VariableSignature(
                 type = parameter.type,
-                isMutable = false)
+                isMutable = false,
+                scope = LocalScope)
 
             symbolTable.addVariable(
                 nodeId = parameter.nodeId,

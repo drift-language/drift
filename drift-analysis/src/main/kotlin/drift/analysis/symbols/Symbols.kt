@@ -10,6 +10,7 @@ package drift.analysis.symbols
 
 import drift.oldruntime.AnyType
 import drift.oldruntime.ParserType
+import language.Namespace
 
 
 abstract class Symbol
@@ -20,7 +21,14 @@ data class VariableSymbol(
 
     data class VariableSignature(
         val type: ParserType,
-        val isMutable: Boolean)
+        val isMutable: Boolean,
+        val scope: Scope) {
+
+        sealed interface Scope
+
+        data object LocalScope : Scope
+        data class TopLevelScope(val namespace: Namespace) : Scope
+    }
 }
 
 data class CallableSymbol(
