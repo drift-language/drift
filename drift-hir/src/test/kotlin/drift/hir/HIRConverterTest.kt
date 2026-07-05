@@ -156,8 +156,8 @@ class HIRConverterTest {
         assertTrue(hir[0] is HIRVariable)
 
         val exprHir = hir[1] as HIRExpressionStmt
-        assertTrue(exprHir.expression is HIRVariableRef)
-        val varRefHir = exprHir.expression as HIRVariableRef
+        assertTrue(exprHir.expression is HIRReference)
+        val varRefHir = exprHir.expression as HIRReference
         assertEquals("y", varRefHir.name)
     }
 

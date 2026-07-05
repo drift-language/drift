@@ -356,7 +356,7 @@ class HIRConverter(
 
         return when (expr) {
             is Literal -> convertLiteral(expr, type)
-            is Reference -> convertVariable(expr, type)
+            is Reference -> convertReference(expr, type)
             is Binary -> convertBinary(expr, type)
             is Unary -> convertUnary(expr, type)
             is Call -> convertCall(expr, type)
@@ -385,12 +385,12 @@ class HIRConverter(
         return hirLiteral
     }
 
-    private fun convertVariable(reference: Reference, type: HIRType) : HIRVariableRef {
+    private fun convertReference(reference: Reference, type: HIRType) : HIRReference {
         val hirId = allocateHirId()
 
         val definitionHirId = getDefinitionHirIdFromRefResolutions(reference.nodeId)
 
-        val hirVar = HIRVariableRef(
+        val hirVar = HIRReference(
             hirId = hirId,
             type = type,
             name = reference.name,
