@@ -9,6 +9,8 @@
 
 package drift.hir
 
+import language.Namespace
+
 // ============================================================================
 // OPERATORS
 // ============================================================================
@@ -160,10 +162,22 @@ data class HIRAssign(
     val value: HIRExpression) : HIRExpression
 
 sealed interface AssignTarget
+sealed interface VariableTarget : AssignTarget {
 
-data class VariableTarget(val name: String) : AssignTarget
+    val name: String
+}
+
+data class TopLevelVariableTarget(
+    override val name: String,
+    val ownerNamespace: Namespace) : VariableTarget
+
+data class LocalVariableTarget(
+    override val name: String,
+    val definitionHirId: Int) : VariableTarget
+
 data class FieldTarget(
     val receiver: HIRExpression,
+    val ownerNamespace: Namespace,
     val fieldName: String,
     val fieldOffset: Int) : AssignTarget
 

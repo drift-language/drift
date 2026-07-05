@@ -11,6 +11,9 @@ package drift.hir
 
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
+import drift.analysis.symbols.VariableSymbol
+import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
+import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
@@ -572,14 +575,21 @@ class HIRConverter(
     private fun convertSet(set: Set, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
         val receiver = convertExpression(set.receiver)
-        val receiverClassName = extractClassName(typeResolution[set.receiver.nodeId])
-        val fieldOffset = computeFieldOffset(receiverClassName, set.name)
+        val receiverQualifiedName = extractClassName(typeResolution[set.receiver.nodeId])
+        val fieldOffset = computeFieldOffset(receiverQualifiedName, set.name)
         val value = convertExpression(set.value)
+
+        val target = FieldTarget(
+            receiver = receiver,
+            ownerNamespace = Namespace(receiverQualifiedName),
+            fieldName = set
+                .name,
+            fieldOffset = fieldOffset)
 
         val hirSet = HIRAssign(
             hirId = hirId,
             type = type,
-            target = FieldTarget(receiver, set.name, fieldOffset),
+            target = target,
             value = value)
 
         astToHirMap[set.nodeId] = hirId
@@ -589,12 +599,33 @@ class HIRConverter(
 
     private fun convertAssign(assign: Assign, type: HIRType) : HIRAssign {
         val hirId = allocateHirId()
+
+        val definitionNodeId = refResolutions[assign.nodeId]
+            ?: error("Undefined reference")
+        val symbol = symbolTable.getSymbol(definitionNodeId) as? VariableSymbol
+            ?: error("Only variables can be assigned")
+
         val value = convertExpression(assign.value)
+
+        val target = when(val scope = symbol.signature.scope) {
+            is TopLevelScope -> TopLevelVariableTarget(
+                name = assign.name,
+                ownerNamespace = scope.namespace)
+
+            is LocalScope -> {
+                val defHirId = astToHirMap[definitionNodeId]
+                    ?: error("Reference definition not found")
+
+                LocalVariableTarget(
+                    name = assign.name,
+                    definitionHirId = defHirId)
+            }
+        }
 
         val hirAssign = HIRAssign(
             hirId = hirId,
             type = type,
-            target = VariableTarget(assign.name),
+            target = target,
             value = value)
 
         astToHirMap[assign.nodeId] = hirId
