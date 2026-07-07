@@ -36,6 +36,13 @@ sealed interface HIRAnnotatable {
     val annotations: MutableList<HIRAnnotation>
 }
 
+sealed interface HIRCallable {
+
+    val parameters: List<HIRParameter>
+    val returnType: HIRType
+    val body: List<HIRStatement>
+}
+
 
 /**
  * Base interface for all expression nodes in HIR.
