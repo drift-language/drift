@@ -31,6 +31,9 @@ data class Namespace(
     fun getFilename() : String =
         namespace.substringAfterLast(NAMESPACE_SEPARATOR)
 
+    fun addStep(step: String) : Namespace =
+        Namespace("$namespace$NAMESPACE_SEPARATOR$step")
+
     operator fun plus(other: String) = namespace + other
 
     override fun toString(): String = getQualifiedName()
