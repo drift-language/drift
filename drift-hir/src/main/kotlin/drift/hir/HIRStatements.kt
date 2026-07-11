@@ -9,9 +9,11 @@
 
 package drift.hir
 
-import drift.ast.metadata.Annotation
 import drift.hir.metadata.HIRAnnotation
 import language.Namespace
+
+
+sealed interface HIRStatementCallable : HIRCallable
 
 /**
  * Function declaration in HIR.
@@ -19,12 +21,23 @@ import language.Namespace
 data class HIRFunction(
     override val hirId: Int,
     override val annotations: MutableList<HIRAnnotation>,
+    override val parameters: List<HIRParameter>,
+    override val returnType: HIRType,
+    override val body: List<HIRStatement>,
     val name: String,
-    val parameters: List<HIRParameter>,
-    val returnType: HIRType,
-    val body: List<HIRStatement>,
-    val isStatic: Boolean
-) : HIRStatement, HIRAnnotatable
+    val capturedVariables: List<HIRCapturedVariable>) : HIRStatement, HIRAnnotatable, HIRStatementCallable
+
+/**
+ * Class method declaration in HIR.
+ */
+data class HIRMethod(
+    override val hirId: Int,
+    override val annotations: MutableList<HIRAnnotation>,
+    override val parameters: List<HIRParameter>,
+    override val returnType: HIRType,
+    override val body: List<HIRStatement>,
+    val name: String,
+    val isStatic: Boolean) : HIRStatement, HIRAnnotatable, HIRStatementCallable
 
 /**
  * Hook declaration in HIR.
@@ -65,10 +78,10 @@ data class HIRClass(
     override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val fields: List<HIRField>,
-    val methods: List<HIRFunction>,
+    val methods: List<HIRMethod>,
     val hooks: List<HIRHook>,
     val staticFields: List<HIRField>,
-    val staticMethods: List<HIRFunction>
+    val staticMethods: List<HIRMethod>
 ) : HIRStatement, HIRAnnotatable
 
 /**

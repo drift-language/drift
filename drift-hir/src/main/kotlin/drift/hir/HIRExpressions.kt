@@ -210,11 +210,15 @@ data class HIRLoop(
 data class HIRLambda(
     override val hirId: Int,
     override val type: HIRType,
-    val parameters: List<HIRLambdaParameter>,
+    override val parameters: List<HIRParameter>,
     val capturedVariables: List<HIRCapturedVariable>,
-    val body: List<HIRStatement>
-) : HIRExpression
+    override val body: List<HIRStatement>) : HIRExpression, HIRCallable {
 
+    override val returnType: HIRType
+        get() = (type as HIRFunctionType).returnType
+}
+
+@Deprecated("Use HIRParameter instead")
 data class HIRLambdaParameter(
     val name: String,
     val type: HIRType
