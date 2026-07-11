@@ -71,12 +71,7 @@ class HIRConverter(
     private fun convertStatement(stmt: ParserStatement) : HIRStatement {
         return when (stmt) {
             is Let -> convertLet(stmt)
-            is Func -> convertFunction(stmt, isStatic = true)
-                    // NOTE: isStatic is set to TRUE in this context
-                    //  because it defines a top-level function, not a
-                    //  class method.
-                    //  A top-level function, in JVM, is declared in
-                    //  a synthetic class as a static method.
+            is Func -> convertFunction(stmt)
             is Class -> convertClass(stmt)
             is If -> convertIfStmt(stmt)
             is For -> convertFor(stmt)
@@ -113,34 +108,58 @@ class HIRConverter(
         return hirVar
     }
 
-    private fun convertFunction(
-        function: Func,
-        isStatic: Boolean,
-        receiverQualifiedName: String? = null)
-    : HIRFunction {
-
+    private fun convertFunction(function: Func) : HIRFunction {
         val hirId = allocateHirId()
 
-        val annotations = function.annotations
+        val annotations = function
+            .annotations
             .map(this::convertAnnotation)
             .toMutableList()
-
         val returnType = convertType(function.returnType)
-
         val parameters = function
             .parameters
             .map(this::convertParameter)
-
         val body = function
             .body
             .statements
             .map(this::convertStatement)
-
-        val name =
-            if (receiverQualifiedName != null) "$receiverQualifiedName$NAMESPACE_SEPARATOR${function.name}"
-            else function.name
+        val name = function.name
 
         val hirFunc = HIRFunction(
+            hirId = hirId,
+            annotations = annotations,
+            name = name,
+            parameters = parameters,
+            returnType = returnType,
+            body = body)
+
+        astToHirMap[function.nodeId] = hirId
+
+        return hirFunc
+    }
+
+    private fun convertMethod(
+        function: Func,
+        isStatic: Boolean,
+        receiverQualifiedName: String) : HIRMethod {
+
+        val hirId = allocateHirId()
+
+        val annotations = function
+            .annotations
+            .map(this::convertAnnotation)
+            .toMutableList()
+        val returnType = convertType(function.returnType)
+        val parameters = function
+            .parameters
+            .map(this::convertParameter)
+        val body = function
+            .body
+            .statements
+            .map(this::convertStatement)
+        val name = function.name
+
+        val hirMethod = HIRMethod(
             hirId = hirId,
             annotations = annotations,
             name = name,
@@ -151,10 +170,11 @@ class HIRConverter(
 
         astToHirMap[function.nodeId] = hirId
 
-        if (receiverQualifiedName != null)
-            classMethodHirIds[name] = hirId
+        val qualifiedName = Namespace(receiverQualifiedName)
+            .addStep(function.name)
+        classMethodHirIds[qualifiedName.toString()] = hirId
 
-        return hirFunc
+        return hirMethod
     }
 
     private fun convertHook(hook: Hook) : HIRHook {
@@ -212,13 +232,13 @@ class HIRConverter(
         val staticFields = clazz.staticFields.map { convertClassField(it, isStatic = true) }
         val fields = clazz.fields.map { convertClassField(it, isStatic = false) }
         val staticMethods = clazz.staticMethods.map {
-            convertFunction(
+            convertMethod(
                 it,
                 isStatic = true,
                 receiverQualifiedName = classQualifiedName)
         }
         val methods = clazz.methods.map {
-            convertFunction(
+            convertMethod(
                 it,
                 isStatic = false,
                 receiverQualifiedName = classQualifiedName)
@@ -655,7 +675,10 @@ class HIRConverter(
         val hirId = allocateHirId()
 
         val parameters = lambda.parameters.map { param ->
-            HIRLambdaParameter(
+            val paramHirId = allocateHirId()
+
+            HIRParameter(
+                hirId = paramHirId,
                 name = param.name,
                 type = convertType(param.type))
         }
