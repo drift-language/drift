@@ -11,6 +11,7 @@ package drift.bootstrap.impl
 
 import drift.analysis.inference.TypeInference
 import drift.analysis.symbols.SymbolCollector
+import drift.analysis.symbols.SymbolCollector.CollectionResult
 import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap
 import drift.bootstrap.CompilationMemory
@@ -38,7 +39,7 @@ class RunnerTestBootstrap(
     lateinit var tokens: List<Token>
         private set
 
-    lateinit var collection: SymbolCollector.CollectionResult
+    lateinit var collection: CollectionResult
         private set
 
     lateinit var inference: TypeInference.TypeInferenceResult
@@ -62,7 +63,7 @@ class RunnerTestBootstrap(
         }
     }
 
-    override fun bootCollectionPass(): SymbolCollector.CollectionResult {
+    override fun bootCollectionPass(): CollectionResult {
         if (!sourceRoot.isDirectory())
             error("Source root path must target the source directory")
 
@@ -113,7 +114,7 @@ class RunnerTestBootstrap(
         return bootHandleFile()
     }
 
-    private fun bootHandleFile() : SymbolCollector.CollectionResult {
+    private fun bootHandleFile() : CollectionResult {
         tokens = bootLexer(source)
         ast = bootParser(tokens)
 
@@ -124,8 +125,7 @@ class RunnerTestBootstrap(
         return collection
     }
 
-    override fun bootCompilationPass(
-        collection: SymbolCollector.CollectionResult) {
+    override fun bootCompilationPass(collection: CollectionResult) {
 
         inference = bootTypeInference(collection.resolutions)
 
