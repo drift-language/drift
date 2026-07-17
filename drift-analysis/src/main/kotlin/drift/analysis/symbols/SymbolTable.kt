@@ -29,6 +29,13 @@ import language.QualifiedName
 data class SymbolTable(
     val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
+    companion object {
+
+        /** The conventional top-level scope index is 0. */
+        private const val TOP_LEVEL_SCOPE_INDEX = 0
+    }
+
+
     /**
      * Stack of living scopes. From top-level (index-0) to
      * deeper.
@@ -38,6 +45,14 @@ data class SymbolTable(
      * it will throw a 'structural error' exception.
      */
     private val scopes = mutableListOf<Scope>()
+
+    /**
+     * This map stores node IDs with their binding information.
+     *
+     * @see Binding
+     */
+    private val nodeBindings = mutableMapOf<Int, Binding>()
+
 
     /**
      * A synthetic ID permits identifying a synthetic node
@@ -72,6 +87,19 @@ data class SymbolTable(
             scopes.removeLast()
     }
 
+    /**
+     * Easier management of scoped actions. It avoids always calling [pushScope]
+     * and [popScope]. This function consists of a callback, run between
+     * implicit push and pop. Once the actions are finished, the scope is
+     * implicitly popped.
+     *
+     * @param actions Actions callback to run in the new scope.
+     */
+    fun scope(actions: () -> Unit) {
+        pushScope()
+        actions()
+        popScope()
+    }
 
     /**
      * @return If the current deepest scope is the top-level one. It is the case
@@ -86,7 +114,20 @@ data class SymbolTable(
      */
     fun allocateSyntheticId() : Int = currentSyntheticId--
 
+    /**
+     * Searches and returns, if existing, the binding information related to the
+     * provided definition node ID.
+     *
+     * @param defNodeId Related definition node ID.
+     * @return The provided definition node ID's binding information if
+     *         existing; else NULL.
+     */
+    fun bindingOf(defNodeId: Int) : Binding? = nodeBindings[defNodeId]
 
+    /**
+     * @return The current scope depth (deepest scope index).
+     */
+    fun currentDepth() : Int = scopes.size - 1
 
 
     /**
@@ -95,13 +136,20 @@ data class SymbolTable(
     fun addVariable(
         nodeId: Int,
         name: String,
-        signature: VariableSymbol.VariableSignature) {
+        signature: VariableSignature) {
 
         val symbol = VariableSymbol(signature)
-
         allSymbols[nodeId] = symbol
 
-        scopes.last().bindings[name] = nodeId
+        when (val scope = signature.scope) {
+            is LocalScope -> addBinding(
+                simpleName = name,
+                nodeId = nodeId)
+
+            is TopLevelScope -> addBinding(
+                qualifiedName = QualifiedName(scope.namespace, name),
+                nodeId = nodeId)
+        }
     }
 
     /**
@@ -116,8 +164,7 @@ data class SymbolTable(
 
         allSymbols[nodeId] = symbol
 
-        if (name != null)
-            scopes.last().bindings[name] = nodeId
+        if (name != null) addBinding(name, nodeId)
     }
 
     /**
@@ -131,8 +178,7 @@ data class SymbolTable(
         val symbol = ClassSymbol(signature, hasPrimaryConstructor)
 
         allSymbols[nodeId] = symbol
-
-        scopes.last().bindings[signature.name] = nodeId
+        addBinding(signature.qualifiedName, nodeId)
     }
 
     /**
@@ -149,7 +195,10 @@ data class SymbolTable(
 
         allSymbols[nodeId] = symbol
 
-        scopes.first().bindings[signature.name] = nodeId
+        scopes.first().bindings[signature.name.qualifiedName] = nodeId
+        nodeBindings[nodeId] = Binding(
+            depth = TOP_LEVEL_SCOPE_INDEX,
+            simpleName = signature.name.simpleName)
         // NOTE: first scope because an import statement
         //  can only be done on top-level.
     }
@@ -219,16 +268,11 @@ data class SymbolTable(
 
 
     /**
-     * Add or replace a binding of the last scope.
+     * Searches from the current scope to the top-level one for the provided
+     * name and returns the deeper found node ID.
      *
-     * @param name Binding name, to prefix with namespace if top-level.
-     * @param nodeId Bound node ID
+     * @return The deeper found node ID if existing; else NULL.
      */
-    fun addBinding(name: String, nodeId: Int) {
-        scopes.last().bindings[name] = nodeId
-    }
-
-
     fun lookupNodeId(name: String): Int? {
         for (scope in scopes.asReversed())
             scope.bindings[name]?.let { return it }
@@ -321,6 +365,20 @@ data class SymbolTable(
         return finalSymbolTable
     }
 
+
+    /**
+     * Binding information about a defined structure.
+     *
+     * Binding contains the structure's simple name and depth (scope index).
+     *
+     * @param depth Scope index, named depth, 0 means top-level, the greater the
+     *              value, the deeper the depth.
+     *
+     * @author Jonathan (GitHub: belicfr)
+     */
+    data class Binding(
+        val depth: Int,
+        val simpleName: String)
 
 
     /**
