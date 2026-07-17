@@ -9,14 +9,35 @@
 package drift.analysis.symbols
 
 import drift.analysis.exceptions.DIRNotDefinedSymbolException
+import drift.analysis.symbols.CallableSymbol.CallableSignature
+import drift.analysis.symbols.ClassSymbol.ClassSignature
+import drift.analysis.symbols.ModuleSymbol.ModuleSignature
+import drift.analysis.symbols.VariableSymbol.VariableSignature
+import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
+import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import language.LangInfo.NAMESPACE_SEPARATOR
-import kotlin.collections.emptyMap
+import language.QualifiedName
 
+
+/**
+ *
+ *
+ * @param allSymbols Global symbol storage. Symbols persist after scope pop.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 data class SymbolTable(
-    // Global symbol storage - symbols persist after scope pop
     val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
 
-    private val scopes: MutableList<Scope> = mutableListOf()
+    /**
+     * Stack of living scopes. From top-level (index-0) to
+     * deeper.
+     *
+     * As introduced above, the index-0 scope is reserved for the top-level one.
+     * So it must not be ended and the collection cannot be empty. Otherwise,
+     * it will throw a 'structural error' exception.
+     */
+    private val scopes = mutableListOf<Scope>()
 
     /**
      * A synthetic ID permits identifying a synthetic node
@@ -30,23 +51,47 @@ data class SymbolTable(
 
     init {
         pushScope()
+        // NOTE: implicit initialization of the top-level scope. It must always
+        //  exist and never be deleted.
     }
 
 
+    /**
+     * Appends a new scope to the stack. Necessary to handle deeper bodies, it
+     * permits isolating local structures.
+     */
     fun pushScope() {
         scopes.add(Scope())
     }
 
+    /**
+     * Deletes the last scope.
+     */
     fun popScope() {
         if (scopes.size > 1)
             scopes.removeLast()
     }
 
-    fun isTopLevel() = scopes.size == 1
 
-    fun allocateSyntheticId() = currentSyntheticId--
+    /**
+     * @return If the current deepest scope is the top-level one. It is the case
+     *         only when [scopes] size equals 1.
+     */
+    fun isTopLevel() : Boolean = scopes.size == 1
+
+    /**
+     * Returns the current prepared [currentSyntheticId], then decrements it.
+     *
+     * @return Current prepared [currentSyntheticId].
+     */
+    fun allocateSyntheticId() : Int = currentSyntheticId--
 
 
+
+
+    /**
+     * Builds a [VariableSymbol] and adds it to the current scope.
+     */
     fun addVariable(
         nodeId: Int,
         name: String,
@@ -59,10 +104,13 @@ data class SymbolTable(
         scopes.last().bindings[name] = nodeId
     }
 
+    /**
+     * Builds a [CallableSymbol] and adds it to the current scope.
+     */
     fun addCallable(
         nodeId: Int,
         name: String? = null,
-        signature: CallableSymbol.CallableSignature) {
+        signature: CallableSignature) {     // TODO: implement QualifiedName properly.
 
         val symbol = CallableSymbol(signature)
 
@@ -72,9 +120,12 @@ data class SymbolTable(
             scopes.last().bindings[name] = nodeId
     }
 
+    /**
+     * Builds a [ClassSymbol] and adds it to the current scope.
+     */
     fun addClass(
         nodeId: Int,
-        signature: ClassSymbol.ClassSignature,
+        signature: ClassSignature,
         hasPrimaryConstructor: Boolean) {
 
         val symbol = ClassSymbol(signature, hasPrimaryConstructor)
@@ -84,9 +135,15 @@ data class SymbolTable(
         scopes.last().bindings[signature.name] = nodeId
     }
 
+    /**
+     * Builds a [ModuleSymbol] and adds it to the top-level scope.
+     *
+     * A module, depending on an import, can only be stated on the top-level
+     * scope.
+     */
     fun addModule(
         nodeId: Int,
-        signature: ModuleSymbol.ModuleSignature) {
+        signature: ModuleSignature) {
 
         val symbol = ModuleSymbol(signature)
 
@@ -98,6 +155,12 @@ data class SymbolTable(
     }
 
 
+    /**
+     * Searches [allSymbols] using the provided [nodeId] and returns the
+     * [Symbol] if existing.
+     *
+     * @return Found [Symbol] if existing; else NULL.
+     */
     fun getSymbol(nodeId: Int) : Symbol {
         return allSymbols[nodeId]
             ?: throw DIRNotDefinedSymbolException("nodeId#$nodeId")
@@ -146,6 +209,12 @@ data class SymbolTable(
     }
 
 
+    /**
+     * Looks up for a class with the provided name and returns if it exists.
+     *
+     * @return If a class having the provided name is declared.
+     * @see lookupNodeId
+     */
     fun hasClass(name: String) : Boolean {
         val nodeId = lookupNodeId(name) 
             ?: return false
@@ -154,15 +223,37 @@ data class SymbolTable(
     }
 
 
+    /**
+     * '+=' operation between two [SymbolTable] instances.
+     *
+     * This operation merges both [allSymbols] and top-level scopes bindings.
+     */
     operator fun plusAssign(other: SymbolTable) {
         allSymbols += other.allSymbols
 
         if (scopes.isNotEmpty() && other.scopes.isNotEmpty())
             scopes.first().bindings += other.scopes.first().bindings
     }
+
+    /**
+     * '+=' operation between a [SymbolTable] instance and a collection of other
+     * instances.
+     *
+     * This operation repeats the singular operation between the current
+     * instance and each one from the provided collection.
+     */
     operator fun plusAssign(others: Collection<SymbolTable>) =
         others.forEach { plusAssign(it) }
 
+    /**
+     * '+' operation between two [SymbolTable] instances.
+     *
+     * This operation merges both [allSymbols] and top-level scopes bindings.
+     * Then it builds a new [SymbolTable] with the merged collections, and
+     * returns it.
+     *
+     * @return Merged [SymbolTable] new instance.
+     */
     operator fun plus(other: SymbolTable) : SymbolTable {
         val allSymbols = (allSymbols + other.allSymbols)
             .toMutableMap()
@@ -182,6 +273,17 @@ data class SymbolTable(
 
         return symbolTable
     }
+
+    /**
+     * '+' operation between a [SymbolTable] instance and a collection of other
+     * instances.
+     *
+     * This operation repeats the singular operation between the current
+     * instance and each one from the provided collection. Then it builds a new
+     * [SymbolTable] instance with merges and returns it.
+     *
+     * @return Merged [SymbolTable] new instance.
+     */
     operator fun plus(others: Collection<SymbolTable>) : SymbolTable {
         val finalSymbolTable = this
 
@@ -192,8 +294,17 @@ data class SymbolTable(
     }
 
 
+
+    /**
+     * Since a programming language supports branches, it needs to handle
+     * scopes. A scope is an isolated object containing bindings between
+     * structures' names and node IDs defined in it.
+     */
     private class Scope {
 
+        /**
+         * Bindings between defined structures' names and node IDs.
+         */
         val bindings = mutableMapOf<String, Int>()
     }
 }
