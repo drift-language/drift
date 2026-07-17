@@ -22,7 +22,6 @@ package drift.ast.statements
  * This class represents an import statement.
  *
  * @property namespace Namespace to import
- * @property path Namespace path to import
  */
 data class Import(
     val namespace: String,
