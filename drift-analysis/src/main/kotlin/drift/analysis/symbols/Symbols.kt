@@ -11,6 +11,7 @@ package drift.analysis.symbols
 import drift.oldruntime.AnyType
 import drift.oldruntime.ParserType
 import language.Namespace
+import language.QualifiedName
 
 
 abstract class Symbol
@@ -50,7 +51,7 @@ data class ClassSymbol(
     val hasPrimaryConstructor: Boolean) : Symbol() {
 
     data class ClassSignature(
-        val name: String,
+        val qualifiedName: QualifiedName,
         val constructorMethod: CallableSymbol,
         val fields: LinkedHashMap<String, ParserType> = linkedMapOf(),
         val staticFields: LinkedHashMap<String, ParserType> = linkedMapOf(),
@@ -62,6 +63,6 @@ data class ModuleSymbol(
     val signature: ModuleSignature) : Symbol() {
 
     data class ModuleSignature(
-        val name: String,
+        val name: QualifiedName,
         val symbols: Map<String, Int> = mapOf())
 }

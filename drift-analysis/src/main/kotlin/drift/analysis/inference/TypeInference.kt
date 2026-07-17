@@ -235,7 +235,7 @@ class TypeInference(
                 typeResolutions[referenceNodeId] = functionType
                 functionType
             }
-            is ClassSymbol -> ClassType(symbol.signature.name)
+            is ClassSymbol -> ClassType(symbol.signature.qualifiedName)
             is VariableSymbol -> {
                 typeResolutions[definitionNodeId]
                     ?: symbol.signature.type
@@ -486,7 +486,7 @@ class TypeInference(
                     typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
                 }
-                is ClassSymbol -> ObjectType(symbol.signature.name)
+                is ClassSymbol -> ObjectType(symbol.signature.qualifiedName)
                 is VariableSymbol -> {
                     val varType = typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
@@ -558,7 +558,7 @@ class TypeInference(
                             returnType = ctx.returnType)
                     }
                     ?: throw DIRNotDefinedSymbolException(
-                        name = "(instance of ${classRef.signature.name}).${get.name}")
+                        name = "(instance of ${classRef.signature.qualifiedName}).${get.name}")
             }
             is ClassType -> {
                 val classId = symbolTable.lookupNodeId(receiverType.className)
@@ -573,7 +573,7 @@ class TypeInference(
                             returnType = ctx.returnType)
                     }
                     ?: throw DIRNotDefinedSymbolException(
-                        name = "${classRef.signature.name}.${get.name}")
+                        name = "${classRef.signature.qualifiedName}.${get.name}")
             }
 
             else -> throw DIRUnexpectedTypeException()
