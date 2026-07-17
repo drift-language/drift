@@ -8,36 +8,60 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
+import drift.analysis.symbols.CallableSymbol.CallableSignature
+import drift.analysis.symbols.ClassSymbol.ClassSignature
+import drift.analysis.symbols.ModuleSymbol.ModuleSignature
+import drift.analysis.symbols.VariableSymbol.VariableSignature
 import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
 import drift.oldruntime.AnyType
-import drift.oldruntime.ClassType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.ParserType
 import drift.oldruntime.VoidType
-import language.LangInfo
-import language.LangInfo.INJECTED_VAR_PREFIX
+import language.InjectedVariableUtils.injectedThis
 import language.LangInfo.NAMESPACE_SEPARATOR
 import language.Namespace
+import language.QualifiedName
+import kotlin.collections.Set as KtSet
 
+
+/**
+ *
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 class SymbolCollector(
     val namespace: Namespace,
     val symbolTable: SymbolTable,
-    val statements: List<ParserStatement>) {
+    val ast: List<ParserStatement>) {
 
+    /**
+     * This map links a definition node ID with a resolution node ID.
+     */
     private val refResolutions = mutableMapOf<Int, Int>()
-    private val lambdaClosures = mutableMapOf<Int, Map<String, Int>>()
 
+    /**
+     * A closure captures variables for a callable, like a lambda or a
+     * nested/top-level function. It records outer variables used in its body.
+     */
+    private val closures = mutableMapOf<Int, Map<String, Int>>()
+
+    /**
+     * This set contains all imported namespaces from the current [ast].
+     */
     private val importedNamespaces = mutableSetOf<String>()
 
 
+    /**
+     *
+     */
     fun collect(): CollectionResult {
-        statements.forEach { collectStatement(it) }
+        ast.forEach { collectStatement(it) }
 
-        return CollectionResult(symbolTable, refResolutions, lambdaClosures)
+        return CollectionResult(symbolTable, refResolutions, this@SymbolCollector.closures)
     }
 
 
@@ -82,10 +106,10 @@ class SymbolCollector(
 
         val isTopLevel = symbolTable.isTopLevel()
 
-        val scope: VariableSymbol.VariableSignature.Scope =
+        val scope: VariableSignature.Scope =
             if (isTopLevel) TopLevelScope(namespace)
             else LocalScope
-        val signature = VariableSymbol.VariableSignature(
+        val signature = VariableSignature(
             type = statement.type,
             isMutable = statement.isMutable,
             scope = scope)
@@ -115,14 +139,15 @@ class SymbolCollector(
      */
     private fun collectFunction(func: Func, receiverClass: Class? = null) {
         val parameterTypes = func.parameters.map {
-            CallableSymbol.CallableSignature.Parameter(
+            CallableSignature.Parameter(
                 name = it.name,
                 type = it.type,
                 isRequired = it.defaultValue == null)
         }
-        val signature = CallableSymbol.CallableSignature(
+        val signature = CallableSignature(
             parameterTypes,
             func.returnType)
+        val refsBefore = refResolutions.keys.toSet()
 
         symbolTable.addCallable(
             nodeId = func.nodeId,
@@ -132,53 +157,51 @@ class SymbolCollector(
 
         /* Function's Scope */
 
-        symbolTable.pushScope()
+        symbolTable.scope {
+            func.parameters.forEach { parameter ->
+                val signature = VariableSignature(
+                    type = parameter.type,
+                    isMutable = false,
+                    scope = LocalScope)
 
-        func.parameters.forEach { parameter ->
-            val signature = VariableSymbol.VariableSignature(
-                type = parameter.type,
-                isMutable = false,
-                scope = LocalScope)
+                symbolTable.addVariable(
+                    nodeId = parameter.nodeId,
+                    name = parameter.name,
+                    signature = signature)      // NOTE: Callable Parameters are immutable!
 
-            symbolTable.addVariable(
-                nodeId = parameter.nodeId,
-                name = parameter.name,
-                signature = signature)      // NOTE: Callable Parameters are immutable!
+                parameter.defaultValue?.let { collectExpression(it) }
+            }
 
-            parameter.defaultValue?.let { collectExpression(it) }
+            if (receiverClass != null) {
+                val thisSignature = VariableSignature(
+                    type = ObjectType("$namespace$NAMESPACE_SEPARATOR${receiverClass.name}"),
+                    isMutable = false,
+                    scope = LocalScope)
+
+                symbolTable.addVariable(
+                    nodeId = symbolTable.allocateSyntheticId(),
+                    name = injectedThis(),
+                    signature = thisSignature)
+            }
+
+            collectBlock(func.body, newScope = false)
+
+            closures[func.nodeId] = collectCaptures(
+                entryDepth = symbolTable.currentDepth(),
+                refsBefore = refsBefore)
         }
-
-        if (receiverClass != null) {
-            val thisSignature = VariableSymbol.VariableSignature(
-                type = ObjectType("$namespace$NAMESPACE_SEPARATOR${receiverClass.name}"),
-                isMutable = false,
-                scope = LocalScope)
-
-            symbolTable.addVariable(
-                nodeId = symbolTable.allocateSyntheticId(),
-                name = "${INJECTED_VAR_PREFIX}this",
-                signature = thisSignature)
-        }
-
-        func
-            .body
-            .statements
-            .forEach { collectStatement(it) }
-
-        symbolTable.popScope()
     }
 
     /**
-     * # Block Collector
-     *
      * Create a new [SymbolTable.Scope] and collect each block's statement inside it.
      */
-    private fun collectBlock(block: Block) {
-        symbolTable.pushScope()
+    private fun collectBlock(block: Block, newScope: Boolean = true) {
+        val collect = {
+            block.statements.forEach { collectStatement(it) }
+        }
 
-        block.statements.forEach { collectStatement(it) }
-
-        symbolTable.popScope()
+        if (newScope) symbolTable.scope(collect)
+        else collect()
     }
 
     /**
@@ -219,7 +242,7 @@ class SymbolCollector(
 
         /* Iteration variables collection */
         `for`.variables.forEach { variable ->
-            val signature = VariableSymbol.VariableSignature(
+            val signature = VariableSignature(
                 type = AnyType,
                 isMutable = false,
                 scope = LocalScope)
@@ -245,18 +268,18 @@ class SymbolCollector(
                 }
                 .toMap(linkedMapOf())
         }
-        fun prepareMethods(source: List<Func>) : LinkedHashMap<String, CallableSymbol.CallableSignature> {
+        fun prepareMethods(source: List<Func>) : LinkedHashMap<String, CallableSignature> {
             return source
                 .associate { method ->
                     collectFunction(method, `class`)
 
                     val parameterTypes = method.parameters.map {
-                        CallableSymbol.CallableSignature.Parameter(
+                        CallableSignature.Parameter(
                             name = it.name,
                             type = it.type,
                             isRequired = it.defaultValue != null)
                     }
-                    val signature = CallableSymbol.CallableSignature(
+                    val signature = CallableSignature(
                         parameterTypes = parameterTypes,
                         returnType = method.returnType)
 
@@ -274,17 +297,20 @@ class SymbolCollector(
             .first { it.name == "init" }
 
         val ctorParameterTypes = constructorMethod.parameters.map {
-            CallableSymbol.CallableSignature.Parameter(
+            CallableSignature.Parameter(
                 name = it.name,
                 type = it.type,
                 isRequired = it.defaultValue == null)
         }
-        val constructorSignature = CallableSymbol.CallableSignature(
+        val constructorSignature = CallableSignature(
             parameterTypes = ctorParameterTypes,
             returnType = VoidType)
         val constructorSymbol = CallableSymbol(constructorSignature)
-        val signature = ClassSymbol.ClassSignature(
-            name = "$namespace$NAMESPACE_SEPARATOR${`class`.name}",
+        val classQualifiedName = QualifiedName(
+            namespace = namespace,
+            simpleName = `class`.name)
+        val signature = ClassSignature(
+            qualifiedName = classQualifiedName,
             constructorMethod = constructorSymbol,
             fields = fields,
             staticFields = staticFields,
@@ -312,20 +338,27 @@ class SymbolCollector(
             import.parts
                 ?.filter { it.alias != null }
                 ?.forEach { part ->
-                    val qualifiedName = "${import.namespace}$NAMESPACE_SEPARATOR${part.source}"
-                    val nodeId = importedNodeIds[qualifiedName]
+                    val qualifiedName = QualifiedName(
+                        namespace = Namespace(import.namespace),
+                        simpleName = part.source)
+                    val nodeId = importedNodeIds[qualifiedName.qualifiedName]
                         ?: return@forEach
-                    val importNewQualifiedName = "$namespace$NAMESPACE_SEPARATOR${part.alias!!}"
+                    val importNewQualifiedName = QualifiedName(
+                        namespace = namespace,
+                        simpleName = part.alias!!)
 
                     symbolTable.addBinding(importNewQualifiedName, nodeId)
-                    excludedImportNamespaces.add(qualifiedName)
+                    excludedImportNamespaces.add(qualifiedName.qualifiedName)
                 }
 
             importedNodeIds
                 .filter { (importedNamespace, _) -> !excludedImportNamespaces.contains(importedNamespace) }
                 .forEach { (importedNamespace, importedNodeId) ->
-                    val simpleName = importedNamespace.substringAfterLast(NAMESPACE_SEPARATOR)
-                    symbolTable.addBinding("$namespace$NAMESPACE_SEPARATOR$simpleName", importedNodeId)
+                    val simpleName = importedNamespace
+                        .substringAfterLast(NAMESPACE_SEPARATOR)
+                    val qualifiedName = QualifiedName(namespace, simpleName)
+
+                    symbolTable.addBinding(qualifiedName, importedNodeId)
                 }
         }
         fun handleWithoutWildcard() {
@@ -333,11 +366,11 @@ class SymbolCollector(
 
             import.parts
                 ?.forEach { part ->
-                    val namespaceEnding =
-                        if (part.alias == null) part.source
-                        else part.alias
+                    val namespaceEnding = part.alias ?: part.source
                     val originalQualifiedName = "${import.namespace}$NAMESPACE_SEPARATOR${part.source}"
-                    val qualifiedName = "${namespace}$NAMESPACE_SEPARATOR$namespaceEnding"
+                    val qualifiedName = QualifiedName(
+                        namespace = namespace,
+                        simpleName = namespaceEnding)
 
                     val importedNodeId = symbolTable
                         .lookupNodeId(originalQualifiedName)
@@ -357,11 +390,10 @@ class SymbolCollector(
                 }
                 .toMap()
 
-            val moduleQualifiedName =
-                namespace +
-                NAMESPACE_SEPARATOR +
-                import.namespace.substringAfterLast(NAMESPACE_SEPARATOR)
-            val signature = ModuleSymbol.ModuleSignature(
+            val moduleQualifiedName = QualifiedName(
+                namespace = namespace,
+                simpleName = import.namespace.substringAfterLast(NAMESPACE_SEPARATOR))
+            val signature = ModuleSignature(
                 name = moduleQualifiedName,
                 symbols = importedNodeIds)
 
@@ -370,9 +402,9 @@ class SymbolCollector(
                 signature = signature)
         }
 
-        if (import.wildcard) handleWithWildcard()
-        else if (import.parts != null) handleWithoutWildcard()
-        else handleImportByAccessor()
+        if (import.wildcard)            handleWithWildcard()
+        else if (import.parts != null)  handleWithoutWildcard()
+        else                            handleImportByAccessor()
     }
 
     /**
@@ -388,10 +420,7 @@ class SymbolCollector(
     /* -- EXPRESSION COLLECTORS -- */
 
     /**
-     * # Expression Collector
-     *
-     * Visit expressions to find structures
-     * that can declare symbols.
+     * Visits expressions to find structures that can declare symbols.
      */
     private fun collectExpression(expression: ParserExpression) {
         when (expression) {
@@ -450,119 +479,67 @@ class SymbolCollector(
         }
     }
 
+    /**
+     * Visits the provided lambda expression, creates a scope during the
+     * collection, collects its parameters and statements.
+     *
+     * This method also determines which outer variables it captures.
+     */
     private fun collectLambda(lambda: Lambda) {
-        val parameterNames = lambda.parameters.map { it.name }.toSet()
+        val refsBefore = refResolutions.keys.toSet()
 
-        symbolTable.pushScope()
+        symbolTable.scope {
+            lambda.parameters.forEach { parameter ->
+                val signature = VariableSignature(
+                    type = parameter.type,
+                    isMutable = false,
+                    scope = LocalScope)
 
-        lambda.parameters.forEach { parameter ->
-            val signature = VariableSymbol.VariableSignature(
-                type = parameter.type,
-                isMutable = false,
-                scope = LocalScope)
+                symbolTable.addVariable(
+                    nodeId = parameter.nodeId,
+                    name = parameter.name,
+                    signature = signature)
+            }
+            collectBlock(lambda.body, newScope = false)
 
-            symbolTable.addVariable(
-                nodeId = parameter.nodeId,
-                name = parameter.name,
-                signature = signature)
+            closures[lambda.nodeId] = collectCaptures(
+                entryDepth = symbolTable.currentDepth(),
+                refsBefore = refsBefore)
         }
+    }
 
-        lambda
-            .body
-            .statements
-            .forEach { collectStatement(it) }
 
-        val capturedVars = mutableMapOf<String, Int>()
-        val varNamesInLambda = findVariableNamesInLambda(lambda)
+    /* -- CONTEXT COLLECTORS -- */
 
-        for (varName in varNamesInLambda) {
-            val defId = symbolTable.lookupNodeId(varName)
-                ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR$varName")
+    private fun collectCaptures(entryDepth: Int, refsBefore: KtSet<Int>) : MutableMap<String, Int> {
+        val newRefs = refResolutions.keys - refsBefore
+        val captures = mutableMapOf<String, Int>()
+
+        for (refNodeId in newRefs) {
+            val defNodeId = refResolutions[refNodeId]
+                ?: error("Unexisting definition for reference '$refNodeId'")
+            val binding = symbolTable.bindingOf(defNodeId)
+                ?: error("Unexisting scope depth for definition '$defNodeId'")
+
+            symbolTable.getSymbol(defNodeId) as? VariableSymbol
                 ?: continue
 
-            if (!parameterNames.contains(varName)) {
-                capturedVars[varName] = defId
-            }
+            val isOuter = binding.depth < entryDepth
+
+            if (isOuter) captures[binding.simpleName] = defNodeId
         }
 
-        lambdaClosures[lambda.nodeId] = capturedVars
-
-        symbolTable.popScope()
-    }
-
-    private fun findVariableNamesInLambda(lambda: Lambda): kotlin.collections.Set<String> {
-        val names = mutableSetOf<String>()
-
-        lambda.body.statements.forEach { statement ->
-            collectVariableNamesInStatement(statement, names)
-        }
-
-        return names
-    }
-
-    private fun collectVariableNamesInStatement(
-        statement: ParserStatement,
-        names: MutableSet<String>) {
-
-        when (statement) {
-            is Let -> collectVariableNamesInExpression(statement.value, names)
-            is ExprStmt -> collectVariableNamesInExpression(statement.expr, names)
-            is If -> {
-                collectVariableNamesInExpression(statement.condition, names)
-                collectVariableNamesInStatement(statement.thenBranch, names)
-                statement.elseBranch?.let { collectVariableNamesInStatement(it, names) }
-            }
-            is Block -> statement.statements.forEach { collectVariableNamesInStatement(it, names) }
-            is Return -> collectVariableNamesInExpression(statement.value, names)
-            is For -> {
-                collectVariableNamesInExpression(statement.iterable, names)
-                collectVariableNamesInStatement(statement.body, names)
-            }
-            else -> {}
-        }
-    }
-
-    private fun collectVariableNamesInExpression(
-        expression: ParserExpression?,
-        names: MutableSet<String>) {
-
-        when (expression) {
-            is Reference -> names.add(expression.name)
-            is Binary -> {
-                collectVariableNamesInExpression(expression.left, names)
-                collectVariableNamesInExpression(expression.right, names)
-            }
-            is Unary -> collectVariableNamesInExpression(expression.expr, names)
-            is Call -> {
-                collectVariableNamesInExpression(expression.callee, names)
-                for (arg in expression.args) {
-                    collectVariableNamesInExpression(arg.expr, names)
-                }
-            }
-            is Get -> collectVariableNamesInExpression(expression.receiver, names)
-            is Set -> {
-                collectVariableNamesInExpression(expression.receiver, names)
-                collectVariableNamesInExpression(expression.value, names)
-            }
-            is Assign -> collectVariableNamesInExpression(expression.value, names)
-            is Lambda -> {
-                for (stmt in expression.body.statements) {
-                    collectVariableNamesInStatement(stmt, names)
-                }
-            }
-            is drift.ast.expressions.Array -> {
-                for (value in expression.values) {
-                    collectVariableNamesInExpression(value, names)
-                }
-            }
-
-            else -> {}
-        }
+        return captures
     }
 
 
+    /**
+     *
+     *
+     * @author Jonathan (GitHub: belicfr)
+     */
     data class CollectionResult(
         val symbolTable: SymbolTable,
         val resolutions: Map<Int, Int>,
-        val lambdaClosures: Map<Int, Map<String, Int>>)
+        val closures: Map<Int, Map<String, Int>>)
 }
