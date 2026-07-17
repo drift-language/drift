@@ -21,6 +21,7 @@ import drift.ast.statements.*
 import drift.oldruntime.*
 import drift.oldruntime.values.primaries.*
 import drift.oldruntime.values.primaries.ParserNull
+import language.Namespace
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
@@ -560,7 +561,7 @@ class TypeInferenceTest {
                 val initSymbol = CallableSymbol()
                 val classSymbol = ClassSymbol(
                     signature = ClassSymbol.ClassSignature(
-                        name = clazz.name,
+                        qualifiedName = clazz.name,
                         constructorMethod = initSymbol),
                     hasPrimaryConstructor = false)
 
@@ -584,7 +585,7 @@ class TypeInferenceTest {
             fun `Method call should return method return type`() {
                 val clazz = Class(name = "A")
                 val signature = ClassSymbol.ClassSignature(
-                    name = clazz.name,
+                    qualifiedName = clazz.name,
                     constructorMethod = CallableSymbol(),
                     methods = linkedMapOf(
                         "f" to CallableSymbol.CallableSignature(returnType = intOT)))
@@ -612,7 +613,7 @@ class TypeInferenceTest {
             fun `Method call on field (non-callable) should throw`() {
                 val clazz = Class(name = "A")
                 val signature = ClassSymbol.ClassSignature(
-                    name = clazz.name,
+                    qualifiedName = clazz.name,
                     constructorMethod = CallableSymbol(),
                     fields = linkedMapOf("x" to intOT))
 
@@ -659,7 +660,8 @@ class TypeInferenceTest {
                 val letSymbol = VariableSymbol(
                     signature = VariableSymbol.VariableSignature(
                         type = AnyType,
-                        isMutable = false))
+                        isMutable = false,
+                        scope = VariableSymbol.VariableSignature.LocalScope))
 
                 val ast = listOf(function, let, ExprStmt(call))
 
@@ -692,7 +694,8 @@ class TypeInferenceTest {
                 val letSymbol = VariableSymbol(
                     signature = VariableSymbol.VariableSignature(
                         type = AnyType,
-                        isMutable = false))
+                        isMutable = false,
+                        scope = VariableSymbol.VariableSignature.LocalScope))
 
                 val ast = listOf(let, ExprStmt(call))
 
@@ -1476,7 +1479,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     fields = linkedMapOf(
                         "foo" to stringOT)),
@@ -1518,7 +1521,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     staticFields = linkedMapOf(
                         "foo" to stringOT)),
@@ -1559,7 +1562,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     methods = linkedMapOf(
                         "foo" to CallableSymbol.CallableSignature())),
@@ -1598,7 +1601,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     staticMethods = linkedMapOf(
                         "foo" to CallableSymbol.CallableSignature())),
@@ -1635,7 +1638,7 @@ class TypeInferenceTest {
                 name = "String")
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
@@ -1666,7 +1669,7 @@ class TypeInferenceTest {
                 name = "String")
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
@@ -1729,7 +1732,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     fields = linkedMapOf(
                         "foo" to stringOT)),
@@ -1772,7 +1775,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     staticFields = linkedMapOf(
                         "foo" to stringOT)),
@@ -1810,7 +1813,7 @@ class TypeInferenceTest {
                 name = "String")
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
@@ -1842,7 +1845,7 @@ class TypeInferenceTest {
                 name = "String")
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol()),
                 hasPrimaryConstructor = false)
 
@@ -1883,7 +1886,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     fields = linkedMapOf(
                         "foo" to stringOT)),
@@ -1924,7 +1927,7 @@ class TypeInferenceTest {
                     fooField))
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
-                    name = "String",
+                    qualifiedName = "String",
                     constructorMethod = CallableSymbol(),
                     staticFields = linkedMapOf(
                         "foo" to stringOT)),
@@ -2058,7 +2061,10 @@ class TypeInferenceTest {
             st.addVariable(
                 nodeId = let.nodeId,
                 name = qualifiedName,
-                signature = VariableSymbol.VariableSignature(type, false))
+                signature = VariableSymbol.VariableSignature(
+                    type,
+                    false,
+                    VariableSymbol.VariableSignature.TopLevelScope(Namespace(importedNamespace))))
             return st
         }
 

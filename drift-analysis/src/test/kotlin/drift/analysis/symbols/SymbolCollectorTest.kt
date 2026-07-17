@@ -7,7 +7,9 @@ import drift.ast.statements.hooks.UnreturnableHook
 import drift.oldruntime.AnyType
 import drift.oldruntime.ObjectType
 import drift.oldruntime.values.primaries.ParserInt
+import language.InjectedVariableUtils.injectedThis
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,7 +18,7 @@ import org.junit.jupiter.api.assertThrows
 class SymbolCollectorTest {
 
     private fun collect(namespace: String = "test", vararg statements: ParserStatement) =
-        SymbolCollector(namespace, SymbolTable(), statements.toList()).collect()
+        SymbolCollector(Namespace(namespace), SymbolTable(), statements.toList()).collect()
 
     private fun classWithInit(
         name: String,
@@ -85,6 +87,42 @@ class SymbolCollectorTest {
             val result = collect(statements = arrayOf(func))
             val symbol = result.symbolTable.getSymbol(func.nodeId) as CallableSymbol
             assertFalse(symbol.signature.parameterTypes.single().isRequired)
+        }
+
+        @Test
+        fun `Function captures outer variable in closure`() {
+            val outer = Let(name = "x", type = AnyType, value = Literal(ParserInt(1)), isMutable = false)
+            val func = Func(name = "foo", body = Block(listOf(ExprStmt(Reference("x")))))
+            val result = collect(statements = arrayOf(outer, func))
+            assertEquals(outer.nodeId, result.closures[func.nodeId]?.get("x"))
+        }
+
+        @Test
+        fun `Function parameters are not captured as closure variables`() {
+            val param = FunctionParameter(name = "x", type = AnyType)
+            val func = Func(
+                name = "foo",
+                parameters = listOf(param),
+                body = Block(listOf(ExprStmt(Reference("x")))))
+            val result = collect(statements = arrayOf(func))
+            assertFalse(result.closures[func.nodeId]?.containsKey("x") == true)
+        }
+
+        @Test
+        fun `Nested function captures enclosing function's local variable`() {
+            val innerFunc = Func(name = "inner", body = Block(listOf(ExprStmt(Reference("y")))))
+            val outerLet = Let(name = "y", type = AnyType, value = Literal(ParserInt(1)), isMutable = false)
+            val outerFunc = Func(name = "outer", body = Block(listOf(outerLet, innerFunc)))
+            val result = collect(statements = arrayOf(outerFunc))
+            assertEquals(outerLet.nodeId, result.closures[innerFunc.nodeId]?.get("y"))
+        }
+
+        @Test
+        fun `Method does not capture injected this as a closure variable`() {
+            val method = Func(name = "greet", body = Block(listOf(ExprStmt(Reference(injectedThis())))))
+            val clazz = classWithInit("Foo", methods = listOf(method))
+            val result = collect(statements = arrayOf(clazz))
+            assertFalse(result.closures[method.nodeId]?.containsKey(injectedThis()) == true)
         }
     }
 
@@ -181,7 +219,7 @@ class SymbolCollectorTest {
             val outer = Let(name = "x", type = AnyType, value = Literal(ParserInt(1)), isMutable = false)
             val lambda = Lambda(body = Block(listOf(ExprStmt(Reference("x")))))
             val result = collect(statements = arrayOf(outer, ExprStmt(lambda)))
-            assertEquals(outer.nodeId, result.lambdaClosures[lambda.nodeId]?.get("x"))
+            assertEquals(outer.nodeId, result.closures[lambda.nodeId]?.get("x"))
         }
 
         @Test
@@ -191,7 +229,7 @@ class SymbolCollectorTest {
                 parameters = listOf(param),
                 body = Block(listOf(ExprStmt(Reference("x")))))
             val result = collect(statements = arrayOf(ExprStmt(lambda)))
-            assertFalse(result.lambdaClosures[lambda.nodeId]?.containsKey("x") == true)
+            assertFalse(result.closures[lambda.nodeId]?.containsKey("x") == true)
         }
     }
 
@@ -207,12 +245,15 @@ class SymbolCollectorTest {
             st.addVariable(
                 nodeId = let.nodeId,
                 name = qualifiedName,
-                signature = VariableSymbol.VariableSignature(let.type, let.isMutable))
+                signature = VariableSymbol.VariableSignature(
+                    type = let.type,
+                    isMutable = let.isMutable,
+                    scope = VariableSymbol.VariableSignature.TopLevelScope(Namespace(importedNamespace))))
             return st
         }
 
         private fun collectImport(import: Import, symbolTable: SymbolTable) =
-            SymbolCollector(currentNamespace, symbolTable, listOf(import)).collect()
+            SymbolCollector(Namespace(currentNamespace), symbolTable, listOf(import)).collect()
 
 
         @Test
@@ -315,7 +356,7 @@ class SymbolCollectorTest {
                 parts = listOf(ImportPart(source = "nonExistent")))
 
             assertThrows<IllegalStateException> {
-                SymbolCollector(currentNamespace, SymbolTable(), listOf(import)).collect()
+                SymbolCollector(Namespace(currentNamespace), SymbolTable(), listOf(import)).collect()
             }
         }
 
@@ -328,7 +369,7 @@ class SymbolCollectorTest {
                 steps = listOf("test", "users"),
                 parts = listOf(ImportPart(source = "myValue")))
 
-            val result = SymbolCollector(currentNamespace, st, listOf(import, import)).collect()
+            val result = SymbolCollector(Namespace(currentNamespace), st, listOf(import, import)).collect()
 
             val bindings = result.symbolTable
                 .getBindingsByNamespace(currentNamespace)
