@@ -154,6 +154,34 @@ data class SymbolTable(
         //  can only be done on top-level.
     }
 
+    /**
+     * Adds or replaces a binding of the last scope. A variant using a
+     * [QualifiedName] object.
+     *
+     * @param qualifiedName Binding qualified-name.
+     * @param nodeId Bound node ID.
+     */
+    fun addBinding(qualifiedName: QualifiedName, nodeId: Int) {
+        scopes.last().bindings[qualifiedName.qualifiedName] = nodeId
+        nodeBindings[nodeId] = Binding(
+            depth = scopes.size - 1,
+            simpleName = qualifiedName.simpleName)
+    }
+
+    /**
+     * Adds or replaces a binding of the last scope. A variant using a simple
+     * name string.
+     *
+     * @param simpleName Binding's used simple-name.
+     * @param nodeId Bound node ID.
+     */
+    fun addBinding(simpleName: String, nodeId: Int) {
+        scopes.last().bindings[simpleName] = nodeId
+        nodeBindings[nodeId] = Binding(
+            depth = scopes.size - 1,
+            simpleName = simpleName)
+    }
+
 
     /**
      * Searches [allSymbols] using the provided [nodeId] and returns the
