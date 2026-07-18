@@ -26,13 +26,17 @@ import language.LangInfo.NAMESPACE_SEPARATOR
 data class Namespace(
     private val namespace: String) {
 
+    constructor(vararg steps: String) : this(steps.joinToString(NAMESPACE_SEPARATOR))
+
+
     fun getQualifiedName() : String = namespace
 
     fun getFilename() : String =
         namespace.substringAfterLast(NAMESPACE_SEPARATOR)
 
     fun addStep(step: String) : Namespace =
-        Namespace("$namespace$NAMESPACE_SEPARATOR$step")
+        if (namespace.isNotEmpty()) Namespace(namespace, step)
+        else                        Namespace(step)
 
     operator fun plus(other: String) = namespace + other
 
