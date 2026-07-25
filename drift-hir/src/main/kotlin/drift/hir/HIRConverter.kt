@@ -627,7 +627,7 @@ class HIRConverter(
 
         val value = convertExpression(assign.value)
 
-        val target = when(val scope = symbol.signature.scope) {
+        val target = when(val scope = symbol.signature.scopeType) {
             is TopLevelScope -> TopLevelVariableTarget(
                 name = assign.name,
                 ownerNamespace = scope.namespace)

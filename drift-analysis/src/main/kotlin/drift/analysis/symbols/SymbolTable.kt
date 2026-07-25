@@ -12,10 +12,12 @@ import drift.analysis.exceptions.DIRNotDefinedSymbolException
 import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol.ClassSignature
 import drift.analysis.symbols.ModuleSymbol.ModuleSignature
+import drift.analysis.symbols.Symbol.LocalScope
+import drift.analysis.symbols.Symbol.MemberScope
+import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature
-import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
-import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.Namespace
 import language.QualifiedName
 
 
@@ -141,7 +143,7 @@ data class SymbolTable(
         val symbol = VariableSymbol(signature)
         allSymbols[nodeId] = symbol
 
-        when (val scope = signature.scope) {
+        when (val scope = signature.scopeType) {
             is LocalScope -> addBinding(
                 simpleName = name,
                 nodeId = nodeId)

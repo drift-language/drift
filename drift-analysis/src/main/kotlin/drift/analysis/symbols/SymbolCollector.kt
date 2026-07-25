@@ -106,13 +106,13 @@ class SymbolCollector(
 
         val isTopLevel = symbolTable.isTopLevel()
 
-        val scope: VariableSignature.Scope =
+        val scopeType: ScopeType =
             if (isTopLevel) TopLevelScope(namespace)
-            else LocalScope
+            else            LocalScope
         val signature = VariableSignature(
             type = statement.type,
             isMutable = statement.isMutable,
-            scope = scope)
+            scopeType = scopeType)
 
         val name =
             if (isTopLevel) QualifiedName(namespace, statement.name).qualifiedName
@@ -144,9 +144,13 @@ class SymbolCollector(
                 type = it.type,
                 isRequired = it.defaultValue == null)
         }
+        val scopeType: ScopeType =
+            if (symbolTable.isTopLevel())   TopLevelScope(namespace)
+            else                            LocalScope
         val signature = CallableSignature(
-            parameterTypes,
-            func.returnType)
+            parameterTypes = parameterTypes,
+            returnType = func.returnType,
+            scopeType = scopeType)
         val refsBefore = refResolutions.keys.toSet()
 
         symbolTable.addCallable(
@@ -162,21 +166,24 @@ class SymbolCollector(
                 val signature = VariableSignature(
                     type = parameter.type,
                     isMutable = false,
-                    scope = LocalScope)
+                    scopeType = LocalScope)
 
                 symbolTable.addVariable(
                     nodeId = parameter.nodeId,
                     name = parameter.name,
                     signature = signature)      // NOTE: Callable Parameters are immutable!
 
-                parameter.defaultValue?.let { collectExpression(it) }
+                parameter.defaultValue?.let(this::collectExpression)
             }
 
             if (receiverClass != null) {
+                val receiverQualifiedName = QualifiedName(
+                    namespace = namespace,
+                    simpleName = receiverClass.name).qualifiedName
                 val thisSignature = VariableSignature(
-                    type = ObjectType("$namespace$NAMESPACE_SEPARATOR${receiverClass.name}"),
+                    type = ObjectType(receiverQualifiedName),
                     isMutable = false,
-                    scope = LocalScope)
+                    scopeType = LocalScope)
 
                 symbolTable.addVariable(
                     nodeId = symbolTable.allocateSyntheticId(),
@@ -245,7 +252,7 @@ class SymbolCollector(
             val signature = VariableSignature(
                 type = AnyType,
                 isMutable = false,
-                scope = LocalScope)
+                scopeType = LocalScope)
 
             symbolTable.addVariable(
                 nodeId = variable.nodeId,
@@ -281,7 +288,8 @@ class SymbolCollector(
                     }
                     val signature = CallableSignature(
                         parameterTypes = parameterTypes,
-                        returnType = method.returnType)
+                        returnType = method.returnType,
+                        scopeType = MemberScope(classQualifiedName))
 
                     method.name to signature
                 }
@@ -493,7 +501,7 @@ class SymbolCollector(
                 val signature = VariableSignature(
                     type = parameter.type,
                     isMutable = false,
-                    scope = LocalScope)
+                    scopeType = LocalScope)
 
                 symbolTable.addVariable(
                     nodeId = parameter.nodeId,

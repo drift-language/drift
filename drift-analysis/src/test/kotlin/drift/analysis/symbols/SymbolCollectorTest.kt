@@ -248,7 +248,7 @@ class SymbolCollectorTest {
                 signature = VariableSymbol.VariableSignature(
                     type = let.type,
                     isMutable = let.isMutable,
-                    scope = VariableSymbol.VariableSignature.TopLevelScope(Namespace(importedNamespace))))
+                    scopeType = VariableSymbol.VariableSignature.TopLevelScope(Namespace(importedNamespace))))
             return st
         }
 

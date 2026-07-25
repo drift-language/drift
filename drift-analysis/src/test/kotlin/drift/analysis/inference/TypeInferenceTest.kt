@@ -661,7 +661,7 @@ class TypeInferenceTest {
                     signature = VariableSymbol.VariableSignature(
                         type = AnyType,
                         isMutable = false,
-                        scope = VariableSymbol.VariableSignature.LocalScope))
+                        scopeType = VariableSymbol.VariableSignature.LocalScope))
 
                 val ast = listOf(function, let, ExprStmt(call))
 
@@ -695,7 +695,7 @@ class TypeInferenceTest {
                     signature = VariableSymbol.VariableSignature(
                         type = AnyType,
                         isMutable = false,
-                        scope = VariableSymbol.VariableSignature.LocalScope))
+                        scopeType = VariableSymbol.VariableSignature.LocalScope))
 
                 val ast = listOf(let, ExprStmt(call))
 

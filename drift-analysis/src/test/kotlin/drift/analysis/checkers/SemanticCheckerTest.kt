@@ -222,7 +222,7 @@ class SemanticCheckerTest {
             val fooSignature = VariableSymbol.VariableSignature(
                 type = intValueType,
                 isMutable = false,
-                scope = VariableSymbol.VariableSignature.LocalScope)
+                scopeType = VariableSymbol.VariableSignature.LocalScope)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
