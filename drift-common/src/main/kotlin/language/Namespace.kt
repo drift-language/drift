@@ -13,32 +13,94 @@ import language.LangInfo.NAMESPACE_SEPARATOR
 
 
 /**
- * Representation of a namespace in the Drift Programming Language.
+ * Representation of a namespace in Drift.
  * A namespace is a path that represents where a class or package can be located
  * inside the Drift virtual file system.
  *
- * In practice, the path is represented as a string separated by a separator
+ * This class stores its namespace using a list of steps. Each step represents
+ * a package or class name, which composes the namespace.
+ *
+ * ``com.foo.bar`` using the Java package conventional naming;
+ * becomes ``com/foo/bar`` using the internal Drift package conventional naming.
+ * This class represents it as ``[ com, foo, bar ]``.
+ *
+ * Once formatted, the path is represented as a string separated by a separator
  * (cf. [NAMESPACE_SEPARATOR]).
+ *
+ * **Attention!** [Namespace] must not be confused with [QualifiedName].
+ * A namespace can finish with a class name, like a qualified name, but for
+ * composition purposes, to target a member.
+ *
+ * ``com/foo/bar/User`` targets the class ``User`` and can be used to target
+ * its member``id`` by producing a [QualifiedName] object:
+ * ```kotlin
+ * QualifiedName(
+ *     namespace = Namespace("com", "foo", "bar", "User"),
+ *     simpleName = "id")
+ * // It qualifies the 'id' member using a namespace containing the class's
+ * // name.
+ * ```
  * 
  * @author Jonathan (GitHub: belicfr)
- * @see NAMESPACE_SEPARATOR
+ * @see QualifiedName
  */
 data class Namespace(
-    private val namespace: String) {
+    private val steps: List<String>) {
 
-    constructor(vararg steps: String) : this(steps.joinToString(NAMESPACE_SEPARATOR))
+    constructor(vararg steps: String) : this(steps.toList())
+
+    constructor(qualifiedName: QualifiedName) : this(
+        qualifiedName.qualifiedName.split(NAMESPACE_SEPARATOR))
 
 
-    fun getQualifiedName() : String = namespace
+    /**
+     * Since [Namespace] stores its namespace as a [List] of [String],
+     * [getNamespace] permits preparing it as a [String].
+     *
+     * @return string version of the namespace's steps.
+     */
+    fun getNamespace() : String = steps.joinToString(NAMESPACE_SEPARATOR)
 
-    fun getFilename() : String =
-        namespace.substringAfterLast(NAMESPACE_SEPARATOR)
+    /**
+     * Returns the last part of the [steps] list if non-empty; else it throws
+     * an exception: an empty namespace cannot be decomposed and contain a
+     * simple name.
+     *
+     * @return The namespace's simple name.
+     */
+    fun getSimpleName() : String {
+        if (steps.isEmpty())
+            error("An empty namespace cannot be decomposed.")
 
-    fun addStep(step: String) : Namespace =
-        if (namespace.isNotEmpty()) Namespace(namespace, step)
-        else                        Namespace(step)
+        return steps.last()
+    }
 
-    operator fun plus(other: String) = namespace + other
+    /**
+     * Returns the [steps] list after dropping its last step (the simple name)
+     * if non-empty; else it throws an exception: an empty namespace cannot be
+     * decomposed and have a parent.
+     *
+     * @return The namespace's parent [Namespace] object.
+     */
+    fun getParent() : Namespace {
+        if (steps.isEmpty())
+            error("An empty namespace cannot be decomposed.")
 
-    override fun toString(): String = getQualifiedName()
+        return Namespace(steps.dropLast(1))
+    }
+
+    /**
+     * Returns a new object containing the current [steps] list appened by the
+     * provided new step.
+     *
+     * @param step The new step to append.
+     * @return The new [Namespace] containing the new steps list.
+     */
+    fun addStep(step: String) : Namespace = Namespace(steps + step)
+
+
+    operator fun plus(other: String) = addStep(other)
+
+
+    override fun toString(): String = getNamespace()
 }
