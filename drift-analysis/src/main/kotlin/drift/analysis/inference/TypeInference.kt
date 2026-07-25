@@ -28,6 +28,7 @@ import drift.oldruntime.values.specials.ParserNotAssigned
 import drift.oldruntime.values.primaries.ParserNull
 import drift.oldruntime.values.specials.ParserVoid
 
+
 class TypeInference(
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
@@ -235,11 +236,8 @@ class TypeInference(
                 typeResolutions[referenceNodeId] = functionType
                 functionType
             }
-            is ClassSymbol -> ClassType(symbol.signature.qualifiedName)
-            is VariableSymbol -> {
-                typeResolutions[definitionNodeId]
-                    ?: symbol.signature.type
-            }
+            is ClassSymbol -> ClassType(symbol.signature.qualifiedName.qualifiedName)
+            is VariableSymbol -> typeResolutions[definitionNodeId] ?: symbol.signature.type
 
             else -> throw DIRUnexpectedExpressionException()
         }
@@ -486,7 +484,7 @@ class TypeInference(
                     typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
                 }
-                is ClassSymbol -> ObjectType(symbol.signature.qualifiedName)
+                is ClassSymbol -> ObjectType(symbol.signature.qualifiedName.qualifiedName)
                 is VariableSymbol -> {
                     val varType = typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")

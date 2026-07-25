@@ -115,7 +115,7 @@ class SymbolCollector(
             scope = scope)
 
         val name =
-            if (isTopLevel) "$namespace$NAMESPACE_SEPARATOR${statement.name}"
+            if (isTopLevel) QualifiedName(namespace, statement.name).qualifiedName
             else statement.name
 
         symbolTable.addVariable(
@@ -327,7 +327,7 @@ class SymbolCollector(
         if (importedNamespaces.contains(import.namespace))
             return
 
-        if (import.namespace != namespace.getQualifiedName())
+        if (import.namespace != namespace.getNamespace())
             importedNamespaces.add(import.namespace)
 
         fun handleWithWildcard() {
