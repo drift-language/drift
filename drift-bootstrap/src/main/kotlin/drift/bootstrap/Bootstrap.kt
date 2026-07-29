@@ -131,7 +131,7 @@ abstract class Bootstrap(
             symbolTable = symbolTable,
             refResolutions = analysis.collection.resolutions,
             typeResolution = analysis.inference.typeResolutions,
-            lambdaClosures = analysis.collection.closures)
+            closures = analysis.collection.closures)
 
         return converter.convert()
     }

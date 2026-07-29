@@ -148,6 +148,15 @@ data class SymbolTable(
                 simpleName = name,
                 nodeId = nodeId)
 
+            is MemberScope -> {
+                val classQualifiedName = Namespace(scope.classQualifiedName.qualifiedName)
+                val memberQualifiedName = classQualifiedName
+                    .addStep(name)
+                    .getNamespace()
+
+                addBinding(memberQualifiedName, nodeId)
+            }
+
             is TopLevelScope -> addBinding(
                 qualifiedName = QualifiedName(scope.namespace, name),
                 nodeId = nodeId)
@@ -159,14 +168,30 @@ data class SymbolTable(
      */
     fun addCallable(
         nodeId: Int,
-        name: String? = null,
-        signature: CallableSignature) {     // TODO: implement QualifiedName properly.
+        name: String,
+        signature: CallableSignature) {
 
         val symbol = CallableSymbol(signature)
-
         allSymbols[nodeId] = symbol
 
-        if (name != null) addBinding(name, nodeId)
+        when (val scope = signature.scopeType) {
+            is LocalScope -> addBinding(
+                simpleName = name,
+                nodeId = nodeId)
+
+            is MemberScope -> {
+                val classQualifiedName = Namespace(scope.classQualifiedName.qualifiedName)
+                val memberQualifiedName = classQualifiedName
+                    .addStep(name)
+                    .getNamespace()
+
+                addBinding(memberQualifiedName, nodeId)
+            }
+
+            is TopLevelScope -> addBinding(
+                qualifiedName = QualifiedName(scope.namespace, name),
+                nodeId = nodeId)
+        }
     }
 
     /**

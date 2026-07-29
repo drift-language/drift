@@ -11,11 +11,12 @@ package drift.analysis.symbols
 import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol.ClassSignature
 import drift.analysis.symbols.ModuleSymbol.ModuleSignature
+import drift.analysis.symbols.Symbol.LocalScope
+import drift.analysis.symbols.Symbol.MemberScope
+import drift.analysis.symbols.Symbol.ScopeType
+import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature
-import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
-import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
 import drift.ast.expressions.*
-import drift.ast.expressions.Set
 import drift.ast.statements.*
 import drift.oldruntime.AnyType
 import drift.oldruntime.ObjectType
@@ -267,6 +268,10 @@ class SymbolCollector(
     }
 
     private fun collectClass(`class`: Class) {
+        val classQualifiedName = QualifiedName(
+            namespace = namespace,
+            simpleName = `class`.name)
+
         fun prepareFields(source: List<Let>): LinkedHashMap<String, ParserType> {
             return source
                 .associate { field ->
@@ -304,19 +309,17 @@ class SymbolCollector(
         val constructorMethod = `class`.hooks
             .first { it.name == "init" }
 
-        val ctorParameterTypes = constructorMethod.parameters.map {
+        val ctorParameterTypes = constructorMethod.parameters.map { param ->
             CallableSignature.Parameter(
-                name = it.name,
-                type = it.type,
-                isRequired = it.defaultValue == null)
+                name = param.name,
+                type = param.type,
+                isRequired = param.defaultValue == null)
         }
         val constructorSignature = CallableSignature(
             parameterTypes = ctorParameterTypes,
-            returnType = VoidType)
+            returnType = VoidType,
+            scopeType = MemberScope(classQualifiedName))
         val constructorSymbol = CallableSymbol(constructorSignature)
-        val classQualifiedName = QualifiedName(
-            namespace = namespace,
-            simpleName = `class`.name)
         val signature = ClassSignature(
             qualifiedName = classQualifiedName,
             constructorMethod = constructorSymbol,

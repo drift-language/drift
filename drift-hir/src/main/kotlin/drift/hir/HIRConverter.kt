@@ -10,10 +10,12 @@
 package drift.hir
 
 import drift.analysis.symbols.ClassSymbol
+import drift.analysis.symbols.Symbol
 import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
-import drift.analysis.symbols.VariableSymbol.VariableSignature.LocalScope
-import drift.analysis.symbols.VariableSymbol.VariableSignature.TopLevelScope
+import drift.analysis.symbols.Symbol.LocalScope
+import drift.analysis.symbols.Symbol.MemberScope
+import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
@@ -40,7 +42,7 @@ class HIRConverter(
     private val symbolTable: SymbolTable,
     private val refResolutions: Map<Int, Int>,
     private val typeResolution: Map<Int, ParserType>,
-    private val lambdaClosures: Map<Int, Map<String, Int>>) {
+    private val closures: Map<Int, Map<String, Int>>) {
 
     companion object {
 
@@ -124,6 +126,7 @@ class HIRConverter(
             .statements
             .map(this::convertStatement)
         val name = function.name
+        val captures = computeCaptures(function.nodeId)
 
         val hirFunc = HIRFunction(
             hirId = hirId,
@@ -131,7 +134,8 @@ class HIRConverter(
             name = name,
             parameters = parameters,
             returnType = returnType,
-            body = body)
+            body = body,
+            capturedVariables = captures)
 
         astToHirMap[function.nodeId] = hirId
 
@@ -632,6 +636,8 @@ class HIRConverter(
                 name = assign.name,
                 ownerNamespace = scope.namespace)
 
+            is MemberScope -> TODO()
+
             is LocalScope -> {
                 val defHirId = astToHirMap[definitionNodeId]
                     ?: error("Reference definition not found")
@@ -682,17 +688,7 @@ class HIRConverter(
                 name = param.name,
                 type = convertType(param.type))
         }
-
-        val captures = lambdaClosures[lambda.nodeId] ?: emptyMap()
-        val capturedVariables = captures.map { (name, definitionNodeId) ->
-            val definitionHirId = astToHirMap[definitionNodeId]
-            val captureType = typeResolution[definitionNodeId]?.let { convertType(it) } ?: HIRAnyType
-
-            HIRCapturedVariable(
-                name = name,
-                type = captureType,
-                definitionHirId = definitionHirId)
-        }
+        val captures = computeCaptures(lambda.nodeId)
 
         val body = lambda
             .body
@@ -703,7 +699,7 @@ class HIRConverter(
             hirId = hirId,
             type = type,
             parameters = parameters,
-            capturedVariables = capturedVariables,
+            capturedVariables = captures,
             body = body)
 
         astToHirMap[lambda.nodeId] = hirId
@@ -784,5 +780,19 @@ class HIRConverter(
 
         return astToHirMap[definitionNodeId]
             ?: error("Reference definition not found")
+    }
+
+    private fun computeCaptures(callableNodeId: Int) : List<HIRCapturedVariable> {
+        val captures = closures[callableNodeId] ?: emptyMap()
+
+        return captures.map { (name, definitionNodeId) ->
+            val definitionHirId = astToHirMap[definitionNodeId]
+            val captureType = typeResolution[definitionNodeId]?.let { convertType(it) } ?: HIRAnyType
+
+            HIRCapturedVariable(
+                name = name,
+                type = captureType,
+                definitionHirId = definitionHirId)
+        }
     }
 }

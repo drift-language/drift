@@ -51,7 +51,7 @@ data class QualifiedName(
      * @param namespace The namespace object to use to construct the
      *                  [QualifiedName] object.
      * @throws IllegalStateException If the provided namespace is empty: it
-     *                               cannot have neither a parent nor a simple
+     *                               can have neither a parent nor a simple
      *                               name.
      *   TODO DOC: replace IllegalStateException by a dedicated exception class.
      */
