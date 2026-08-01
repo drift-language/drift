@@ -3,13 +3,13 @@ plugins {
 }
 rootProject.name = "drift"
 
-includeBuild("../drift-jvm")
-
 
 include("drift-common")
-include("drift-cli")
 include("drift-core")
 include("drift-ir")
 include("drift-hir")
 include("drift-analysis")
-include("drift-bootstrap")
+
+includeBuild("drift-cli")
+includeBuild("drift-bootstrap")
+// NOTE: bootstrap must lives in its dedicated runtime.

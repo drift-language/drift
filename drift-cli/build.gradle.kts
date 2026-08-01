@@ -22,12 +22,12 @@ kotlin {
 dependencies {
     testImplementation(kotlin("test"))
 
-    implementation(project(":drift-common"))
-    implementation(project(":drift-core"))
-    implementation(project(":drift-analysis"))
-    implementation(project(":drift-hir"))
-    implementation(project(":drift-ir"))
-    implementation(project(":drift-bootstrap"))
+    implementation("fr.belic.drift:drift-common:2026.0")
+    implementation("fr.belic.drift:drift-core:2026.0")
+    implementation("fr.belic.drift:drift-analysis:2026.0")
+    implementation("fr.belic.drift:drift-hir:2026.0")
+    implementation("fr.belic.drift:drift-ir:2026.0")
+    implementation("fr.belic.drift:drift-bootstrap:2026.0")
 
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
     implementation("com.github.ajalt.clikt:clikt-markdown:5.0.3")

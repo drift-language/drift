@@ -12,10 +12,10 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
 
-    implementation(project(":drift-analysis"))
-    implementation(project(":drift-core"))
-    implementation(project(":drift-hir"))
-    implementation(project(":drift-common"))
+    implementation("fr.belic.drift:drift-analysis:2026.0")
+    implementation("fr.belic.drift:drift-core:2026.0")
+    implementation("fr.belic.drift:drift-hir:2026.0")
+    implementation("fr.belic.drift:drift-common:2026.0")
 
     implementation("fr.belic.drift:drift-jvm:2026.0")
 }
