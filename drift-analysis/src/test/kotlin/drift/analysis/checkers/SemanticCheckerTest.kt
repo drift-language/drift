@@ -18,7 +18,9 @@ import drift.analysis.exceptions.DTCUnexpectedTypeException
 import drift.analysis.exceptions.DTCUnsupportedIterationException
 import drift.analysis.inference.TypeInference
 import drift.analysis.symbols.CallableSymbol
+import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol
+import drift.analysis.symbols.Symbol
 import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
 import drift.ast.bindings.FunctionParameter
@@ -46,6 +48,7 @@ import drift.oldruntime.values.primaries.ParserInt
 import drift.oldruntime.values.primaries.ParserString
 import drift.oldruntime.values.primaries.ParserNull
 import language.Namespace
+import language.QualifiedName
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -54,27 +57,40 @@ import org.junit.jupiter.api.assertThrows
 
 class SemanticCheckerTest {
 
+    private val namespace = Namespace("test")
+
+    private val intClassDeclaration = Class(name = "Int")
+    private val intClassQualifiedName = QualifiedName(
+        namespace,
+        simpleName = intClassDeclaration.name)
+    private val intClassConstructorSignature = CallableSignature(
+        scopeType = Symbol.MemberScope(intClassQualifiedName))
+    private val intClassSignature = ClassSymbol.ClassSignature(
+        qualifiedName = intClassQualifiedName,
+        constructorMethod = CallableSymbol(intClassConstructorSignature))
+    private val intValueType = ObjectType(
+        className = intClassDeclaration.name)
+
+    private val stringClassDeclaration = Class(
+        name = "String")
+    private val stringClassQualifiedName = QualifiedName(
+        namespace,
+        simpleName = stringClassDeclaration.name)
+    private val stringClassConstructorSignature = CallableSignature(
+        scopeType = Symbol.MemberScope(stringClassQualifiedName))
+    private val stringClassSignature = ClassSymbol.ClassSignature(
+        qualifiedName = stringClassQualifiedName,
+        constructorMethod = CallableSymbol(stringClassConstructorSignature))
+    private val stringValueType = ObjectType(
+        className = stringClassDeclaration.name)
+
+
     @Nested
     inner class LetTests {
 
         private lateinit var symbolTable: SymbolTable
         private var refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
-
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(
-            className = intClassDeclaration.name)
-
-        private val stringClassDeclaration = Class(
-            name = "String")
-        private val stringClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${stringClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val stringValueType = ObjectType(
-            className = stringClassDeclaration.name)
 
 
         @BeforeEach
@@ -133,9 +149,14 @@ class SemanticCheckerTest {
         fun `Let with defined type class in union context should not throw`() {
             val secondTypeClass = Class(
                 name = "Int64")
+            val secondTypeClassQualifiedName = QualifiedName(
+                namespace,
+                secondTypeClass.name)
+            val secondTypeClassConstructorSignature = CallableSignature(
+                scopeType = Symbol.MemberScope(secondTypeClassQualifiedName))
             val secondTypeClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${secondTypeClass.name}",
-                constructorMethod = CallableSymbol())
+                qualifiedName = secondTypeClassQualifiedName,
+                constructorMethod = CallableSymbol(secondTypeClassConstructorSignature))
             val expectedTypes = listOf(
                 ObjectType(className = intClassDeclaration.name),
                 ObjectType(className = secondTypeClass.name))
@@ -222,7 +243,7 @@ class SemanticCheckerTest {
             val fooSignature = VariableSymbol.VariableSignature(
                 type = intValueType,
                 isMutable = false,
-                scopeType = VariableSymbol.VariableSignature.LocalScope)
+                scopeType = Symbol.LocalScope)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
@@ -353,12 +374,6 @@ class SemanticCheckerTest {
         private lateinit var symbolTable: SymbolTable
         private val refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
-
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
 
 
         @BeforeEach
@@ -494,12 +509,6 @@ class SemanticCheckerTest {
         private val refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
 
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
-
 
         @BeforeEach
         fun setUp() {
@@ -586,12 +595,6 @@ class SemanticCheckerTest {
         private lateinit var symbolTable: SymbolTable
         private val resolutions = TypeInference.TypeInferenceResult.empty()
 
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
-
 
         @BeforeEach
         fun setUp() {
@@ -637,12 +640,13 @@ class SemanticCheckerTest {
             val funcDecl = Func(
                 name = "foo",
                 parameters = listOf(param))
-            val funcSignature = CallableSymbol.CallableSignature(
+            val funcSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = param.name,
                         type = intValueType,
-                        isRequired = false)))
+                        isRequired = false)),
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -662,12 +666,13 @@ class SemanticCheckerTest {
         fun `Call with too few args should throw`() {
             val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
-            val funcSignature = CallableSymbol.CallableSignature(
+            val funcSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -687,8 +692,8 @@ class SemanticCheckerTest {
         fun `Call with too many args should throw`() {
             val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
-            val funcSignature = CallableSymbol.CallableSignature(
-                parameterTypes = emptyList())
+            val funcSignature = CallableSignature(
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -710,12 +715,13 @@ class SemanticCheckerTest {
         fun `Call with wrong arg type should throw`() {
             val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
-            val funcSignature = CallableSymbol.CallableSignature(
+            val funcSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -738,12 +744,13 @@ class SemanticCheckerTest {
         fun `Call with non literal arg with resolved type mismatch should throw`() {
             val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
-            val funcSignature = CallableSymbol.CallableSignature(
+            val funcSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -773,12 +780,13 @@ class SemanticCheckerTest {
         fun `Call with valid args should not throw`() {
             val calleeVar = Reference("foo")
             val funcDecl = Func(name = "foo")
-            val funcSignature = CallableSymbol.CallableSignature(
+            val funcSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = Symbol.LocalScope)
 
             symbolTable.addCallable(
                 nodeId = funcDecl.nodeId,
@@ -804,14 +812,18 @@ class SemanticCheckerTest {
 
         private lateinit var symbolTable: SymbolTable
 
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
-
         private val aClassDeclaration = Class(name = "A")
+        private val aClassQualifiedName = QualifiedName(
+            namespace,
+            simpleName = aClassDeclaration.name)
         private val aValueType = ObjectType(className = "test/${aClassDeclaration.name}")
+        private val aClassMemberScope = Symbol.MemberScope(aClassQualifiedName)
+        private val anyAClassMethodSignature = CallableSignature(
+            scopeType = aClassMemberScope)
+        private val aClassSignature = ClassSymbol.ClassSignature(
+            qualifiedName = aClassQualifiedName,
+            constructorMethod = CallableSymbol(anyAClassMethodSignature),
+            methods = linkedMapOf("t" to anyAClassMethodSignature))
 
 
         @BeforeEach
@@ -837,11 +849,6 @@ class SemanticCheckerTest {
         fun `Method call on instance should not throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol(),
-                methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
-
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
                 signature = aClassSignature,
@@ -864,11 +871,6 @@ class SemanticCheckerTest {
         fun `Method call with missing type resolution for receiver should throw`() {
             val (innerVar, _, outerCall) = buildMethodCall("t")
 
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol(),
-                methods = linkedMapOf("t" to CallableSymbol.CallableSignature()))
-
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
                 signature = aClassSignature,
@@ -886,10 +888,6 @@ class SemanticCheckerTest {
         @Test
         fun `Method call on non-object type receiver should throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
-
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol())
 
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
@@ -913,10 +911,6 @@ class SemanticCheckerTest {
         fun `Method call with unregistered receiver class should throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol())
-
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
                 signature = aClassSignature,
@@ -938,10 +932,6 @@ class SemanticCheckerTest {
         @Test
         fun `Method call with method not found in class should throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("nonExistent")
-
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol())
 
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
@@ -965,15 +955,16 @@ class SemanticCheckerTest {
         fun `Method call with too few args should throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t")
 
-            val methodSignature = CallableSymbol.CallableSignature(
+            val methodSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = aClassMemberScope)
             val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol(),
+                qualifiedName = aClassQualifiedName,
+                constructorMethod = CallableSymbol(anyAClassMethodSignature),
                 methods = linkedMapOf("t" to methodSignature))
 
             symbolTable.addClass(
@@ -982,8 +973,7 @@ class SemanticCheckerTest {
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-)
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType))
 
             assertThrows<DTCInvalidArgsCountException> {
                 SemanticChecker(Namespace("test"),
@@ -1000,19 +990,13 @@ class SemanticCheckerTest {
                 "t",
                 listOf(Argument(name = null, expr = Literal(ParserInt(1)))))
 
-            val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol(),
-                methods = linkedMapOf("t" to CallableSymbol.CallableSignature(parameterTypes = emptyList())))
-
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
                 signature = aClassSignature,
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-)
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType))
 
             assertThrows<DTCInvalidArgsCountException> {
                 SemanticChecker(Namespace("test"),
@@ -1028,15 +1012,16 @@ class SemanticCheckerTest {
             val arg = Argument(name = null, expr = Literal(ParserString("hello")))
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t", listOf(arg))
 
-            val methodSignature = CallableSymbol.CallableSignature(
+            val methodSignature = CallableSignature(
                 parameterTypes = listOf(
-                    CallableSymbol.CallableSignature.Parameter(
+                    CallableSignature.Parameter(
                         name = "a",
                         type = intValueType,
-                        isRequired = true)))
+                        isRequired = true)),
+                scopeType = aClassMemberScope)
             val aClassSignature = ClassSymbol.ClassSignature(
-                qualifiedName = "test/${aClassDeclaration.name}",
-                constructorMethod = CallableSymbol(),
+                qualifiedName = aClassQualifiedName,
+                constructorMethod = CallableSymbol(anyAClassMethodSignature),
                 methods = linkedMapOf("t" to methodSignature))
 
             symbolTable.addClass(
@@ -1045,8 +1030,7 @@ class SemanticCheckerTest {
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(receiverCall.nodeId to aValueType),
-)
+                typeResolutions = mapOf(receiverCall.nodeId to aValueType))
 
             assertThrows<DTCUnexpectedTypeException> {
                 SemanticChecker(Namespace("test"),
@@ -1067,14 +1051,19 @@ class SemanticCheckerTest {
 
         private val myListLet = Let(name = "myList", type = AnyType, isMutable = false)
         private val listClassDeclaration = Class(name = "List")
+        private val listClassQualifiedName = QualifiedName(
+            namespace,
+            simpleName = listClassDeclaration.name)
+        private val anyListClassCallableSignature = CallableSignature(
+            scopeType = Symbol.MemberScope(listClassQualifiedName))
         private val listClassWithIterate = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${listClassDeclaration.name}",
-            constructorMethod = CallableSymbol(),
-            methods = linkedMapOf("iterate" to CallableSymbol.CallableSignature()))
+            qualifiedName = listClassQualifiedName,
+            constructorMethod = CallableSymbol(anyListClassCallableSignature),
+            methods = linkedMapOf("iterate" to anyListClassCallableSignature))
         private val listClassWithoutIterate = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${listClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val listType = ObjectType(className = "test/${listClassDeclaration.name}")
+            qualifiedName = listClassQualifiedName,
+            constructorMethod = CallableSymbol(anyListClassCallableSignature))
+        private val listType = ObjectType(className = listClassQualifiedName.qualifiedName)
 
 
         @BeforeEach
@@ -1095,8 +1084,7 @@ class SemanticCheckerTest {
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(iterable.nodeId to listType),
-)
+                typeResolutions = mapOf(iterable.nodeId to listType))
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1169,8 +1157,7 @@ class SemanticCheckerTest {
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(iterable.nodeId to listType),
-)
+                typeResolutions = mapOf(iterable.nodeId to listType))
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1189,12 +1176,6 @@ class SemanticCheckerTest {
         private lateinit var symbolTable: SymbolTable
         private val refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
-
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
 
 
         @BeforeEach
@@ -1325,12 +1306,6 @@ class SemanticCheckerTest {
         private val refResolutions = mapOf<Int, Int>()
         private val resolutions = TypeInference.TypeInferenceResult.empty()
 
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
-
 
         @BeforeEach
         fun setUp() {
@@ -1417,19 +1392,8 @@ class SemanticCheckerTest {
         private lateinit var symbolTable: SymbolTable
         private var refResolutions = mapOf<Int, Int>()
 
-        private val intClassDeclaration = Class(name = "Int")
-        private val intClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${intClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val intValueType = ObjectType(className = intClassDeclaration.name)
-
-        private val stringClassDeclaration = Class(name = "String")
-        private val stringClassSignature = ClassSymbol.ClassSignature(
-            qualifiedName = "test/${stringClassDeclaration.name}",
-            constructorMethod = CallableSymbol())
-        private val stringValueType = ObjectType(className = stringClassDeclaration.name)
-
         private val importedLet = Let(name = "myValue", type = AnyType, isMutable = false)
+
 
         @BeforeEach
         fun setUp() {
@@ -1444,7 +1408,7 @@ class SemanticCheckerTest {
                 signature = VariableSymbol.VariableSignature(
                     intValueType,
                     false,
-                    VariableSymbol.VariableSignature.TopLevelScope(Namespace("main"))))
+                    Symbol.TopLevelScope(Namespace("main"))))
         }
 
 
