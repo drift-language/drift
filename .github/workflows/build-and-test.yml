@@ -1,0 +1,28 @@
+name: "Build & Test Drift"
+on: [ push, pull_request ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout drift
+        uses: actions/checkout@v4
+        with:
+          path: drift
+
+      - name: Checkout drift-jvm
+        uses: actions/checkout@v4
+        with:
+          repository: drift-language/drift-jvm
+          path: drift-jvm
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+
+      - name: Build
+        working-directory: drift
+        run: ./gradlew build
