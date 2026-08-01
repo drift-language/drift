@@ -533,7 +533,9 @@ class SymbolCollector(
                 ?: error("Unexisting scope depth for definition '$defNodeId'")
 
             symbolTable.getSymbol(defNodeId) as? VariableSymbol
-                ?: continue
+                ?: continue     // TODO: handle nested functions case...
+                                //  classes and modules are not handled by this
+                                //  way.
 
             val isOuter = binding.depth < entryDepth
 
