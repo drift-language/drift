@@ -20,15 +20,23 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout drift
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          path: drift
+          fetch-depth: 0
+      - name: Checkout drift-jvm
+        uses: actions/checkout@v4
+        with:
+          repository: drift-language/drift-jvm
+          path: drift-jvm
           fetch-depth: 0
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.1
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
+          args: --project-dir,drift
           # When pr-mode is set to true, Qodana analyzes only the files that have been changed
           pr-mode: false
           use-caches: true
