@@ -221,5 +221,4 @@ data class HIRLambda(
 data class HIRCapturedVariable(
     val name: String,
     val type: HIRType,
-    val definitionHirId: Int?
-)
+    val definitionHirId: Int?)
