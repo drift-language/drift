@@ -10,7 +10,6 @@
 package drift.bootstrap.impl
 
 import drift.analysis.inference.TypeInference
-import drift.analysis.symbols.SymbolCollector
 import drift.analysis.symbols.SymbolCollector.CollectionResult
 import drift.analysis.symbols.SymbolTable
 import drift.bootstrap.Bootstrap

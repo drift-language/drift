@@ -268,8 +268,7 @@ class TypeInference(
             is ParserNull           -> NullType
             is ParserNotAssigned    -> UnknownType
             is ParserVoid           -> VoidType
-
-            else -> throw DIRUnexpectedTypeException()
+            // TODO: clean up deprecated/impossible branches.
         }
 
         typeResolutions[literal.nodeId] = type

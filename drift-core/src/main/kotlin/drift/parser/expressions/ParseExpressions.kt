@@ -172,9 +172,8 @@ internal fun Parser.parsePrimary() : ParserExpression {
         is Token.Identifier -> parseVariable()
         is Token.Symbol -> when (token.value) {
             "(" -> {
-                if (isLambda()) {
+                if (isLambda())
                     return parseLambda()
-                }
 
                 advance()
 
@@ -184,10 +183,12 @@ internal fun Parser.parsePrimary() : ParserExpression {
                 expression
             }
             "[" -> parseList()
+
             else -> throw DPUnexpectedSymbolException(
                 unexpected = token,
                 context = "in primary expression")
         }
+
         else -> throw DPUnexpectedExpressionException(
             unexpected = token,
             context = "in primary expression")
