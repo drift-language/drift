@@ -218,12 +218,6 @@ data class HIRLambda(
         get() = (type as HIRFunctionType).returnType
 }
 
-@Deprecated("Use HIRParameter instead")
-data class HIRLambdaParameter(
-    val name: String,
-    val type: HIRType
-)
-
 data class HIRCapturedVariable(
     val name: String,
     val type: HIRType,
