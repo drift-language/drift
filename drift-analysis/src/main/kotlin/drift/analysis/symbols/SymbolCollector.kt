@@ -42,13 +42,13 @@ class SymbolCollector(
     /**
      * This map links a definition node ID with a resolution node ID.
      */
-    private val refResolutions = mutableMapOf<Int, Int>()
+    private val refResolutions = mutableMapOf<NodeId, NodeId>()
 
     /**
      * A closure captures variables for a callable, like a lambda or a
      * nested/top-level function. It records outer variables used in its body.
      */
-    private val closures = mutableMapOf<Int, Map<String, Int>>()
+    private val closures = mutableMapOf<NodeId, Map<String, NodeId>>()
 
     /**
      * This set contains all imported namespaces from the current [ast].
@@ -62,7 +62,7 @@ class SymbolCollector(
     fun collect(): CollectionResult {
         ast.forEach { collectStatement(it) }
 
-        return CollectionResult(symbolTable, refResolutions, this@SymbolCollector.closures)
+        return CollectionResult(symbolTable, refResolutions, closures)
     }
 
 
@@ -522,9 +522,9 @@ class SymbolCollector(
 
     /* -- CONTEXT COLLECTORS -- */
 
-    private fun collectCaptures(entryDepth: Int, refsBefore: KtSet<Int>) : MutableMap<String, Int> {
+    private fun collectCaptures(entryDepth: Int, refsBefore: KtSet<Int>) : MutableMap<String, NodeId> {
         val newRefs = refResolutions.keys - refsBefore
-        val captures = mutableMapOf<String, Int>()
+        val captures = mutableMapOf<String, NodeId>()
 
         for (refNodeId in newRefs) {
             val defNodeId = refResolutions[refNodeId]

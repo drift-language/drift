@@ -14,6 +14,10 @@ import language.Namespace
 import language.QualifiedName
 
 
+/** An [Int] that represents a node ID. */
+typealias NodeId = Int
+
+
 /**
  *
  *
