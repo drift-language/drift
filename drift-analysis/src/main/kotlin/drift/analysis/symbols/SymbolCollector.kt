@@ -60,7 +60,7 @@ class SymbolCollector(
      *
      */
     fun collect(): CollectionResult {
-        ast.forEach { collectStatement(it) }
+        ast.forEach(this::collectStatement)
 
         return CollectionResult(symbolTable, refResolutions, closures)
     }
