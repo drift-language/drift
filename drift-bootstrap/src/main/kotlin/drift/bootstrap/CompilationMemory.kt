@@ -22,4 +22,9 @@ object CompilationMemory {
 
     /** This set stores all already imported modules. */
     val imported = mutableSetOf<Namespace>()
+
+
+    fun clear() {
+        imported.clear()
+    }
 }

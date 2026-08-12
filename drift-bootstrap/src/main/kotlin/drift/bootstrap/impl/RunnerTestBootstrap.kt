@@ -49,9 +49,7 @@ class RunnerTestBootstrap(
 
 
     override fun boot() {
-        CompilationMemory
-            .imported
-            .clear()
+        CompilationMemory.clear()
 
         val collection = bootCollectionPass()
         bootCompilationPass(collection)
@@ -125,7 +123,6 @@ class RunnerTestBootstrap(
     }
 
     override fun bootCompilationPass(collection: CollectionResult) {
-
         inference = bootTypeInference(collection.resolutions)
 
         bootCheck(collection.resolutions, inference)

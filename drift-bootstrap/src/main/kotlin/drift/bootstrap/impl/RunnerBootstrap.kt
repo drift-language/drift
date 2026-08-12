@@ -34,9 +34,7 @@ class RunnerBootstrap(
 
 
     override fun boot() {
-        CompilationMemory
-            .imported
-            .clear()
+        CompilationMemory.clear()
 
         val collection = bootCollectionPass()
         bootCompilationPass(collection)
