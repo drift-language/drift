@@ -18,6 +18,7 @@ import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.Symbol
 import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
+import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.oldruntime.*
@@ -49,7 +50,7 @@ class TypeInferenceTest {
     inner class LiteralTests {
 
         val symbolTable = SymbolTable()
-        val refResolutions = emptyMap<Int, Int>()
+        val refResolutions = emptyMap<NodeId, NodeId>()
 
 
         @Test
@@ -132,7 +133,7 @@ class TypeInferenceTest {
     inner class ArrayTests {
 
         private val symbolTable = SymbolTable()
-        private val refResolutions = emptyMap<Int, Int>()
+        private val refResolutions = emptyMap<NodeId, NodeId>()
 
         @Test
         fun `Empty Array should return Array(AnyType)`() {
@@ -183,7 +184,7 @@ class TypeInferenceTest {
     inner class LetTests {
 
         val symbolTable = SymbolTable()
-        val refResolutions = emptyMap<Int, Int>()
+        val refResolutions = emptyMap<NodeId, NodeId>()
 
 
         @Test
@@ -230,7 +231,7 @@ class TypeInferenceTest {
         inner class FunctionTests {
 
             val symbolTable = SymbolTable()
-            val refResolutions = emptyMap<Int, Int>()
+            val refResolutions = emptyMap<NodeId, NodeId>()
 
 
             @Test
@@ -342,7 +343,7 @@ class TypeInferenceTest {
         inner class LambdaTests {
 
             val symbolTable = SymbolTable()
-            val refResolutions = emptyMap<Int, Int>()
+            val refResolutions = emptyMap<NodeId, NodeId>()
 
 
             @Test
@@ -751,7 +752,7 @@ class TypeInferenceTest {
     inner class UnaryTests {
 
         private val symbolTable = SymbolTable()
-        private val refResolutions = emptyMap<Int, Int>()
+        private val refResolutions = emptyMap<NodeId, NodeId>()
 
         private val boolNeg = "!"
         private val mathNeg = "-"
@@ -844,7 +845,7 @@ class TypeInferenceTest {
         private val erg = "..<"
 
         private val symbolTable = SymbolTable()
-        private val refResolutions = emptyMap<Int, Int>()
+        private val refResolutions = emptyMap<NodeId, NodeId>()
 
 
         @Test
@@ -1334,7 +1335,7 @@ class TypeInferenceTest {
     inner class ConditionalTests {
 
         private val symbolTable = SymbolTable()
-        private val refResolutions = mapOf<Int, Int>()
+        private val refResolutions = mapOf<NodeId, NodeId>()
 
 
         @Test
@@ -1460,7 +1461,7 @@ class TypeInferenceTest {
     inner class AssignTests {
 
         private val symbolTable = SymbolTable()
-        private val refResolutions = mapOf<Int, Int>()
+        private val refResolutions = mapOf<NodeId, NodeId>()
 
 
         @Test
@@ -1493,7 +1494,7 @@ class TypeInferenceTest {
             val ast = listOf<ParserStatement>(ExprStmt(get))
 
             val symbolTable = SymbolTable()
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
                 TypeInference(ast, symbolTable, refResolutions)
@@ -1538,7 +1539,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             val inference = TypeInference(ast, symbolTable, refResolutions)
                 .infer()
@@ -1633,7 +1634,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             val inference = TypeInference(ast, symbolTable, refResolutions)
                 .infer()
@@ -1717,7 +1718,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRNotDefinedSymbolException> {
                 TypeInference(ast, symbolTable, refResolutions)
@@ -1777,7 +1778,7 @@ class TypeInferenceTest {
             val ast = listOf<ParserStatement>(ExprStmt(set))
 
             val symbolTable = SymbolTable()
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
                 TypeInference(ast, symbolTable, refResolutions)
@@ -1822,7 +1823,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             val inference = TypeInference(ast, symbolTable, refResolutions)
                 .infer()
@@ -1909,7 +1910,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRNotDefinedSymbolException> {
                 TypeInference(ast, symbolTable, refResolutions)
@@ -1992,7 +1993,7 @@ class TypeInferenceTest {
                 nodeId = stringClass.nodeId,
                 signature = stringClassSymbol.signature,
                 hasPrimaryConstructor = false)
-            val refResolutions = mapOf<Int, Int>()
+            val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
                 TypeInference(ast, symbolTable, refResolutions)
@@ -2053,7 +2054,7 @@ class TypeInferenceTest {
     inner class ForTests {
 
         val symbolTable = SymbolTable()
-        val refResolutions = emptyMap<Int, Int>()
+        val refResolutions = emptyMap<NodeId, NodeId>()
 
 
         @Test
@@ -2092,7 +2093,7 @@ class TypeInferenceTest {
     inner class ClassTests {
 
         val symbolTable = SymbolTable()
-        val refResolutions = emptyMap<Int, Int>()
+        val refResolutions = emptyMap<NodeId, NodeId>()
 
 
         @Test

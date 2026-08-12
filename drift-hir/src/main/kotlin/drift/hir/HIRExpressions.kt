@@ -11,6 +11,7 @@ package drift.hir
 
 import language.Namespace
 
+
 // ============================================================================
 // OPERATORS
 // ============================================================================
@@ -30,16 +31,16 @@ enum class UnaryOperator {
 // ============================================================================
 
 data class HIRLiteral(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val value: Any?
 ) : HIRExpression
 
 data class HIRReference(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val name: String,
-    val definitionHirId: Int?
+    val definitionHirId: HirId?
 ) : HIRExpression
 
 // ============================================================================
@@ -47,7 +48,7 @@ data class HIRReference(
 // ============================================================================
 
 data class HIRBinaryOp(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val operator: BinaryOperator,
     val left: HIRExpression,
@@ -55,7 +56,7 @@ data class HIRBinaryOp(
 ) : HIRExpression
 
 data class HIRUnaryOp(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val operator: UnaryOperator,
     val operand: HIRExpression
@@ -66,7 +67,7 @@ data class HIRUnaryOp(
 // ============================================================================
 
 data class HIRCall(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val callee: HIRExpression,
     val arguments: List<HIRArgument>
@@ -109,17 +110,17 @@ sealed interface HIRStaticAccess : HIRAccess {
 }
 
 data class HIRStaticFieldAccess(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     override val receiverClassName: String,
     override val memberName: String) : HIRStaticAccess, HIRFieldAccess
 
 data class HIRStaticMethodAccess(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     override val receiverClassName: String,
     override val memberName: String,
-    val definitionHirId: Int) : HIRStaticAccess, HIRMethodAccess
+    val definitionHirId: HirId) : HIRStaticAccess, HIRMethodAccess
 
 
 /**
@@ -135,7 +136,7 @@ sealed interface HIRInstanceAccess : HIRAccess {
 }
 
 data class HIRInstanceFieldAccess(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     override val receiver: HIRExpression,
     override val receiverClassName: String,
@@ -143,20 +144,20 @@ data class HIRInstanceFieldAccess(
     override val memberOffset: Int) : HIRInstanceAccess, HIRFieldAccess
 
 data class HIRInstanceMethodAccess(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     override val receiver: HIRExpression,
     override val receiverClassName: String,
     override val memberName: String,
     override val memberOffset: Int,
-    val definitionHirId: Int) : HIRInstanceAccess, HIRMethodAccess
+    val definitionHirId: HirId) : HIRInstanceAccess, HIRMethodAccess
 
 // ============================================================================
 // ASSIGNMENT
 // ============================================================================
 
 data class HIRAssign(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val target: AssignTarget,
     val value: HIRExpression) : HIRExpression
@@ -173,7 +174,7 @@ data class TopLevelVariableTarget(
 
 data class LocalVariableTarget(
     override val name: String,
-    val definitionHirId: Int) : VariableTarget
+    val definitionHirId: HirId) : VariableTarget
 
 data class FieldTarget(
     val receiver: HIRExpression,
@@ -186,7 +187,7 @@ data class FieldTarget(
 // ============================================================================
 
 data class HIRConditional(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     val condition: HIRExpression,
     val thenBranch: HIRBlock,
@@ -194,7 +195,7 @@ data class HIRConditional(
 ) : HIRExpression
 
 data class HIRLoop(
-    override val hirId: Int,
+    override val hirId: HirId,
     val iteratorVariable: String,
     val iteratorType: HIRType,
     val iterable: HIRExpression,
@@ -208,7 +209,7 @@ data class HIRLoop(
 // ============================================================================
 
 data class HIRLambda(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val type: HIRType,
     override val parameters: List<HIRParameter>,
     val capturedVariables: List<HIRCapturedVariable>,
@@ -221,4 +222,4 @@ data class HIRLambda(
 data class HIRCapturedVariable(
     val name: String,
     val type: HIRType,
-    val definitionHirId: Int?)
+    val definitionHirId: HirId?)

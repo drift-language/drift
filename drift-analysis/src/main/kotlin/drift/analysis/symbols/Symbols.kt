@@ -8,14 +8,11 @@
  ******************************************************************************/
 package drift.analysis.symbols
 
+import drift.ast.NodeId
 import drift.oldruntime.AnyType
 import drift.oldruntime.ParserType
 import language.Namespace
 import language.QualifiedName
-
-
-/** An [Int] that represents a node ID. */
-typealias NodeId = Int
 
 
 /**
@@ -113,5 +110,5 @@ data class ModuleSymbol(
 
     data class ModuleSignature(
         val name: QualifiedName,
-        val symbols: Map<String, Int> = mapOf())
+        val symbols: Map<String, NodeId> = mapOf())
 }

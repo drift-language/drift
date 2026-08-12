@@ -6,7 +6,6 @@ import drift.lexer.lex
 import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
 import drift.oldruntime.*
 import drift.oldruntime.values.primaries.ParserNumeric
-import drift.oldruntime.values.specials.ParserNotAssigned
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

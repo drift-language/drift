@@ -16,6 +16,7 @@ import drift.analysis.symbols.VariableSymbol
 import drift.analysis.symbols.Symbol.LocalScope
 import drift.analysis.symbols.Symbol.MemberScope
 import drift.analysis.symbols.Symbol.TopLevelScope
+import drift.ast.NodeId
 import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
@@ -40,25 +41,25 @@ class HIRConverter(
     private val namespace: Namespace,
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
-    private val refResolutions: Map<Int, Int>,
-    private val typeResolution: Map<Int, ParserType>,
-    private val closures: Map<Int, Map<String, Int>>) {
+    private val refResolutions: Map<NodeId, NodeId>,
+    private val typeResolution: Map<NodeId, ParserType>,
+    private val closures: Map<NodeId, Map<String, NodeId>>) {
 
     companion object {
 
-        private var nextHirId = 0
+        private var nextHirId = HirId(0)
 
-        fun allocateHirId() : Int = nextHirId++
+        fun allocateHirId() : HirId = nextHirId++
 
         fun resetIds() {
-            nextHirId = 0
+            nextHirId = HirId(0)
         }
     }
 
 
-    private val astToHirMap = mutableMapOf<Int, Int>()
+    private val astToHirMap = mutableMapOf<NodeId, HirId>()
 
-    private val classMethodHirIds = mutableMapOf<String, Int>()
+    private val classMethodHirIds = mutableMapOf<String, HirId>()
 
 
     fun convert() : List<HIRStatement> {
@@ -362,7 +363,7 @@ class HIRConverter(
 
         val hirImport = HIRImport(
             hirId = hirId,
-            namespace = Namespace(importStmt.namespace),
+            namespace = Namespace(importStmt.steps),
             steps = importStmt.steps,
             alias = importStmt.alias,
             parts = hirImportParts,
@@ -631,7 +632,7 @@ class HIRConverter(
 
         val value = convertExpression(assign.value)
 
-        val target = when(val scope = symbol.signature.scopeType) {
+        val target = when (val scope = symbol.signature.scopeType) {
             is TopLevelScope -> TopLevelVariableTarget(
                 name = assign.name,
                 ownerNamespace = scope.namespace)
@@ -774,7 +775,7 @@ class HIRConverter(
         return -1
     }
 
-    private fun getDefinitionHirIdFromRefResolutions(refNodeId: Int) : Int {
+    private fun getDefinitionHirIdFromRefResolutions(refNodeId: NodeId) : HirId {
         val definitionNodeId = refResolutions[refNodeId]
             ?: error("Undefined reference")
 
@@ -782,7 +783,7 @@ class HIRConverter(
             ?: error("Reference definition not found")
     }
 
-    private fun computeCaptures(callableNodeId: Int) : List<HIRCapturedVariable> {
+    private fun computeCaptures(callableNodeId: NodeId) : List<HIRCapturedVariable> {
         val captures = closures[callableNodeId] ?: emptyMap()
 
         return captures.map { (name, definitionNodeId) ->

@@ -10,8 +10,8 @@ package drift.ast
 
 object AstNodeId {
 
-    private var current: Int = 0
+    private var current: NodeId = NodeId(0)
 
 
-    fun allocate(): Int = current++
+    fun allocate(): NodeId = current++
 }

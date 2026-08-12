@@ -14,6 +14,7 @@ import drift.analysis.inference.TypeInference
 import drift.analysis.semantic.classes.ClassValidator
 import drift.analysis.symbols.SymbolCollector
 import drift.analysis.symbols.SymbolTable
+import drift.ast.NodeId
 import drift.ast.statements.Class
 import drift.ast.statements.ParserStatement
 import drift.hir.HIRConverter
@@ -27,8 +28,8 @@ import java.io.File
 
 /**
  * A bootstrap is a build orchestrator.
- * It handles each step and data structure from
- * the source code to the compilation end.
+ * It handles each step and data structure from the source code to the
+ * compilation end.
  *
  * @author Jonathan (GitHub: belicfr)
  */
@@ -75,17 +76,26 @@ abstract class Bootstrap(
         collection: SymbolCollector.CollectionResult)
 
 
+    /**
+     * TODO DOC
+     */
     protected fun bootLexer(source: String) : List<Token> {
         return lex(source)
     }
 
 
+    /**
+     * TODO DOC
+     */
     protected fun bootParser(tokens: List<Token>) : List<ParserStatement> {
         return Parser(tokens)
             .parse()
     }
 
 
+    /**
+     * TODO DOC
+     */
     protected fun bootValidation() {
         ast.forEach { node ->
             when (node) {
@@ -94,20 +104,29 @@ abstract class Bootstrap(
         }
     }
 
+    /**
+     * TODO DOC
+     */
     protected fun bootSymbolCollection() : SymbolCollector.CollectionResult {
         return SymbolCollector(namespace, symbolTable, ast)
             .collect()
     }
 
+    /**
+     * TODO DOC
+     */
     protected fun bootTypeInference(
-        refResolutions: Map<Int, Int>) : TypeInference.TypeInferenceResult {
+        refResolutions: Map<NodeId, NodeId>) : TypeInference.TypeInferenceResult {
 
         return TypeInference(ast, symbolTable, refResolutions)
             .infer()
     }
 
+    /**
+     * TODO DOC
+     */
     protected fun bootCheck(
-        refResolutions: Map<Int, Int>,
+        refResolutions: Map<NodeId, NodeId>,
         resolutions: TypeInference.TypeInferenceResult) {
 
         val semanticChecker = SemanticChecker(
@@ -121,6 +140,9 @@ abstract class Bootstrap(
     }
 
 
+    /**
+     * TODO DOC
+     */
     protected fun bootHIRConverter(
         analysis: AnalysisResult)
         : List<HIRStatement> {
@@ -137,6 +159,9 @@ abstract class Bootstrap(
     }
 
 
+    /**
+     * TODO DOC
+     */
     protected data class AnalysisResult(
         val inference: TypeInference.TypeInferenceResult,
         val collection: SymbolCollector.CollectionResult)

@@ -16,6 +16,7 @@ import drift.analysis.symbols.Symbol.MemberScope
 import drift.analysis.symbols.Symbol.ScopeType
 import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature
+import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.oldruntime.AnyType
@@ -49,6 +50,11 @@ class SymbolCollector(
      * nested/top-level function. It records outer variables used in its body.
      */
     private val closures = mutableMapOf<NodeId, Map<String, NodeId>>()
+
+    /**
+     * All definition node IDs needing reference boxing are stored here.
+     */
+    private val boxedDefinitions = mutableSetOf<NodeId>()
 
     /**
      * This set contains all imported namespaces from the current [ast].
@@ -115,13 +121,9 @@ class SymbolCollector(
             isMutable = statement.isMutable,
             scopeType = scopeType)
 
-        val name =
-            if (isTopLevel) QualifiedName(namespace, statement.name).qualifiedName
-            else statement.name
-
         symbolTable.addVariable(
             nodeId = statement.nodeId,
-            name = name,
+            name = statement.name,
             signature = signature)
     }
 
@@ -522,7 +524,7 @@ class SymbolCollector(
 
     /* -- CONTEXT COLLECTORS -- */
 
-    private fun collectCaptures(entryDepth: Int, refsBefore: KtSet<Int>) : MutableMap<String, NodeId> {
+    private fun collectCaptures(entryDepth: Int, refsBefore: KtSet<NodeId>) : MutableMap<String, NodeId> {
         val newRefs = refResolutions.keys - refsBefore
         val captures = mutableMapOf<String, NodeId>()
 
@@ -532,10 +534,13 @@ class SymbolCollector(
             val binding = symbolTable.bindingOf(defNodeId)
                 ?: error("Unexisting scope depth for definition '$defNodeId'")
 
-            symbolTable.getSymbol(defNodeId) as? VariableSymbol
+            val symbol = symbolTable.getSymbol(defNodeId) as? VariableSymbol
                 ?: continue     // TODO: handle nested functions case...
                                 //  classes and modules are not handled by this
                                 //  way.
+
+            if (symbol.signature.isMutable)
+                boxedDefinitions += defNodeId
 
             val isOuter = binding.depth < entryDepth
 
@@ -553,6 +558,6 @@ class SymbolCollector(
      */
     data class CollectionResult(
         val symbolTable: SymbolTable,
-        val resolutions: Map<Int, Int>,
-        val closures: Map<Int, Map<String, Int>>)
+        val resolutions: Map<NodeId, NodeId>,
+        val closures: Map<NodeId, Map<String, NodeId>>)
 }

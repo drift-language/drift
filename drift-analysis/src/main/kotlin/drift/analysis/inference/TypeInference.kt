@@ -13,6 +13,7 @@ import drift.analysis.symbols.CallableSymbol
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
+import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
@@ -32,9 +33,9 @@ import drift.oldruntime.values.specials.ParserVoid
 class TypeInference(
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
-    val refResolutions: Map<Int, Int>) {
+    val refResolutions: Map<NodeId, NodeId>) {
 
-    private val typeResolutions = mutableMapOf<Int, ParserType>()
+    private val typeResolutions = mutableMapOf<NodeId, ParserType>()
 
 
     fun infer() : TypeInferenceResult {
@@ -683,7 +684,7 @@ class TypeInference(
         val lastType: ParserType = VoidType)
 
     data class TypeInferenceResult(
-        val typeResolutions: Map<Int, ParserType>) {
+        val typeResolutions: Map<NodeId, ParserType>) {
 
         companion object {
 

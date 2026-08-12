@@ -19,7 +19,7 @@ sealed interface HIRStatementCallable : HIRCallable
  * Function declaration in HIR.
  */
 data class HIRFunction(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val annotations: MutableList<HIRAnnotation>,
     override val parameters: List<HIRParameter>,
     override val returnType: HIRType,
@@ -31,7 +31,7 @@ data class HIRFunction(
  * Class method declaration in HIR.
  */
 data class HIRMethod(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val annotations: MutableList<HIRAnnotation>,
     override val parameters: List<HIRParameter>,
     override val returnType: HIRType,
@@ -43,7 +43,7 @@ data class HIRMethod(
  * Hook declaration in HIR.
  */
 data class HIRHook(
-    override val hirId: Int,
+    override val hirId: HirId,
     val name: String,
     val parameters: List<HIRParameter>,
     val returnType: HIRType,
@@ -53,7 +53,7 @@ data class HIRHook(
  * Function parameter.
  */
 data class HIRParameter(
-    override val hirId: Int,
+    override val hirId: HirId,
     val name: String,
     val type: HIRType,
     val defaultValue: HIRExpression? = null) : HIRNode
@@ -62,7 +62,7 @@ data class HIRParameter(
  * Variable declaration (let/var).
  */
 data class HIRVariable(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val type: HIRType,
@@ -74,7 +74,7 @@ data class HIRVariable(
  * Class declaration.
  */
 data class HIRClass(
-    override val hirId: Int,
+    override val hirId: HirId,
     override val annotations: MutableList<HIRAnnotation>,
     val name: String,
     val fields: List<HIRField>,
@@ -88,7 +88,7 @@ data class HIRClass(
  * Class field definition.
  */
 data class HIRField(
-    override val hirId: Int,
+    override val hirId: HirId,
     val name: String,
     override val annotations: MutableList<HIRAnnotation>,
     val type: HIRType,
@@ -99,7 +99,7 @@ data class HIRField(
  * Code block (scoped statements).
  */
 data class HIRBlock(
-    override val hirId: Int,
+    override val hirId: HirId,
     val statements: List<HIRStatement>
 ) : HIRStatement
 
@@ -107,7 +107,7 @@ data class HIRBlock(
  * Return statement.
  */
 data class HIRReturn(
-    override val hirId: Int,
+    override val hirId: HirId,
     val value: HIRExpression? = null
 ) : HIRStatement
 
@@ -115,7 +115,7 @@ data class HIRReturn(
  * Expression as a statement.
  */
 data class HIRExpressionStmt(
-    override val hirId: Int,
+    override val hirId: HirId,
     val expression: HIRExpression
 ) : HIRStatement
 
@@ -123,7 +123,7 @@ data class HIRExpressionStmt(
  * Module import statement.
  */
 data class HIRImport(
-    override val hirId: Int,
+    override val hirId: HirId,
     val namespace: Namespace,
     val steps: List<String>,
     val alias: String? = null,

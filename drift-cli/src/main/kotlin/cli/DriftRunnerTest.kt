@@ -27,15 +27,13 @@ fun main(args: Array<String>) {
 
     t.run {
         println(bold(
-            "-- Drift CommandLine Debugger Feature — ${DriftVersion.fullVersion} --"
-        ))
+            "-- Drift CommandLine Debugger Feature — ${DriftVersion.fullVersion} --"))
 
         println()
         println(bold(
             (driftBlue)("Running ") +
             (rgb("#FFF") on driftBlue)(" Drift ") +
-            (rgb("#FFF") on green)(" Debugger ")
-        ))
+            (rgb("#FFF") on green)(" Debugger ")))
     }
 
     if (args.isEmpty()) return

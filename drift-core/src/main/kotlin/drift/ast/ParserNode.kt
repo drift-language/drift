@@ -8,7 +8,16 @@
  ******************************************************************************/
 package drift.ast
 
+
+/** An [Int] that represents a node ID. */
+@JvmInline
+value class NodeId(val value: Int) {
+
+    operator fun inc() = NodeId(value + 1)
+}
+
+
 abstract class ParserNode {
 
-    val nodeId: Int = AstNodeId.allocate()
+    val nodeId: NodeId = AstNodeId.allocate()
 }

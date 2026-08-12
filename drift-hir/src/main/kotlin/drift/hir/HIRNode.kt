@@ -12,6 +12,13 @@ package drift.hir
 import drift.hir.metadata.HIRAnnotation
 
 
+@JvmInline
+value class HirId(val value: Int) {
+
+    operator fun inc() = HirId(value + 1)
+}
+
+
 /**
  * Base interface for all HIR (High-level Intermediate Representation) nodes.
  * 
@@ -19,7 +26,7 @@ import drift.hir.metadata.HIRAnnotation
  */
 sealed interface HIRNode {
 
-    val hirId: Int
+    val hirId: HirId
 }
 
 

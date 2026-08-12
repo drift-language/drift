@@ -8,6 +8,7 @@
  ******************************************************************************/
 package drift.analysis.exceptions
 
+import drift.ast.NodeId
 import drift.exceptions.DriftException
 import drift.oldruntime.ParserType
 
@@ -59,7 +60,7 @@ class DTCCannotReturnValueInNonReturnableContextException(
 
 
 class DTCTypeResolutionNotFoundException(
-    nodeId: Int,
+    nodeId: NodeId,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0

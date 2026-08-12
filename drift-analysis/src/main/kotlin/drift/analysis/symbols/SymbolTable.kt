@@ -16,6 +16,7 @@ import drift.analysis.symbols.Symbol.LocalScope
 import drift.analysis.symbols.Symbol.MemberScope
 import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature
+import drift.ast.NodeId
 import language.LangInfo.NAMESPACE_SEPARATOR
 import language.Namespace
 import language.QualifiedName
@@ -29,7 +30,7 @@ import language.QualifiedName
  * @author Jonathan (GitHub: belicfr)
  */
 data class SymbolTable(
-    val allSymbols: MutableMap<Int, Symbol> = mutableMapOf()) {
+    val allSymbols: MutableMap<NodeId, Symbol> = mutableMapOf()) {
 
     companion object {
 
@@ -53,7 +54,7 @@ data class SymbolTable(
      *
      * @see Binding
      */
-    private val nodeBindings = mutableMapOf<Int, Binding>()
+    private val nodeBindings = mutableMapOf<NodeId, Binding>()
 
 
     /**
@@ -114,7 +115,7 @@ data class SymbolTable(
      *
      * @return Current prepared [currentSyntheticId].
      */
-    fun allocateSyntheticId() : Int = currentSyntheticId--
+    fun allocateSyntheticId() : NodeId = NodeId(currentSyntheticId--)
 
     /**
      * Searches and returns, if existing, the binding information related to the
@@ -124,7 +125,7 @@ data class SymbolTable(
      * @return The provided definition node ID's binding information if
      *         existing; else NULL.
      */
-    fun bindingOf(defNodeId: Int) : Binding? = nodeBindings[defNodeId]
+    fun bindingOf(defNodeId: NodeId) : Binding? = nodeBindings[defNodeId]
 
     /**
      * @return The current scope depth (deepest scope index).
@@ -136,7 +137,7 @@ data class SymbolTable(
      * Builds a [VariableSymbol] and adds it to the current scope.
      */
     fun addVariable(
-        nodeId: Int,
+        nodeId: NodeId,
         name: String,
         signature: VariableSignature) {
 
@@ -167,7 +168,7 @@ data class SymbolTable(
      * Builds a [CallableSymbol] and adds it to the current scope.
      */
     fun addCallable(
-        nodeId: Int,
+        nodeId: NodeId,
         name: String,
         signature: CallableSignature) {
 
@@ -198,7 +199,7 @@ data class SymbolTable(
      * Builds a [ClassSymbol] and adds it to the current scope.
      */
     fun addClass(
-        nodeId: Int,
+        nodeId: NodeId,
         signature: ClassSignature,
         hasPrimaryConstructor: Boolean) {
 
@@ -215,7 +216,7 @@ data class SymbolTable(
      * scope.
      */
     fun addModule(
-        nodeId: Int,
+        nodeId: NodeId,
         signature: ModuleSignature) {
 
         val symbol = ModuleSymbol(signature)
@@ -237,7 +238,7 @@ data class SymbolTable(
      * @param qualifiedName Binding qualified-name.
      * @param nodeId Bound node ID.
      */
-    fun addBinding(qualifiedName: QualifiedName, nodeId: Int) {
+    fun addBinding(qualifiedName: QualifiedName, nodeId: NodeId) {
         scopes.last().bindings[qualifiedName.qualifiedName] = nodeId
         nodeBindings[nodeId] = Binding(
             depth = scopes.size - 1,
@@ -251,7 +252,7 @@ data class SymbolTable(
      * @param simpleName Binding's used simple-name.
      * @param nodeId Bound node ID.
      */
-    fun addBinding(simpleName: String, nodeId: Int) {
+    fun addBinding(simpleName: String, nodeId: NodeId) {
         scopes.last().bindings[simpleName] = nodeId
         nodeBindings[nodeId] = Binding(
             depth = scopes.size - 1,
@@ -265,7 +266,7 @@ data class SymbolTable(
      *
      * @return Found [Symbol] if existing; else NULL.
      */
-    fun getSymbol(nodeId: Int) : Symbol {
+    fun getSymbol(nodeId: NodeId) : Symbol {
         return allSymbols[nodeId]
             ?: throw DIRNotDefinedSymbolException("nodeId#$nodeId")
         /*
@@ -283,7 +284,7 @@ data class SymbolTable(
      * @return Binding map (qualified name: node ID) composed of all structures
      *         related to the provided namespace.
      */
-    fun getBindingsByNamespace(namespace: String) : Map<String, Int> {
+    fun getBindingsByNamespace(namespace: String) : Map<String, NodeId> {
         if (scopes.isEmpty())
             error("None active scope, structural error")
 
@@ -300,7 +301,7 @@ data class SymbolTable(
      *
      * @return The deeper found node ID if existing; else NULL.
      */
-    fun lookupNodeId(name: String): Int? {
+    fun lookupNodeId(name: String): NodeId? {
         for (scope in scopes.asReversed())
             scope.bindings[name]?.let { return it }
 
@@ -357,7 +358,7 @@ data class SymbolTable(
         val allSymbols = (allSymbols + other.allSymbols)
             .toMutableMap()
 
-        val bindings: Map<String, Int> =
+        val bindings: Map<String, NodeId> =
             if (scopes.isNotEmpty() && other.scopes.isNotEmpty()) {
                 scopes.first().bindings + other.scopes.first().bindings
             } else {
@@ -418,6 +419,6 @@ data class SymbolTable(
         /**
          * Bindings between defined structures' names and node IDs.
          */
-        val bindings = mutableMapOf<String, Int>()
+        val bindings = mutableMapOf<String, NodeId>()
     }
 }
