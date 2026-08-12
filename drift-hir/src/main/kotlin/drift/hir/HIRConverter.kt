@@ -94,7 +94,9 @@ class HIRConverter(
             .map(this::convertAnnotation)
             .toMutableList()
 
-        val type = convertType(typeResolution[let.nodeId] ?: let.type)
+        val parserType = typeResolution[let.nodeId]
+            ?: error("Unknown Parser Type for Node ID #${let.nodeId}")
+        val type = convertType(parserType)
 
         val initialValue = let.value?.let(this::convertExpression)
 
