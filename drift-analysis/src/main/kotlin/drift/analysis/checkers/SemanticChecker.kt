@@ -25,6 +25,7 @@ import drift.analysis.symbols.CallableSymbol.CallableSignature
 import drift.analysis.symbols.ClassSymbol
 import drift.analysis.symbols.SymbolTable
 import drift.analysis.symbols.VariableSymbol
+import drift.ast.NodeId
 import drift.ast.ParserCallable
 import drift.ast.ParserReturnable
 import drift.ast.expressions.*
@@ -50,7 +51,7 @@ class SemanticChecker(
     val namespace: Namespace,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
-    val refResolutions: Map<Int, Int>,
+    val refResolutions: Map<NodeId, NodeId>,
     val resolutions: TypeInference.TypeInferenceResult) {
 
     val callableContextScopes: ArrayDeque<ParserCallable> = ArrayDeque()
