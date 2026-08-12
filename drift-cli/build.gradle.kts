@@ -49,8 +49,8 @@ tasks.test {
 tasks.register<JavaExec>("runDebugger") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("drift.cli.DriftRunnerTestKt")
-    workingDir = rootProject.projectDir
-    args = listOf("${rootProject.projectDir}/examples/src/main.drift")
+    workingDir = rootProject.projectDir.parentFile
+    args = listOf("${workingDir}/examples/src/main.drift")
 }
 
 application {
