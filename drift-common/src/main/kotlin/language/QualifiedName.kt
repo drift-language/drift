@@ -56,8 +56,8 @@ data class QualifiedName(
      *   TODO DOC: replace IllegalStateException by a dedicated exception class.
      */
     constructor(namespace: Namespace) : this(
-        namespace = namespace.getParent(),
-        simpleName = namespace.getSimpleName())
+        namespace = namespace.parent(),
+        simpleName = namespace.last())
 
 
     /** A string version of the current qualified name object. */
