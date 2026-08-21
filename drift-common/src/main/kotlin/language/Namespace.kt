@@ -47,6 +47,12 @@ import language.LangInfo.NAMESPACE_SEPARATOR
 data class Namespace(
     private val steps: List<String>) {
 
+    companion object {
+
+        val empty = Namespace()
+    }
+
+
     constructor(vararg steps: String) : this(steps.toList())
 
     constructor(qualifiedName: QualifiedName) : this(
@@ -68,26 +74,30 @@ data class Namespace(
      *
      * @return The namespace's simple name.
      */
-    fun getSimpleName() : String {
-        if (steps.isEmpty())
-            error("An empty namespace cannot be decomposed.")
-
-        return steps.last()
-    }
+    fun last() : String =
+        if (isEmpty()) error("An empty namespace cannot be decomposed.")
+        else steps.last()
 
     /**
-     * Returns the [steps] list after dropping its last step (the simple name)
-     * if non-empty; else it throws an exception: an empty namespace cannot be
-     * decomposed and have a parent.
+     * Returns the [steps] list after dropping its last step if non-empty;
+     * else it throws an exception: an empty namespace cannot be decomposed and
+     * have a parent.
      *
      * @return The namespace's parent [Namespace] object.
      */
-    fun getParent() : Namespace {
-        if (steps.isEmpty())
-            error("An empty namespace cannot be decomposed.")
+    fun parent() : Namespace =
+        if (isEmpty()) error("An empty namespace cannot be decomposed.")
+        else Namespace(steps.dropLast(1))
 
-        return Namespace(steps.dropLast(1))
-    }
+    /**
+     * Returns the [steps] list after dropping its last step if non-empty;
+     * else it returns the [empty] instance.
+     *
+     * @return The namespace's parent [Namespace] object if possible or [empty].
+     */
+    fun parentOrEmpty() : Namespace =
+        if (isEmpty()) empty
+        else parent()
 
     /**
      * Returns a new object containing the current [steps] list appened by the
@@ -97,6 +107,8 @@ data class Namespace(
      * @return The new [Namespace] containing the new steps list.
      */
     fun addStep(step: String) : Namespace = Namespace(steps + step)
+
+    fun isEmpty() = steps.isEmpty()
 
 
     operator fun plus(other: String) = addStep(other)
