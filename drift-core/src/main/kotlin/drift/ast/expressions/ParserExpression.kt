@@ -8,7 +8,6 @@
  ******************************************************************************/
 package drift.ast.expressions
 
-import drift.ast.AstNodeId
 import drift.ast.ParserNode
 
 

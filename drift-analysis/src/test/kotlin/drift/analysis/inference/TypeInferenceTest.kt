@@ -21,9 +21,10 @@ import drift.analysis.symbols.VariableSymbol
 import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.statements.*
-import drift.oldruntime.*
-import drift.oldruntime.values.primaries.*
-import drift.oldruntime.values.primaries.ParserNull
+import drift.types.*
+import drift.values.*
+import drift.values.primaries.*
+import drift.values.primaries.NullValue
 import language.Namespace
 import language.QualifiedName
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,10 +41,10 @@ class TypeInferenceTest {
     private val boolOT = ObjectType(ParserPrimitiveClass.Bool.className)
     private val stringOT = ObjectType(ParserPrimitiveClass.String.className)
 
-    private val intSample = Literal(ParserInt(1))
-    private val int64Sample = Literal(ParserInt64(2L))
-    private val stringSample = Literal(ParserString("Hello, Drift!"))
-    private val boolSample = Literal(ParserBool(true))
+    private val intSample = Literal(IntValue(1))
+    private val int64Sample = Literal(Int64Value(2L))
+    private val stringSample = Literal(StringValue("Hello, Drift!"))
+    private val boolSample = Literal(BoolValue(true))
 
 
     @Nested
@@ -55,7 +56,7 @@ class TypeInferenceTest {
 
         @Test
         fun `Integer literal should infers ObjectType(Int)`() {
-            val literal = Literal(ParserInt(1))
+            val literal = Literal(IntValue(1))
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(literal)
             )
@@ -70,7 +71,7 @@ class TypeInferenceTest {
 
         @Test
         fun `64-bits integer literal should infers ObjectType(Int64)`() {
-            val literal = Literal(ParserInt64(1L))
+            val literal = Literal(Int64Value(1L))
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(literal)
             )
@@ -85,7 +86,7 @@ class TypeInferenceTest {
 
         @Test
         fun `Unsigned integer literal should infers ObjectType(UInt)`() {
-            val literal = Literal(ParserUInt(1u))
+            val literal = Literal(UIntValue(1u))
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(literal)
             )
@@ -100,7 +101,7 @@ class TypeInferenceTest {
 
         @Test
         fun `String literal should infers ObjectType(String)`() {
-            val literal = Literal(ParserString("Hello, Drift!"))
+            val literal = Literal(StringValue("Hello, Drift!"))
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(literal)
             )
@@ -115,7 +116,7 @@ class TypeInferenceTest {
 
         @Test
         fun `Boolean literal should infers ObjectType(Bool)`() {
-            val literal = Literal(ParserBool(true))
+            val literal = Literal(BoolValue(true))
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(literal)
             )
@@ -192,7 +193,7 @@ class TypeInferenceTest {
             val let = Let(
                 name = "foo",
                 type = AnyType,
-                value = Literal(ParserInt(1)),
+                value = Literal(IntValue(1)),
                 isMutable = true)
 
             val ast: List<ParserStatement> = listOf(let)
@@ -210,7 +211,7 @@ class TypeInferenceTest {
             val let = Let(
                 name = "foo",
                 type = ObjectType(ParserPrimitiveClass.String.className),
-                value = Literal(ParserString("Hello, Drift!")),
+                value = Literal(StringValue("Hello, Drift!")),
                 isMutable = true)
 
             val ast: List<ParserStatement> = listOf(let)
@@ -265,7 +266,7 @@ class TypeInferenceTest {
                 val function = Func(
                     name = "foo",
                     body = Block(listOf(
-                        Return(Literal(ParserInt(42))))))
+                        Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(function)
 
@@ -279,10 +280,10 @@ class TypeInferenceTest {
 
             @Test
             fun `Function without explicit typing and multiple return statements should return UnionType()`() {
-                val return42 = Return(Literal(ParserInt(42)))
-                val returnBar = Return(Literal(ParserString("Bar")))
+                val return42 = Return(Literal(IntValue(42)))
+                val returnBar = Return(Literal(StringValue("Bar")))
                 val `if` = If(
-                    Literal(ParserBool(true)),
+                    Literal(BoolValue(true)),
                     Block(listOf(return42)),
                     Block(listOf(returnBar)))
 
@@ -326,7 +327,7 @@ class TypeInferenceTest {
                     name = "foo",
                     returnType = ObjectType(ParserPrimitiveClass.Int.className),
                     body = Block(listOf(
-                        Return(Literal(ParserInt(42))))))
+                        Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(function)
 
@@ -376,7 +377,7 @@ class TypeInferenceTest {
                  */
                 val lambda = Lambda(
                     body = Block(listOf(
-                        Return(Literal(ParserInt(42))))))
+                        Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
@@ -391,10 +392,10 @@ class TypeInferenceTest {
 
             @Test
             fun `Lambda without explicit typing and multiple return statements should return UnionType()`() {
-                val return42 = Return(Literal(ParserInt(42)))
-                val returnBar = Return(Literal(ParserString("Bar")))
+                val return42 = Return(Literal(IntValue(42)))
+                val returnBar = Return(Literal(StringValue("Bar")))
                 val `if` = If(
-                    Literal(ParserBool(true)),
+                    Literal(BoolValue(true)),
                     Block(listOf(return42)),
                     Block(listOf(returnBar)))
 
@@ -438,7 +439,7 @@ class TypeInferenceTest {
                 val lambda = Lambda(
                     returnType = ObjectType(ParserPrimitiveClass.Int.className),
                     body = Block(listOf(
-                        Return(Literal(ParserInt(42))))))
+                        Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
@@ -453,8 +454,8 @@ class TypeInferenceTest {
 
             @Test
             fun `Lambda with special Last return type should return last expression type`() {
-                val one = ExprStmt(Literal(ParserInt(1)))
-                val foo = ExprStmt(Literal(ParserString("foo")))
+                val one = ExprStmt(Literal(IntValue(1)))
+                val foo = ExprStmt(Literal(StringValue("foo")))
 
                 /**
                  * ```
@@ -721,7 +722,7 @@ class TypeInferenceTest {
                 val let = Let(
                     name = "foo",
                     type = AnyType,
-                    value = Literal(ParserInt(1)),
+                    value = Literal(IntValue(1)),
                     isMutable = false)
                 val letVar = Reference(
                     name = "letVar")
@@ -761,7 +762,7 @@ class TypeInferenceTest {
         fun `Negative math unary operation on numeric should pass`() {
             val unary = Unary(
                 operator = mathNeg,
-                expr = Literal(ParserInt(1)))
+                expr = Literal(IntValue(1)))
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
@@ -777,7 +778,7 @@ class TypeInferenceTest {
         fun `Negative math unary operation on non-numeric should throw`() {
             val unary = Unary(
                 operator = mathNeg,
-                expr = Literal(ParserString("Hello, Drift!")))
+                expr = Literal(StringValue("Hello, Drift!")))
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
@@ -791,7 +792,7 @@ class TypeInferenceTest {
         fun `Negative bool unary operation on boolean should pass`() {
             val unary = Unary(
                 operator = boolNeg,
-                expr = Literal(ParserBool(true)))
+                expr = Literal(BoolValue(true)))
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
@@ -807,7 +808,7 @@ class TypeInferenceTest {
         fun `Negative bool unary operation on non-boolean should throw`() {
             val unary = Unary(
                 operator = boolNeg,
-                expr = Literal(ParserString("Hello, Drift!")))
+                expr = Literal(StringValue("Hello, Drift!")))
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
@@ -821,7 +822,7 @@ class TypeInferenceTest {
         fun `Unexpected operator on unary operation should throw`() {
             val unary = Unary(
                 operator = "«",
-                expr = Literal(ParserString("Hello, Drift!")))
+                expr = Literal(StringValue("Hello, Drift!")))
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
@@ -905,8 +906,8 @@ class TypeInferenceTest {
             @Test
             fun `Addition operation with unsupported type as an operand should throw`() {
                 val binary = Binary(
-                    left = Literal(ParserBool(true)),
-                    right = Literal(ParserInt64(2L)),
+                    left = Literal(BoolValue(true)),
+                    right = Literal(Int64Value(2L)),
                     operator = add)
 
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
@@ -1397,7 +1398,7 @@ class TypeInferenceTest {
         fun `Conditional which has only then branch returning null should return OptionalType(elseType)`() {
             val expectedType = OptionalType(stringOT)
             val thenBlock = Block(listOf(
-                Return(Literal(ParserNull))))
+                Return(Literal(NullValue))))
             val elseBlock = Block(listOf(
                 Return(stringSample)))
             val conditional = Conditional(
@@ -1421,7 +1422,7 @@ class TypeInferenceTest {
             val thenBlock = Block(listOf(
                 Return(intSample)))
             val elseBlock = Block(listOf(
-                Return(Literal(ParserNull))))
+                Return(Literal(NullValue))))
             val conditional = Conditional(
                 condition = boolSample,
                 thenBranch = thenBlock,
@@ -1440,7 +1441,7 @@ class TypeInferenceTest {
         @Test
         fun `Conditional which has both branches returning null should return NullType`() {
             val block = Block(listOf(
-                Return(Literal(ParserNull))))
+                Return(Literal(NullValue))))
             val conditional = Conditional(
                 condition = boolSample,
                 thenBranch = block,
@@ -1486,7 +1487,7 @@ class TypeInferenceTest {
 
         @Test
         fun `Get from non-object should throw`() {
-            val receiver = Literal(ParserNull)
+            val receiver = Literal(NullValue)
             val get = Get(
                 receiver = receiver,
                 name = "foo")
@@ -1769,7 +1770,7 @@ class TypeInferenceTest {
 
         @Test
         fun `Set from non-object should throw`() {
-            val receiver = Literal(ParserNull)
+            val receiver = Literal(NullValue)
             val set = Set(
                 receiver = receiver,
                 name = "foo",

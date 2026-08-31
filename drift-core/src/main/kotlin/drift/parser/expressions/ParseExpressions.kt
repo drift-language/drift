@@ -25,10 +25,10 @@ import drift.parser.exceptions.DPNumericSizeOverflowException
 import drift.parser.exceptions.DPUnexpectedExpressionException
 import drift.parser.exceptions.DPUnexpectedSymbolException
 import drift.parser.statements.parseBlock
-import drift.oldruntime.values.primaries.ParserBool
-import drift.oldruntime.values.primaries.ParserNumeric
-import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.primaries.ParserNull
+import drift.values.primaries.BoolValue
+import drift.values.primaries.NumericValue
+import drift.values.primaries.StringValue
+import drift.values.primaries.NullValue
 
 
 /******************************************************************************
@@ -152,22 +152,22 @@ internal fun Parser.parsePrimary() : ParserExpression {
     return when (val token = current()) {
         is Token.StringLiteral -> {
             advance(false)
-            Literal(ParserString(token.value))
+            Literal(StringValue(token.value))
         }
         is Token.NumericLiteral -> {
             advance(false)
             Literal(token.value.run {
-                toLongOrNull()?.let { ParserNumeric(it) }
+                toLongOrNull()?.let { NumericValue(it) }
                     ?: throw DPNumericSizeOverflowException()
             })
         }
         is Token.BoolLiteral -> {
             advance(false)
-            Literal(ParserBool(token.value))
+            Literal(BoolValue(token.value))
         }
         is Token.NullLiteral -> {
             advance(false)
-            Literal(ParserNull)
+            Literal(NullValue)
         }
         is Token.Identifier -> parseVariable()
         is Token.Symbol -> when (token.value) {

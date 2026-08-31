@@ -1,29 +1,30 @@
 /******************************************************************************
  * Drift Programming Language                                                 *
  *                                                                            *
- * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
  *                                                                            *
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
-
-import drift.values.primaries.PrimaryValue
+package drift.values.primaries
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT UNRESOLVED NUMERIC LITERAL
  *
- * Data class representing a literal in an AST.
+ * Parse-time representation of an integer literal whose concrete type
+ * (Int, Int64, UInt, …) has not yet been decided. Stored as Long to
+ * accommodate every currently supported integer range without loss.
+ * Type inference assigns the concrete type based on context.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * An integer literal whose concrete type is resolved by type inference.
  *
- * @property value Literal value
+ * @property value Raw integer value, stored as Long
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+data class NumericValue(
+    override val value: Long) : PrimaryValue<Long>

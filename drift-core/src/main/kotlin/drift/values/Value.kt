@@ -7,23 +7,28 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
+package drift.values
 
-import drift.values.primaries.PrimaryValue
+import drift.types.ParserType
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT VALUES
  *
- * Data class representing a literal in an AST.
+ * Core runtime value interface.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
- *
- * @property value Literal value
+ * This interface represents the whole types existing
+ * natively in Drift, like primary ones, classes,
+ * callables, etc.
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+interface Value {
+
+    fun asString() : String
+
+    @Deprecated("To delete with old interpreter")
+    fun type() : ParserType
+}

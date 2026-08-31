@@ -19,10 +19,10 @@ import drift.analysis.symbols.VariableSymbol.VariableSignature
 import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.statements.*
-import drift.oldruntime.AnyType
-import drift.oldruntime.ObjectType
-import drift.oldruntime.ParserType
-import drift.oldruntime.VoidType
+import drift.types.AnyType
+import drift.types.ObjectType
+import drift.types.ParserType
+import drift.types.VoidType
 import language.InjectedVariableUtils.injectedThis
 import language.LangInfo.NAMESPACE_SEPARATOR
 import language.Namespace

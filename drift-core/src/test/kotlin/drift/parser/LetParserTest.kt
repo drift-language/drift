@@ -4,8 +4,9 @@ import drift.ast.expressions.Literal
 import drift.ast.statements.Let
 import drift.lexer.lex
 import drift.parser.exceptions.DPUnallowedVariableInjectionPrefixUsageException
-import drift.oldruntime.*
-import drift.oldruntime.values.primaries.ParserNumeric
+import drift.types.*
+import drift.values.*
+import drift.values.primaries.NumericValue
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -82,11 +83,11 @@ class LetParserTest {
         @Test
         fun `literal integer value`() {
             val value = parse("let x = 1").value as Literal
-            assertEquals(ParserNumeric(1L), value.value)
+            assertEquals(NumericValue(1L), value.value)
         }
 
         @Test
-        fun `unassigned let has ParserNotAssigned value`() {
+        fun `unassigned let has NotAssignedValue value`() {
             val value = parse("let x: Int").value
             assertNull(value)
         }

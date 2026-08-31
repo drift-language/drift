@@ -40,14 +40,14 @@ import drift.ast.statements.Func
 import drift.ast.statements.Let
 import drift.ast.statements.ParserStatement
 import drift.ast.statements.Return
-import drift.oldruntime.AnyType
-import drift.oldruntime.ObjectType
-import drift.oldruntime.OptionalType
-import drift.oldruntime.UnionType
-import drift.oldruntime.VoidType
-import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.primaries.ParserNull
+import drift.types.AnyType
+import drift.types.ObjectType
+import drift.types.OptionalType
+import drift.types.UnionType
+import drift.types.VoidType
+import drift.values.primaries.IntValue
+import drift.values.primaries.StringValue
+import drift.values.primaries.NullValue
 import language.Namespace
 import language.QualifiedName
 import org.junit.jupiter.api.Assertions.*
@@ -106,9 +106,9 @@ class SemanticCheckerTest {
         type: ObjectType
     ): Pair<Binary, TypeInference.TypeInferenceResult> {
         val binary = Binary(
-            left = Literal(ParserString("str")),
+            left = Literal(StringValue("str")),
             operator = "+",
-            right = Literal(ParserInt(1)))
+            right = Literal(IntValue(1)))
 
         return binary to TypeInference.TypeInferenceResult(
             typeResolutions = mapOf(binary.nodeId to type))
@@ -143,26 +143,28 @@ class SemanticCheckerTest {
 
         @Test
         fun `Let with defined type class should not throw`() {
-            val ast: List<ParserStatement> = listOf(
-                intClassDeclaration,
-                Let(
-                    name = "x",
-                    type = intValueType,
-                    value = Literal(ParserInt(1)),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = intValueType,
+                value = Literal(IntValue(1)),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to intValueType))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with defined type class in optional context should not throw`() {
-            val ast: List<ParserStatement> = listOf(
-                intClassDeclaration,
-                Let(
-                    name = "x",
-                    type = OptionalType(intValueType),
-                    value = Literal(ParserInt(1)),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = OptionalType(intValueType),
+                value = Literal(IntValue(1)),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to OptionalType(intValueType)))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -171,13 +173,14 @@ class SemanticCheckerTest {
         fun `Let with defined type class in union context should not throw`() {
             val secondTypeFixture = classFixture("Int64")
             val expectedTypes = listOf(intValueType, secondTypeFixture.valueType)
-            val ast: List<ParserStatement> = listOf(
-                intClassDeclaration,
-                Let(
-                    name = "x",
-                    type = UnionType(expectedTypes),
-                    value = Literal(ParserInt(1)),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = UnionType(expectedTypes),
+                value = Literal(IntValue(1)),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to UnionType(expectedTypes)))
 
             symbolTable.register(secondTypeFixture)
 
@@ -214,7 +217,7 @@ class SemanticCheckerTest {
                 Let(
                     name = "x",
                     type = UnionType(expectedTypes),
-                    value = Literal(ParserInt(1)),
+                    value = Literal(IntValue(1)),
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -225,17 +228,18 @@ class SemanticCheckerTest {
             val fooLet = Let(
                 name = "foo",
                 type = intValueType,
-                value = Literal(ParserInt(1)),
+                value = Literal(IntValue(1)),
                 isMutable = false)
             val fooRef = Reference(fooLet.name)
             val fooSignature = VariableSymbol.VariableSignature(
                 type = intValueType,
                 isMutable = false,
                 scopeType = Symbol.LocalScope)
+            val xLet = Let(name = "x", type = intValueType, value = fooRef, isMutable = false)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
-                Let(name = "x", type = intValueType, value = fooRef, isMutable = false))
+                xLet)
 
             symbolTable.addVariable(
                 nodeId = fooLet.nodeId,
@@ -243,86 +247,97 @@ class SemanticCheckerTest {
                 signature = fooSignature)
 
             refResolutions = mapOf(fooRef.nodeId to fooLet.nodeId)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(fooLet.nodeId to intValueType, xLet.nodeId to intValueType))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with type mismatch should throw`() {
-            val ast: List<ParserStatement> = listOf(
-                stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = intValueType,
-                    value = Literal(ParserString("Hello, Drift!")),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = intValueType,
+                value = Literal(StringValue("Hello, Drift!")),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to intValueType))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with type mismatch in optional context should throw`() {
-            val ast: List<ParserStatement> = listOf(
-                stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = OptionalType(intValueType),
-                    value = Literal(ParserString("Hello, Drift!")),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = OptionalType(intValueType),
+                value = Literal(StringValue("Hello, Drift!")),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to OptionalType(intValueType)))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with null as value and type in optional context should not throw`() {
-            val ast: List<ParserStatement> = listOf(
-                stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = OptionalType(intValueType),
-                    value = Literal(ParserNull),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = OptionalType(intValueType),
+                value = Literal(NullValue),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to OptionalType(intValueType)))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with union type and unexpected value should throw`() {
-            val ast: List<ParserStatement> = listOf(
-                stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = UnionType(listOf(intValueType, stringValueType)),
-                    value = Literal(ParserNull),
-                    isMutable = false))
+            val expectedTypes = listOf(intValueType, stringValueType)
+            val let = Let(
+                name = "x",
+                type = UnionType(expectedTypes),
+                value = Literal(NullValue),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to UnionType(expectedTypes)))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with non literal value with resolved type mismatch should throw`() {
-            val (binary, resolutions) = stringPlusIntWithResolvedType(stringValueType)
+            val (binary, binaryResolutions) = stringPlusIntWithResolvedType(stringValueType)
+            val let = Let(
+                name = "x",
+                type = intValueType,
+                value = binary,
+                isMutable = false)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = intValueType,
-                    value = binary,
-                    isMutable = false))
+                let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = binaryResolutions.typeResolutions + (let.nodeId to intValueType))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
 
         @Test
         fun `Let with Any type should never throw`() {
-            val ast: List<ParserStatement> = listOf(
-                stringClassDeclaration,
-                Let(
-                    name = "x",
-                    type = AnyType,
-                    value = Literal(ParserInt(42)),
-                    isMutable = false))
+            val let = Let(
+                name = "x",
+                type = AnyType,
+                value = Literal(IntValue(42)),
+                isMutable = false)
+            val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
+            val resolutions = TypeInference.TypeInferenceResult(
+                typeResolutions = mapOf(let.nodeId to intValueType))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -394,7 +409,7 @@ class SemanticCheckerTest {
                         FunctionParameter(
                             name = "x",
                             type = intValueType,
-                            defaultValue = Literal(ParserInt(0))))))
+                            defaultValue = Literal(IntValue(0))))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -409,7 +424,7 @@ class SemanticCheckerTest {
                         FunctionParameter(
                             name = "x",
                             type = intValueType,
-                            defaultValue = Literal(ParserString("hello"))))))
+                            defaultValue = Literal(StringValue("hello"))))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -450,7 +465,7 @@ class SemanticCheckerTest {
         @Test
         fun `Return outside callable context should throw`() {
             val ast: List<ParserStatement> = listOf(
-                Return(value = Literal(ParserInt(1))))
+                Return(value = Literal(IntValue(1))))
 
             assertThrows<DTCUnexpectedReturnStatementException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -463,7 +478,7 @@ class SemanticCheckerTest {
                     name = "foo",
                     returnType = intValueType,
                     body = Block(listOf(
-                        Return(value = Literal(ParserInt(1)))))))
+                        Return(value = Literal(IntValue(1)))))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -476,7 +491,7 @@ class SemanticCheckerTest {
                     name = "foo",
                     returnType = intValueType,
                     body = Block(listOf(
-                        Return(value = Literal(ParserString("hello")))))))
+                        Return(value = Literal(StringValue("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -514,7 +529,7 @@ class SemanticCheckerTest {
         @Test
         fun `Call with non-variable callee should throw`() {
             val ast: List<ParserStatement> = listOf(
-                ExprStmt(Call(callee = Literal(ParserInt(1)))))
+                ExprStmt(Call(callee = Literal(IntValue(1)))))
 
             assertThrows<DTCUnexpectedCalleeException> { checkAst(ast, symbolTable) }
         }
@@ -533,7 +548,7 @@ class SemanticCheckerTest {
             val param = FunctionParameter(
                 name = "a",
                 type = intValueType,
-                defaultValue = Literal(ParserInt(1)))
+                defaultValue = Literal(IntValue(1)))
             val calleeVar = Reference("foo")
             val funcDecl = Func(
                 name = "foo",
@@ -599,7 +614,7 @@ class SemanticCheckerTest {
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(Call(
                     callee = calleeVar,
-                    args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
+                    args = listOf(Argument(name = null, expr = Literal(IntValue(1)))))))
 
             assertThrows<DTCInvalidArgsCountException> {
                 checkAst(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
@@ -627,7 +642,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 ExprStmt(Call(
                     callee = calleeVar,
-                    args = listOf(Argument(name = null, expr = Literal(ParserString("hello")))))))
+                    args = listOf(Argument(name = null, expr = Literal(StringValue("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> {
                 checkAst(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
@@ -684,7 +699,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 ExprStmt(Call(
                     callee = calleeVar,
-                    args = listOf(Argument(name = null, expr = Literal(ParserInt(1)))))))
+                    args = listOf(Argument(name = null, expr = Literal(IntValue(1)))))))
 
             assertDoesNotThrow {
                 checkAst(ast, symbolTable, mapOf(calleeVar.nodeId to funcDecl.nodeId), resolutions)
@@ -865,7 +880,7 @@ class SemanticCheckerTest {
         fun `Method call with too many args should throw`() {
             val (innerVar, receiverCall, outerCall) = buildMethodCall(
                 "t",
-                listOf(Argument(name = null, expr = Literal(ParserInt(1)))))
+                listOf(Argument(name = null, expr = Literal(IntValue(1)))))
 
             symbolTable.addClass(
                 nodeId = aClassDeclaration.nodeId,
@@ -886,7 +901,7 @@ class SemanticCheckerTest {
 
         @Test
         fun `Method call with wrong arg type should throw`() {
-            val arg = Argument(name = null, expr = Literal(ParserString("hello")))
+            val arg = Argument(name = null, expr = Literal(StringValue("hello")))
             val (innerVar, receiverCall, outerCall) = buildMethodCall("t", listOf(arg))
 
             val methodSignature = CallableSignature(
@@ -1091,7 +1106,7 @@ class SemanticCheckerTest {
                         FunctionParameter(
                             name = "x",
                             type = intValueType,
-                            defaultValue = Literal(ParserInt(0)))))))
+                            defaultValue = Literal(IntValue(0)))))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1105,7 +1120,7 @@ class SemanticCheckerTest {
                         FunctionParameter(
                             name = "x",
                             type = intValueType,
-                            defaultValue = Literal(ParserString("hello")))))))
+                            defaultValue = Literal(StringValue("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1255,11 +1270,11 @@ class SemanticCheckerTest {
         fun `Let with imported value matching declared type should not throw`() {
             val ref = Reference("myValue")
             refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val let = Let(name = "x", type = intValueType, value = ref, isMutable = false)
             val typeResolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(ref.nodeId to intValueType))
+                typeResolutions = mapOf(ref.nodeId to intValueType, let.nodeId to intValueType))
 
-            val ast: List<ParserStatement> = listOf(
-                Let(name = "x", type = intValueType, value = ref, isMutable = false))
+            val ast: List<ParserStatement> = listOf(let)
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, typeResolutions) }
         }
@@ -1268,11 +1283,11 @@ class SemanticCheckerTest {
         fun `Let with imported value mismatching declared type should throw`() {
             val ref = Reference("myValue")
             refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
+            val let = Let(name = "x", type = stringValueType, value = ref, isMutable = false)
             val typeResolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(ref.nodeId to intValueType))
+                typeResolutions = mapOf(ref.nodeId to intValueType, let.nodeId to stringValueType))
 
-            val ast: List<ParserStatement> = listOf(
-                Let(name = "x", type = stringValueType, value = ref, isMutable = false))
+            val ast: List<ParserStatement> = listOf(let)
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, typeResolutions) }
         }

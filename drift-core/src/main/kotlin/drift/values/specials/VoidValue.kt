@@ -7,23 +7,28 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
+package drift.values.specials
 
-import drift.values.primaries.PrimaryValue
+import drift.values.Value
+import drift.types.VoidType
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT VOID RUNTIME SPECIAL TYPE
  *
- * Data class representing a literal in an AST.
+ * Runtime class for Void special type.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * Runtime representation of the VOID type, which represents
+ * the absence of return for a function.
  *
- * @property value Literal value
+ * @see drift.types.VoidType
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+data object VoidValue : Value {
+    override fun asString() = "void"
+
+    override fun type() = VoidType
+}

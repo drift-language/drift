@@ -12,8 +12,8 @@ package drift.ast.expressions
 import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Block
-import drift.oldruntime.AnyType
-import drift.oldruntime.ParserType
+import drift.types.AnyType
+import drift.types.ParserType
 
 
 /******************************************************************************

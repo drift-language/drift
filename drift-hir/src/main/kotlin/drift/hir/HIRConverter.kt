@@ -27,10 +27,10 @@ import drift.ast.statements.hooks.ReturnableHook
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
-import drift.oldruntime.ParserType
-import drift.oldruntime.AnyType
-import drift.oldruntime.ClassType
-import drift.oldruntime.ObjectType
+import drift.types.ParserType
+import drift.types.AnyType
+import drift.types.ClassType
+import drift.types.ObjectType
 import language.LangInfo.NAMESPACE_SEPARATOR
 import language.Namespace
 

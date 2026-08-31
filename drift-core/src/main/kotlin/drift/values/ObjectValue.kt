@@ -1,29 +1,23 @@
 /******************************************************************************
  * Drift Programming Language                                                 *
  *                                                                            *
- * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
  *                                                                            *
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.values
 
-package drift.ast.expressions
-
-import drift.values.primaries.PrimaryValue
-
-
-/******************************************************************************
- * DRIFT LITERAL AST NODE
- *
- * Data class representing a literal in an AST.
- ******************************************************************************/
+import drift.types.ObjectType
+import drift.types.ParserType
+import language.QualifiedName
 
 
+interface ObjectValue : Value {
 
-/**
- * A literal expression directly contains a value
- *
- * @property value Literal value
- */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+    val qualifiedName: QualifiedName
+
+
+    @Deprecated("To delete with old interpreter")
+    override fun type(): ParserType = ObjectType(qualifiedName)
+}

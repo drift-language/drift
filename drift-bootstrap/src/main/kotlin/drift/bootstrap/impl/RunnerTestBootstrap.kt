@@ -70,8 +70,8 @@ class RunnerTestBootstrap(
 
         val childSymbolTables: List<SymbolTable> = sourceRoot
             .walkTopDown()
-            .filter {
-                val currentFileRelativePath = it
+            .filter { element ->
+                val currentFileRelativePath = element
                     .toRelativeString(sourceRoot)
                     .replace(File.separator, LangInfo.NAMESPACE_SEPARATOR)
                 val isDriftFile = currentFileRelativePath
@@ -82,7 +82,7 @@ class RunnerTestBootstrap(
                     .imported
                     .contains(currentNamespace)
 
-                return@filter it.isFile &&
+                return@filter element.isFile &&
                     isDriftFile &&
                     !isAlreadyImported &&
                     currentNamespace != namespace

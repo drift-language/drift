@@ -13,7 +13,8 @@ import drift.parser.Parser
 import drift.lexer.Token
 import drift.parser.exceptions.DPSpecialInUnionTypeException
 import drift.parser.exceptions.DPWrongOptionalUnionTypeException
-import drift.oldruntime.*
+import drift.types.*
+import drift.values.*
 
 
 /******************************************************************************
@@ -46,6 +47,7 @@ internal fun Parser.parseType() : ParserType {
         "Void"      -> VoidType
         "Any"       -> AnyType
         "Last"      -> LastType
+
         else        -> ObjectType(token.value)
     }
 

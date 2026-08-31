@@ -9,7 +9,7 @@
 package drift.analysis.exceptions
 
 import drift.exceptions.DriftException
-import drift.oldruntime.ParserType
+import drift.types.ParserType
 
 
 sealed class IRException(

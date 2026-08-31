@@ -9,8 +9,8 @@
 package drift.analysis.inference
 
 import drift.analysis.exceptions.DIRUnexpectedTypeException
-import drift.oldruntime.ObjectType
-import drift.oldruntime.ParserType
+import drift.types.ObjectType
+import drift.types.ParserType
 import kotlin.math.max
 
 

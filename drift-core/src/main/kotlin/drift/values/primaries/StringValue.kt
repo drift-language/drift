@@ -7,23 +7,31 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
+package drift.values.primaries
 
-import drift.values.primaries.PrimaryValue
+import drift.values.ObjectValue
+import drift.values.ParserPrimitiveClass
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT STRING RUNTIME TYPE
  *
- * Data class representing a literal in an AST.
+ * Runtime class for String type.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * Runtime representation of a string.
  *
- * @property value Literal value
+ * @see PrimaryValue
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+data class StringValue(
+    /** String value (unquoted) */
+    override val value: String) : ObjectValue, PrimaryValue<String> {
+
+    override val qualifiedName = ParserPrimitiveClass.String.qualifiedName
+
+
+    override fun asString() = value
+}

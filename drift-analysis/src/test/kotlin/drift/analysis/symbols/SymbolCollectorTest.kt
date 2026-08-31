@@ -4,9 +4,9 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.ast.statements.hooks.UnreturnableHook
-import drift.oldruntime.AnyType
-import drift.oldruntime.ObjectType
-import drift.oldruntime.values.primaries.ParserInt
+import drift.types.AnyType
+import drift.types.ObjectType
+import drift.values.primaries.IntValue
 import language.InjectedVariableUtils.injectedThis
 import language.Namespace
 import language.QualifiedName
@@ -24,7 +24,7 @@ class SymbolCollectorTest {
         QualifiedName(Namespace(namespace), simpleName).qualifiedName
 
     private fun intLet(name: String, isMutable: Boolean = false) =
-        Let(name = name, type = AnyType, value = Literal(ParserInt(1)), isMutable = isMutable)
+        Let(name = name, type = AnyType, value = Literal(IntValue(1)), isMutable = isMutable)
 
     private fun classWithInit(
         name: String,
@@ -73,7 +73,7 @@ class SymbolCollectorTest {
         @Test
         fun `Let with ObjectType annotation is not resolved when class is undefined`() {
             // Given
-            val let = Let(name = "x", type = ObjectType("Unknown"), value = Literal(ParserInt(1)), isMutable = false)
+            val let = Let(name = "x", type = ObjectType("Unknown"), value = Literal(IntValue(1)), isMutable = false)
 
             // When
             val result = collect(statements = arrayOf(let))
@@ -118,7 +118,7 @@ class SymbolCollectorTest {
         @Test
         fun `Function with optional parameter registers it as not required in signature`() {
             // Given
-            val param = FunctionParameter(name = "x", type = AnyType, defaultValue = Literal(ParserInt(0)))
+            val param = FunctionParameter(name = "x", type = AnyType, defaultValue = Literal(IntValue(0)))
             val func = Func(name = "foo", parameters = listOf(param))
 
             // When
@@ -282,7 +282,7 @@ class SymbolCollectorTest {
         fun `Assign resolves to definition nodeId`() {
             // Given
             val let = intLet("x", isMutable = true)
-            val assign = Assign(name = "x", value = Literal(ParserInt(2)))
+            val assign = Assign(name = "x", value = Literal(IntValue(2)))
 
             // When
             val result = collect(statements = arrayOf(let, ExprStmt(assign)))

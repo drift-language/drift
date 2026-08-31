@@ -22,9 +22,10 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
-import drift.oldruntime.*
-import drift.oldruntime.values.primaries.*
-import drift.oldruntime.values.primaries.ParserNull
+import drift.types.*
+import drift.values.*
+import drift.values.primaries.*
+import drift.values.primaries.NullValue
 import language.Namespace
 import language.QualifiedName
 import kotlin.test.*
@@ -72,7 +73,7 @@ class HIRConverterTest {
     @Test
     fun `convert integer literal`() {
         // Given
-        val literal = Literal(ParserInt(42))
+        val literal = Literal(IntValue(42))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to ObjectType("Int"))
@@ -92,7 +93,7 @@ class HIRConverterTest {
     @Test
     fun `convert string literal`() {
         // Given
-        val literal = Literal(ParserString("hello"))
+        val literal = Literal(StringValue("hello"))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to ObjectType("String"))
@@ -110,7 +111,7 @@ class HIRConverterTest {
     @Test
     fun `convert boolean literal`() {
         // Given
-        val literal = Literal(ParserBool(true))
+        val literal = Literal(BoolValue(true))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to ObjectType("Bool"))
@@ -128,7 +129,7 @@ class HIRConverterTest {
     @Test
     fun `convert null literal`() {
         // Given
-        val literal = Literal(ParserNull)
+        val literal = Literal(NullValue)
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to NullType)
@@ -150,7 +151,7 @@ class HIRConverterTest {
     @Test
     fun `convert let statement with int`() {
         // Given
-        val initialValue = Literal(ParserInt(10))
+        val initialValue = Literal(IntValue(10))
         val let = Let(
             name = "x",
             type = ObjectType("Int"),
@@ -177,7 +178,7 @@ class HIRConverterTest {
     fun `convert variable reference`() {
         // Given
         // First define a variable
-        val initialValue = Literal(ParserInt(5))
+        val initialValue = Literal(IntValue(5))
         val let = Let(
             name = "y",
             type = ObjectType("Int"),
@@ -216,8 +217,8 @@ class HIRConverterTest {
     @Test
     fun `convert addition operation`() {
         // Given
-        val left = Literal(ParserInt(3))
-        val right = Literal(ParserInt(4))
+        val left = Literal(IntValue(3))
+        val right = Literal(IntValue(4))
         val binary = Binary(left, "+", right)
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
@@ -242,8 +243,8 @@ class HIRConverterTest {
     @Test
     fun `convert subtraction operation`() {
         // Given
-        val left = Literal(ParserInt(10))
-        val right = Literal(ParserInt(2))
+        val left = Literal(IntValue(10))
+        val right = Literal(IntValue(2))
         val binary = Binary(left, "-", right)
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
@@ -265,8 +266,8 @@ class HIRConverterTest {
     @Test
     fun `convert comparison operation`() {
         // Given
-        val left = Literal(ParserInt(5))
-        val right = Literal(ParserInt(3))
+        val left = Literal(IntValue(5))
+        val right = Literal(IntValue(3))
         val binary = Binary(left, ">", right)
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
@@ -289,8 +290,8 @@ class HIRConverterTest {
     @Test
     fun `convert logical AND operation`() {
         // Given
-        val left = Literal(ParserBool(true))
-        val right = Literal(ParserBool(false))
+        val left = Literal(BoolValue(true))
+        val right = Literal(BoolValue(false))
         val binary = Binary(left, "&&", right)
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
@@ -316,7 +317,7 @@ class HIRConverterTest {
     @Test
     fun `convert unary negation`() {
         // Given
-        val operand = Literal(ParserInt(7))
+        val operand = Literal(IntValue(7))
         val unary = Unary("-", operand)
         val exprStmt = ExprStmt(unary)
         val ast = listOf(exprStmt)
@@ -337,7 +338,7 @@ class HIRConverterTest {
     @Test
     fun `convert logical NOT`() {
         // Given
-        val operand = Literal(ParserBool(true))
+        val operand = Literal(BoolValue(true))
         val unary = Unary("!", operand)
         val exprStmt = ExprStmt(unary)
         val ast = listOf(exprStmt)
@@ -362,7 +363,7 @@ class HIRConverterTest {
     @Test
     fun `convert simple function`() {
         // Given
-        val returnExpr = Literal(ParserInt(42))
+        val returnExpr = Literal(IntValue(42))
         val function = Func(
             name = "getAnswer",
             parameters = emptyList(),
@@ -425,8 +426,8 @@ class HIRConverterTest {
     @Test
     fun `convert if statement`() {
         // Given
-        val condition = Literal(ParserBool(true))
-        val thenBranch = ExprStmt(Literal(ParserInt(1)))
+        val condition = Literal(BoolValue(true))
+        val thenBranch = ExprStmt(Literal(IntValue(1)))
         val ifStmt = If(condition, thenBranch, null)
         val ast = listOf(ifStmt)
         val typeResolution = mapOf(condition.nodeId to ObjectType("Bool"))
@@ -445,9 +446,9 @@ class HIRConverterTest {
     @Test
     fun `convert if-else statement`() {
         // Given
-        val condition = Literal(ParserBool(true))
-        val thenBranch = ExprStmt(Literal(ParserInt(1)))
-        val elseBranch = ExprStmt(Literal(ParserInt(0)))
+        val condition = Literal(BoolValue(true))
+        val thenBranch = ExprStmt(Literal(IntValue(1)))
+        val elseBranch = ExprStmt(Literal(IntValue(0)))
         val ifStmt = If(condition, thenBranch, elseBranch)
         val ast = listOf(ifStmt)
         val typeResolution = mapOf(condition.nodeId to ObjectType("Bool"))
@@ -467,13 +468,13 @@ class HIRConverterTest {
         val let1 = Let(
             name ="x",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(1)),
+            value = Literal(IntValue(1)),
             isMutable = false)
 
         val let2 = Let(
             name ="y",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(2)),
+            value = Literal(IntValue(2)),
             isMutable = false)
 
         val block = Block(listOf(let1, let2))
@@ -551,14 +552,14 @@ class HIRConverterTest {
     @Test
     fun `convert variable assignment`() {
         // Given
-        val initialValue = Literal(ParserInt(0))
+        val initialValue = Literal(IntValue(0))
         val let = Let(
             name = "x",
             type = ObjectType("Int"),
             value = initialValue,
             isMutable = true)
 
-        val assign = Assign("x", Literal(ParserInt(99)))
+        val assign = Assign("x", Literal(IntValue(99)))
         val exprStmt = ExprStmt(assign)
         val ast = listOf(let, exprStmt)
 
@@ -597,9 +598,9 @@ class HIRConverterTest {
     @Test
     fun `convert nested binary operations`() {
         // Given
-        val a = Literal(ParserInt(1))
-        val b = Literal(ParserInt(2))
-        val c = Literal(ParserInt(3))
+        val a = Literal(IntValue(1))
+        val b = Literal(IntValue(2))
+        val c = Literal(IntValue(3))
         val add = Binary(a, "+", b)
         val mul = Binary(add, "*", c)
         val exprStmt = ExprStmt(mul)
@@ -628,19 +629,19 @@ class HIRConverterTest {
         val let1 = Let(
             name = "a",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(10)),
+            value = Literal(IntValue(10)),
             isMutable = false)
 
         val let2 = Let(
             name = "b",
             type = ObjectType("String"),
-            value = Literal(ParserString("hi")),
+            value = Literal(StringValue("hi")),
             isMutable = false)
 
         val let3 = Let(
             name = "c",
             type = ObjectType("Bool"),
-            value = Literal(ParserBool(true)),
+            value = Literal(BoolValue(true)),
             isMutable = false)
 
         val ast = listOf(let1, let2, let3)
@@ -664,13 +665,13 @@ class HIRConverterTest {
         val field1 = Let(
             name = "id",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(0)),
+            value = Literal(IntValue(0)),
             isMutable = false)
 
         val field2 = Let(
             name = "name",
             type = ObjectType("String"),
-            value = Literal(ParserString("")),
+            value = Literal(StringValue("")),
             isMutable = false)
 
         val klass = Class(
@@ -701,7 +702,7 @@ class HIRConverterTest {
         val method = Func(
             name = "getName",
             parameters = emptyList(),
-            body = Block(listOf(ExprStmt(Literal(ParserString("test"))))),
+            body = Block(listOf(ExprStmt(Literal(StringValue("test"))))),
             returnType = ObjectType("String")
         )
         val klass = Class(
@@ -730,13 +731,13 @@ class HIRConverterTest {
         val staticField = Let(
             name = "count",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(0)),
+            value = Literal(IntValue(0)),
             isMutable = false)
 
         val staticMethod = Func(
             name = "getCount",
             parameters = emptyList(),
-            body = Block(listOf(ExprStmt(Literal(ParserInt(0))))),
+            body = Block(listOf(ExprStmt(Literal(IntValue(0))))),
             returnType = ObjectType("Int")
         )
         val klass = Class(
@@ -769,11 +770,11 @@ class HIRConverterTest {
         val itemsVar = Let(
             name = "items",
             type = ObjectType("List"),
-            value = Literal(ParserInt(0)),
+            value = Literal(IntValue(0)),
             isMutable = false)
         val iterable = Reference("items")
         val forVar = ForVariable("item")
-        val body = Block(listOf(ExprStmt(Literal(ParserInt(1)))))
+        val body = Block(listOf(ExprStmt(Literal(IntValue(1)))))
         val forLoop = For(iterable, listOf(forVar), body)
         val ast = listOf(itemsVar, forLoop)
         val refResolutions = mapOf(iterable.nodeId to itemsVar.nodeId)
@@ -795,7 +796,7 @@ class HIRConverterTest {
     @Test
     fun `convert simple lambda`() {
         // Given
-        val body = Block(listOf(ExprStmt(Literal(ParserInt(42)))))
+        val body = Block(listOf(ExprStmt(Literal(IntValue(42)))))
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
@@ -822,7 +823,7 @@ class HIRConverterTest {
     fun `convert lambda with parameters`() {
         // Given
         val param = FunctionParameter("x", isPositional = true, type = ObjectType("Int"))
-        val body = Block(listOf(ExprStmt(Literal(ParserInt(0)))))
+        val body = Block(listOf(ExprStmt(Literal(IntValue(0)))))
         val lambda = Lambda(
             parameters = listOf(param),
             body = body,
@@ -851,7 +852,7 @@ class HIRConverterTest {
         val letStmt = Let(
             name = "y",
             type = ObjectType("Int"),
-            value = Literal(ParserInt(5)),
+            value = Literal(IntValue(5)),
             isMutable = false)
 
         val capturedRef = Reference("y")
@@ -895,7 +896,7 @@ class HIRConverterTest {
         val greetFunc = Func(
             name = "greet",
             parameters = emptyList(),
-            body = Block(listOf(ExprStmt(Literal(ParserString("hi"))))),
+            body = Block(listOf(ExprStmt(Literal(StringValue("hi"))))),
             returnType = ObjectType("String")
         )
         val callee = Reference("greet")
@@ -928,12 +929,12 @@ class HIRConverterTest {
             parameters = listOf(
                 FunctionParameter("a", isPositional = true, type = ObjectType("Int")),
                 FunctionParameter("b", isPositional = true, type = ObjectType("Int"))),
-            body = Block(listOf(ExprStmt(Literal(ParserInt(0))))),
+            body = Block(listOf(ExprStmt(Literal(IntValue(0))))),
             returnType = ObjectType("Int")
         )
         val callee = Reference("add")
-        val arg1 = Argument(null, Literal(ParserInt(1)))
-        val arg2 = Argument(null, Literal(ParserInt(2)))
+        val arg1 = Argument(null, Literal(IntValue(1)))
+        val arg2 = Argument(null, Literal(IntValue(2)))
         val call = Call(callee, listOf(arg1, arg2))
         val exprStmt = ExprStmt(call)
         val ast = listOf(addFunc, exprStmt)
@@ -965,12 +966,12 @@ class HIRConverterTest {
             parameters = listOf(
                 FunctionParameter("name", type = ObjectType("String")),
                 FunctionParameter("age", type = ObjectType("Int"))),
-            body = Block(listOf(ExprStmt(Literal(ParserNull)))),
+            body = Block(listOf(ExprStmt(Literal(NullValue)))),
             returnType = ObjectType("User")
         )
         val callee = Reference("create")
-        val arg1 = Argument("name", Literal(ParserString("Alice")))
-        val arg2 = Argument("age", Literal(ParserInt(30)))
+        val arg1 = Argument("name", Literal(StringValue("Alice")))
+        val arg2 = Argument("age", Literal(IntValue(30)))
         val call = Call(callee, listOf(arg1, arg2))
         val exprStmt = ExprStmt(call)
         val ast = listOf(createFunc, exprStmt)
@@ -1005,7 +1006,7 @@ class HIRConverterTest {
         val userVar = Let(
             name = "user",
             type = ObjectType("User"),
-            value = Literal(ParserNull),
+            value = Literal(NullValue),
             isMutable = false)
         val receiver = Reference("user")
         val get = Get(receiver, "name")
@@ -1041,10 +1042,10 @@ class HIRConverterTest {
         val userVar = Let(
             name = "user",
             type = ObjectType("User"),
-            value = Literal(ParserNull),
+            value = Literal(NullValue),
             isMutable = false)
         val receiver = Reference("user")
-        val set = Set(receiver, "name", Literal(ParserString("Bob")))
+        val set = Set(receiver, "name", Literal(StringValue("Bob")))
         val exprStmt = ExprStmt(set)
         val ast = listOf(userVar, exprStmt)
 
@@ -1078,9 +1079,9 @@ class HIRConverterTest {
     @Test
     fun `convert ternary conditional expression`() {
         // Given
-        val condition = Literal(ParserBool(true))
-        val thenExpr = Literal(ParserInt(1))
-        val elseExpr = Literal(ParserInt(0))
+        val condition = Literal(BoolValue(true))
+        val thenExpr = Literal(IntValue(1))
+        val elseExpr = Literal(IntValue(0))
         val conditional = Conditional(
             condition = condition,
             thenBranch = ExprStmt(thenExpr),
@@ -1108,8 +1109,8 @@ class HIRConverterTest {
     @Test
     fun `convert conditional without else`() {
         // Given
-        val condition = Literal(ParserBool(false))
-        val thenExpr = Literal(ParserInt(5))
+        val condition = Literal(BoolValue(false))
+        val thenExpr = Literal(IntValue(5))
         val conditional = Conditional(
             condition = condition,
             thenBranch = ExprStmt(thenExpr),
@@ -1189,10 +1190,10 @@ class HIRConverterTest {
     @Test
     fun `convert deeply nested expressions`() {
         // Given
-        val a = Literal(ParserInt(1))
-        val b = Literal(ParserInt(2))
-        val c = Literal(ParserInt(3))
-        val d = Literal(ParserInt(4))
+        val a = Literal(IntValue(1))
+        val b = Literal(IntValue(2))
+        val c = Literal(IntValue(3))
+        val d = Literal(IntValue(4))
 
         val add1 = Binary(a, "+", b)
         val mul1 = Binary(add1, "*", c)
@@ -1223,7 +1224,7 @@ class HIRConverterTest {
     @Test
     fun `convert int64 type`() {
         // Given
-        val literal = Literal(ParserInt64(999999999L))
+        val literal = Literal(Int64Value(999999999L))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to ObjectType("Int64"))
@@ -1240,7 +1241,7 @@ class HIRConverterTest {
     @Test
     fun `convert uint type`() {
         // Given
-        val literal = Literal(ParserUInt(42u))
+        val literal = Literal(UIntValue(42u))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(literal.nodeId to ObjectType("UInt"))
@@ -1369,7 +1370,7 @@ class HIRConverterTest {
     fun `convert let with single annotation no args`() {
         // Given
         val annotation = Annotation(name = "Deprecated", args = emptyList())
-        val initialValue = Literal(ParserInt(0))
+        val initialValue = Literal(IntValue(0))
         val let = Let(
             name = "x",
             annotations = mutableListOf(annotation),
@@ -1394,12 +1395,12 @@ class HIRConverterTest {
     @Test
     fun `convert let with annotation with positional arg`() {
         // Given
-        val argExpr = Literal(ParserString("use newFn instead"))
+        val argExpr = Literal(StringValue("use newFn instead"))
         val annotation = Annotation(
             name = "Deprecated",
             args = listOf(Argument(null, argExpr))
         )
-        val initialValue = Literal(ParserInt(0))
+        val initialValue = Literal(IntValue(0))
         val let = Let(
             name = "x",
             annotations = mutableListOf(annotation),
@@ -1430,12 +1431,12 @@ class HIRConverterTest {
     @Test
     fun `convert let with annotation with named arg`() {
         // Given
-        val argExpr = Literal(ParserString("reason"))
+        val argExpr = Literal(StringValue("reason"))
         val annotation = Annotation(
             name = "Suppress",
             args = listOf(Argument("message", argExpr))
         )
-        val initialValue = Literal(ParserInt(1))
+        val initialValue = Literal(IntValue(1))
         val let = Let(
             name = "y",
             annotations = mutableListOf(annotation),
@@ -1464,7 +1465,7 @@ class HIRConverterTest {
         // Given
         val ann1 = Annotation(name = "Deprecated", args = emptyList())
         val ann2 = Annotation(name = "Internal", args = emptyList())
-        val initialValue = Literal(ParserInt(0))
+        val initialValue = Literal(IntValue(0))
         val let = Let(
             name = "z",
             annotations = mutableListOf(ann1, ann2),
@@ -1562,7 +1563,7 @@ class HIRConverterTest {
             name = "password",
             annotations = mutableListOf(annotation),
             type = ObjectType("String"),
-            value = Literal(ParserString("")),
+            value = Literal(StringValue("")),
             isMutable = false
         )
         val klass = Class(
@@ -1590,8 +1591,8 @@ class HIRConverterTest {
     @Test
     fun `convert annotation with multiple args`() {
         // Given
-        val arg1 = Literal(ParserString("message"))
-        val arg2 = Literal(ParserInt(42))
+        val arg1 = Literal(StringValue("message"))
+        val arg2 = Literal(IntValue(42))
         val annotation = Annotation(
             name = "Meta",
             args = listOf(
@@ -1599,7 +1600,7 @@ class HIRConverterTest {
                 Argument("code", arg2)
             )
         )
-        val initialValue = Literal(ParserBool(true))
+        val initialValue = Literal(BoolValue(true))
         val let = Let(
             name = "flag",
             annotations = mutableListOf(annotation),

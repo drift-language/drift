@@ -9,6 +9,7 @@
 
 package drift.hir
 
+import language.QualifiedName
 import kotlin.test.*
 
 class HIRTypeTest {
@@ -46,16 +47,16 @@ class HIRTypeTest {
 
     @Test
     fun `create class type`() {
-        val userType = HIRClassType("User")
-        assertEquals("User", userType.className)
+        val userType = HIRClassType(QualifiedName(simpleName = "User"))
+        assertEquals(QualifiedName(simpleName = "User"), userType.qualifiedName)
         assertEquals(emptyMap(), userType.typeArguments)
     }
 
     @Test
     fun `create generic class type`() {
         val intType = HIRPrimitiveType(PrimitiveKind.INT)
-        val listIntType = HIRClassType("List", mapOf("elementType" to intType))
-        assertEquals("List", listIntType.className)
+        val listIntType = HIRClassType(QualifiedName(simpleName = "List"), mapOf("elementType" to intType))
+        assertEquals(QualifiedName(simpleName = "List"), listIntType.qualifiedName)
         assertEquals(1, listIntType.typeArguments.size)
         assertTrue(listIntType.typeArguments.containsKey("elementType"))
     }
@@ -130,15 +131,15 @@ class HIRTypeTest {
 
     @Test
     fun `type equality for classes`() {
-        val user1 = HIRClassType("User")
-        val user2 = HIRClassType("User")
+        val user1 = HIRClassType(QualifiedName(simpleName = "User"))
+        val user2 = HIRClassType(QualifiedName(simpleName = "User"))
         assertEquals(user1, user2)
     }
 
     @Test
     fun `type inequality for different classes`() {
-        val user = HIRClassType("User")
-        val admin = HIRClassType("Admin")
+        val user = HIRClassType(QualifiedName(simpleName = "User"))
+        val admin = HIRClassType(QualifiedName(simpleName = "Admin"))
         assertNotEquals(user, admin)
     }
 

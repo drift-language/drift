@@ -9,8 +9,8 @@
 package drift.analysis.symbols
 
 import drift.ast.NodeId
-import drift.oldruntime.AnyType
-import drift.oldruntime.ParserType
+import drift.types.AnyType
+import drift.types.ParserType
 import language.Namespace
 import language.QualifiedName
 

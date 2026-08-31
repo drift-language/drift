@@ -10,8 +10,8 @@
 package drift.ast.bindings
 
 import drift.ast.expressions.ParserExpression
-import drift.oldruntime.AnyType
-import drift.oldruntime.ParserType
+import drift.types.AnyType
+import drift.types.ParserType
 
 
 /******************************************************************************

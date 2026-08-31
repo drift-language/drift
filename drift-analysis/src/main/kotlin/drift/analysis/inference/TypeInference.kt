@@ -17,17 +17,18 @@ import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.statements.*
-import drift.oldruntime.*
-import drift.oldruntime.values.containers.list.ParserArray
-import drift.oldruntime.values.primaries.ParserBool
-import drift.oldruntime.values.primaries.ParserInt
-import drift.oldruntime.values.primaries.ParserInt64
-import drift.oldruntime.values.primaries.ParserNumeric
-import drift.oldruntime.values.primaries.ParserString
-import drift.oldruntime.values.primaries.ParserUInt
-import drift.oldruntime.values.specials.ParserNotAssigned
-import drift.oldruntime.values.primaries.ParserNull
-import drift.oldruntime.values.specials.ParserVoid
+import drift.types.*
+import drift.values.*
+import drift.values.containers.list.ArrayValue
+import drift.values.primaries.BoolValue
+import drift.values.primaries.IntValue
+import drift.values.primaries.Int64Value
+import drift.values.primaries.NumericValue
+import drift.values.primaries.StringValue
+import drift.values.primaries.UIntValue
+import drift.values.specials.NotAssignedValue
+import drift.values.primaries.NullValue
+import drift.values.specials.VoidValue
 
 
 class TypeInference(
@@ -253,22 +254,22 @@ class TypeInference(
             ObjectType(primitive)
 
         val type: ParserType = when (literal.value) {
-            is ParserNumeric        -> {
-                val v = (literal.value as ParserNumeric).value
+            is NumericValue        -> {
+                val v = (literal.value as NumericValue).value
                 if (v >= Int.MIN_VALUE && v <= Int.MAX_VALUE)
                     obj(ParserPrimitiveClass.Int)
                 else
                     obj(ParserPrimitiveClass.Int64)
             }
-            is ParserInt            -> obj(ParserPrimitiveClass.Int)
-            is ParserInt64          -> obj(ParserPrimitiveClass.Int64)
-            is ParserUInt           -> obj(ParserPrimitiveClass.UInt)
-            is ParserString         -> obj(ParserPrimitiveClass.String)
-            is ParserBool           -> obj(ParserPrimitiveClass.Bool)
-            is ParserArray          -> obj(ParserPrimitiveClass.Array)
-            is ParserNull           -> NullType
-            is ParserNotAssigned    -> UnknownType
-            is ParserVoid           -> VoidType
+            is IntValue            -> obj(ParserPrimitiveClass.Int)
+            is Int64Value          -> obj(ParserPrimitiveClass.Int64)
+            is UIntValue           -> obj(ParserPrimitiveClass.UInt)
+            is StringValue         -> obj(ParserPrimitiveClass.String)
+            is BoolValue           -> obj(ParserPrimitiveClass.Bool)
+            is ArrayValue          -> obj(ParserPrimitiveClass.Array)
+            is NullValue           -> NullType
+            is NotAssignedValue    -> UnknownType
+            is VoidValue           -> VoidType
             // TODO: clean up deprecated/impossible branches.
         }
 
@@ -476,7 +477,7 @@ class TypeInference(
                 is CallableSymbol -> {
                     symbol.signature.parameterTypes.zip(call.args).forEach { (param, arg) ->
                         val argExpr = arg.expr
-                        if (argExpr is Literal && argExpr.value is ParserNumeric) {
+                        if (argExpr is Literal && argExpr.value is NumericValue) {
                             typeResolutions[argExpr.nodeId] = param.type
                         }
                     }
@@ -516,7 +517,7 @@ class TypeInference(
                 .forEach { (paramType, arg) ->
                     val argExpr = arg.expr
 
-                    if (argExpr is Literal && argExpr.value is ParserNumeric) {
+                    if (argExpr is Literal && argExpr.value is NumericValue) {
                         typeResolutions[argExpr.nodeId] = paramType
                     }
                 }

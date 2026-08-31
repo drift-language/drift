@@ -10,7 +10,7 @@ package drift.analysis.exceptions
 
 import drift.ast.NodeId
 import drift.exceptions.DriftException
-import drift.oldruntime.ParserType
+import drift.types.ParserType
 
 
 sealed class DTCException(

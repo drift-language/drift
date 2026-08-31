@@ -7,23 +7,33 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
+package drift.values.primaries
 
-import drift.values.primaries.PrimaryValue
+import drift.values.ObjectValue
+import drift.values.ParserPrimitiveClass
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT BOOLEAN RUNTIME TYPE
  *
- * Data class representing a literal in an AST.
+ * Runtime class for Boolean type.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * Runtime representation of a boolean.
  *
- * @property value Literal value
+ * @see PrimaryValue
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+data class BoolValue(
+    /** Boolean value */
+    override val value: Boolean)
+    : ObjectValue, PrimaryValue<Boolean> {
+
+    override val qualifiedName = ParserPrimitiveClass.Bool.qualifiedName
+
+
+    /** @return A prepared string version of the type */
+    override fun asString() = value.toString()
+}

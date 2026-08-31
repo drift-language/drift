@@ -3,7 +3,8 @@ package drift.parser
 import drift.lexer.lex
 import drift.parser.exceptions.DPSpecialInUnionTypeException
 import drift.parser.exceptions.DPWrongOptionalUnionTypeException
-import drift.oldruntime.*
+import drift.types.*
+import drift.values.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested

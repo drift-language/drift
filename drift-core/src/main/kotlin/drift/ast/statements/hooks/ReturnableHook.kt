@@ -13,7 +13,7 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.ast.statements.Block
 import drift.ast.statements.ParserStatement
-import drift.oldruntime.ParserType
+import drift.types.ParserType
 
 data class ReturnableHook(
     override val name: String,

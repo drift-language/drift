@@ -7,23 +7,40 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
-
-import drift.values.primaries.PrimaryValue
+package drift.types
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT TYPE ARGUMENTS
  *
- * Data class representing a literal in an AST.
+ * Type container interfaces used to carry ObjectType's generic arguments.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * This interface represents the two type containers:
+ * - [SingleType]: contains one type
+ * - [MultiTypes]: contains many types
  *
- * @property value Literal value
+ * It should be only used if the structure requires
+ * both single and multiple versions.
+ *
+ * @see SingleType
+ * @see MultiTypes
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+interface TypeArgument
+
+
+/**
+ * This data class permits containing one type,
+ * a powerful component of [TypeArgument] interface.
+ */
+data class SingleType(val type: ParserType) : TypeArgument
+
+
+/**
+ * This data class permits containing many types,
+ * a powerful component of [TypeArgument] interface.
+ */
+data class MultiTypes(val types: List<ParserType>) : TypeArgument

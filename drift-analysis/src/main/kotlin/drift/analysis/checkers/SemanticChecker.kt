@@ -32,16 +32,16 @@ import drift.ast.expressions.*
 import drift.ast.expressions.Set
 import drift.ast.metadata.Annotation
 import drift.ast.statements.*
-import drift.oldruntime.AnyType
-import drift.oldruntime.ClassType
-import drift.oldruntime.FunctionType
-import drift.oldruntime.NullType
-import drift.oldruntime.ObjectType
-import drift.oldruntime.OptionalType
-import drift.oldruntime.ParserType
-import drift.oldruntime.UnionType
-import drift.oldruntime.UnknownType
-import drift.oldruntime.VoidType
+import drift.types.AnyType
+import drift.types.ClassType
+import drift.types.FunctionType
+import drift.types.NullType
+import drift.types.ObjectType
+import drift.types.OptionalType
+import drift.types.ParserType
+import drift.types.UnionType
+import drift.types.UnknownType
+import drift.types.VoidType
 import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
 import language.Namespace
@@ -393,18 +393,18 @@ class SemanticChecker(
         val resolvedType =
             if (expression is Literal) {
                 when (expression.value) {
-                    is drift.oldruntime.values.primaries.ParserNumeric ->
+                    is drift.values.primaries.NumericValue ->
                         resolutions.typeResolutions[expression.nodeId] ?: ObjectType("Int")
-                    is drift.oldruntime.values.primaries.ParserInt -> ObjectType("Int")
-                    is drift.oldruntime.values.primaries.ParserInt64 -> ObjectType("Int64")
-                    is drift.oldruntime.values.primaries.ParserUInt -> ObjectType("UInt")
-                    is drift.oldruntime.values.primaries.ParserBool -> ObjectType("Bool")
-                    is drift.oldruntime.values.primaries.ParserString -> ObjectType("String")
-                    is drift.oldruntime.values.primaries.ParserNull -> NullType
+                    is drift.values.primaries.IntValue -> ObjectType("Int")
+                    is drift.values.primaries.Int64Value -> ObjectType("Int64")
+                    is drift.values.primaries.UIntValue -> ObjectType("UInt")
+                    is drift.values.primaries.BoolValue -> ObjectType("Bool")
+                    is drift.values.primaries.StringValue -> ObjectType("String")
+                    is drift.values.primaries.NullValue -> NullType
                 }
             } else {
                 resolutions.typeResolutions[expression.nodeId]
-                    ?: return true
+                    ?: return true      // TODO: confirm this true fallback??
             }
 
         return compareTypeStructures(expectedType, resolvedType)

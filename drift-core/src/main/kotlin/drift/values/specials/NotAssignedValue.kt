@@ -6,24 +6,31 @@
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.values.specials
 
-package drift.ast.expressions
-
-import drift.values.primaries.PrimaryValue
+import drift.types.ParserType
+import drift.values.Value
+import drift.types.UnknownType
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT NOT ASSIGNED RUNTIME SPECIAL TYPE
  *
- * Data class representing a literal in an AST.
+ * Runtime class for NotAssigned special type.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
+ * Runtime representation of the NotAssigned type, which represents
+ * a variable which does not have a value.
  *
- * @property value Literal value
+ * It is linked to [UnknownType].
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+@Deprecated("Literal NULL value on a nullable ParserExpression? environment is preferred")
+data object NotAssignedValue : Value {
+
+    override fun asString(): String = UnknownType.asString()
+
+    override fun type(): ParserType = UnknownType
+}

@@ -1,29 +1,31 @@
 /******************************************************************************
  * Drift Programming Language                                                 *
  *                                                                            *
- * Copyright (c) 2025. Jonathan (GitHub: belicfr)                             *
+ * Copyright (c) 2026. Jonathan (GitHub: belicfr)                             *
  *                                                                            *
  * This source code is licensed under the MIT License.                        *
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
+package drift.values
 
-package drift.ast.expressions
+import language.Namespace
+import language.QualifiedName
 
-import drift.values.primaries.PrimaryValue
+enum class ParserPrimitiveClass(
+    val className: String) {
+
+    Int("Int"),
+    Int64("Int64"),
+    UInt("UInt"),
+
+    String("String"),
+
+    Bool("Bool"),
+
+    Array("Array");
 
 
-/******************************************************************************
- * DRIFT LITERAL AST NODE
- *
- * Data class representing a literal in an AST.
- ******************************************************************************/
-
-
-
-/**
- * A literal expression directly contains a value
- *
- * @property value Literal value
- */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+    val qualifiedName = QualifiedName(
+        namespace = Namespace("lang"),
+        simpleName = className)
+}

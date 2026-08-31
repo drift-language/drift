@@ -7,23 +7,21 @@
  * See the LICENSE file in the root directory for details.                    *
  ******************************************************************************/
 
-package drift.ast.expressions
-
-import drift.values.primaries.PrimaryValue
+package drift.values.primaries
 
 
 /******************************************************************************
- * DRIFT LITERAL AST NODE
+ * DRIFT PRIMARY TYPE INTERFACE
  *
- * Data class representing a literal in an AST.
+ * Interface for all Drift primary types.
  ******************************************************************************/
 
 
 
 /**
- * A literal expression directly contains a value
- *
- * @property value Literal value
+ * This interface represents all primary value types.
  */
-data class Literal(
-    val value: PrimaryValue<*>) : ParserExpression()
+sealed interface PrimaryValue<T> {
+
+    val value: T
+}
