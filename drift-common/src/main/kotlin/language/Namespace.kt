@@ -63,9 +63,18 @@ data class Namespace(
      * Since [Namespace] stores its namespace as a [List] of [String],
      * [getNamespace] permits preparing it as a [String].
      *
-     * @return string version of the namespace's steps.
+     * @return string version of the namespace's steps using
+     *         [NAMESPACE_SEPARATOR].
      */
     fun getNamespace() : String = steps.joinToString(NAMESPACE_SEPARATOR)
+
+    /**
+     * Returns the namespace object as a string, joined using the '/' symbol.
+     * This method does not depend on [NAMESPACE_SEPARATOR].
+     *
+     * @return the path string version of the current namespace instance.
+     */
+    fun toPath() : String = steps.joinToString("/")
 
     /**
      * Returns the last part of the [steps] list if non-empty; else it throws
