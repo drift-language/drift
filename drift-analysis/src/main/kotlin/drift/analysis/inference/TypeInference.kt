@@ -29,14 +29,18 @@ import drift.values.primaries.UIntValue
 import drift.values.specials.NotAssignedValue
 import drift.values.primaries.NullValue
 import drift.values.specials.VoidValue
+import language.ModuleReference
+import language.Namespace
+import language.QualifiedName
 
 
 class TypeInference(
+    val namespace: Namespace,
     val ast: List<ParserStatement>,
     val symbolTable: SymbolTable,
     val refResolutions: Map<NodeId, NodeId>) {
 
-    private val typeResolutions = mutableMapOf<NodeId, ParserType>()
+    private val typeResolutions = mutableMapOf<NodeId, Type>()
 
 
     fun infer() : TypeInferenceResult {
@@ -90,27 +94,29 @@ class TypeInference(
         }
     }
 
-    private fun inferLet(let: Let) : ParserType {
+    private fun inferLet(let: Let) : Type {
         let.run {
             val valueType = inferExpression(value)
-
-            val usedType =
+            val expectedVariableType =
                 if (type == AnyType) valueType
-                else type
+                else type.resolve(ModuleReference.unresolved, namespace)
 
-            val expr = value
-            if (type != AnyType && expr is Literal && expr.value is ParserNumeric) {
-                typeResolutions[expr.nodeId] = type
-            }
+            // Store the expression's own type.
+            value?.let { typeResolutions[it.nodeId] = valueType }
 
-            typeResolutions[nodeId] = usedType
+            // Store the variable's expected type.
+            typeResolutions[nodeId] = expectedVariableType
+
+            // NOTE: the types of the variable and its own value must be
+            //  compared on type checking to ensure the integrity of the
+            //  structure's type constraint.
         }
 
         return VoidType
     }
 
     private fun inferIf(`if`: If) : InferenceResult {
-        val resolvedReturnTypes = mutableSetOf<ParserType>()
+        val resolvedReturnTypes = mutableSetOf<Type>()
 
         `if`.run {
             inferExpression(condition)
@@ -123,13 +129,13 @@ class TypeInference(
         return InferenceResult(resolvedReturnTypes)
     }
 
-    private fun inferReturn(`return`: Return) : ParserType {
+    private fun inferReturn(`return`: Return) : Type {
         return inferExpression(`return`.value)
     }
 
     private fun inferBlock(block: Block) : InferenceResult {
-        val resolvedReturnTypes = mutableSetOf<ParserType>()
-        var lastType: ParserType = VoidType
+        val resolvedReturnTypes = mutableSetOf<Type>()
+        var lastType: Type = VoidType
 
         block.statements.forEach {
             val inference = inferStatement(it)
@@ -144,7 +150,7 @@ class TypeInference(
         )
     }
 
-    private fun inferFor(`for`: For) : ParserType {
+    private fun inferFor(`for`: For) : Type {
         `for`.run {
             inferExpression(iterable)
             inferStatement(body)
@@ -153,7 +159,7 @@ class TypeInference(
         return VoidType
     }
 
-    private fun inferFunction(func: Func) : ParserType {
+    private fun inferFunction(func: Func) : Type {
         func.run {
             parameters.forEach { parameter ->
                 parameter.defaultValue?.let { inferExpression(it) }
@@ -161,21 +167,17 @@ class TypeInference(
 
             val inferredBlock = inferBlock(body)
 
-            typeResolutions[nodeId] =
-                if (func.returnType is AnyType) {
-                    val resolvedReturnTypes = inferredBlock
-                        .resolvedReturnTypes
-
-                    buildType(resolvedReturnTypes)
-                } else {
-                    func.returnType
-                }
+            typeResolutions[nodeId] = when (val declaredReturnType = func.returnType) {
+                is AnyType -> buildType(inferredBlock.resolvedReturnTypes)
+                is LastType -> inferredBlock.lastType
+                else -> declaredReturnType.resolve(ModuleReference.unresolved, namespace)
+            }
         }
 
         return VoidType
     }
 
-    private fun buildType(types: Collection<ParserType>) : ParserType {
+    private fun buildType(types: Collection<Type>) : Type {
         return if (types.size == 1) {
             types.first()
         } else if (types.size > 1) {
@@ -185,7 +187,7 @@ class TypeInference(
         }
     }
 
-    private fun inferClass(`class`: Class) : ParserType {
+    private fun inferClass(`class`: Class) : Type {
         `class`.run {
             fields.forEach { inferStatement(it) }
             staticFields.forEach { inferStatement(it) }
@@ -196,14 +198,14 @@ class TypeInference(
         return VoidType
     }
 
-    private fun inferExprStmt(exprStmt: ExprStmt) : ParserType {
+    private fun inferExprStmt(exprStmt: ExprStmt) : Type {
         return inferExpression(exprStmt.expr)
     }
 
 
     /*  --  EXPRESSIONS  --  */
 
-    private fun inferExpression(expression: ParserExpression?) : ParserType {
+    private fun inferExpression(expression: ParserExpression?) : Type {
         return when (expression) {
             is Reference -> inferReference(expression)
             is Literal -> inferLiteral(expression)
@@ -221,12 +223,12 @@ class TypeInference(
         }
     }
 
-    private fun inferReference(reference: Reference) : ParserType {
+    private fun inferReference(reference: Reference) : Type {
         val referenceNodeId = reference.nodeId
         val definitionNodeId = refResolutions[referenceNodeId]
             ?: return UnknownType // TODO: throw
 
-        val type: ParserType = when (val symbol = symbolTable.getSymbol(definitionNodeId)) {
+        val type: Type = when (val symbol = symbolTable.getSymbol(definitionNodeId)) {
             is CallableSymbol -> {
                 val returnTypes = typeResolutions[definitionNodeId]
                     ?: throw DIRNotDefinedSymbolException(name = "nodeId#$definitionNodeId")
@@ -238,7 +240,7 @@ class TypeInference(
                 typeResolutions[referenceNodeId] = functionType
                 functionType
             }
-            is ClassSymbol -> ClassType(symbol.signature.qualifiedName.qualifiedName)
+            is ClassSymbol -> ClassType(symbol.signature.qualifiedName)
             is VariableSymbol -> typeResolutions[definitionNodeId] ?: symbol.signature.type
 
             else -> throw DIRUnexpectedExpressionException()
@@ -249,11 +251,11 @@ class TypeInference(
         return type
     }
 
-    private fun inferLiteral(literal: Literal) : ParserType {
+    private fun inferLiteral(literal: Literal) : Type {
         fun obj(primitive: ParserPrimitiveClass) =
             ObjectType(primitive)
 
-        val type: ParserType = when (literal.value) {
+        val type: Type = when (literal.value) {
             is NumericValue        -> {
                 val v = (literal.value as NumericValue).value
                 if (v >= Int.MIN_VALUE && v <= Int.MAX_VALUE)
@@ -278,7 +280,7 @@ class TypeInference(
         return type
     }
 
-    private fun inferUnary(unary: Unary) : ParserType {
+    private fun inferUnary(unary: Unary) : Type {
         val exprType = inferExpression(unary.expr)
 
         if (exprType is VoidType) {
@@ -288,11 +290,11 @@ class TypeInference(
         }
 
         val isNumericType = exprType is ObjectType &&
-                            exprType.className in numericClassNames
+                            exprType.isPrimitiveNumeric()
         val isBooleanType = exprType is ObjectType &&
-                            exprType.className == "Bool"
+                            exprType.isPrimitiveBool()
 
-        val type: ParserType = when (val operator = unary.operator) {
+        val type: Type = when (val operator = unary.operator) {
             "-" -> {
                 if (isNumericType) exprType
                 else throw DIRUnsupportedOperationException(
@@ -317,7 +319,7 @@ class TypeInference(
         return type
     }
 
-    private fun inferBinary(binary: Binary) : ParserType {
+    private fun inferBinary(binary: Binary) : Type {
         val leftType = inferExpression(binary.left)
         val rightType = inferExpression(binary.right)
 
@@ -340,7 +342,7 @@ class TypeInference(
                             leftType.isPrimitiveBool() &&
                             rightType.isPrimitiveBool()
 
-        val type: ParserType = when (binary.operator) {
+        val type: Type = when (binary.operator) {
             "+" -> {
                 if (isLeftString) {
                     leftType
@@ -367,7 +369,7 @@ class TypeInference(
 
             "<", "<=", ">", ">=" -> {
                 if (isNumericType) {
-                    ObjectType("Bool")
+                    ObjectType(ParserPrimitiveClass.Bool)
                 } else {
                     throw DIRUnsupportedOperationException(
                         operator = binary.operator,
@@ -387,7 +389,7 @@ class TypeInference(
                 }
             }
 
-            "==", "!=" -> ObjectType("Bool")
+            "==", "!=" -> ObjectType(ParserPrimitiveClass.Bool)
 
             ".." -> {
                 if (!isNumericType) {
@@ -397,8 +399,9 @@ class TypeInference(
                     )
                 }
 
-                ObjectType("InclusiveRange", mapOf(
-                    "limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
+                ObjectType(
+                    QualifiedName(module = ModuleReference.homemade, simpleName = "InclusiveRange"),
+                    mapOf("limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
             }
 
             "..<" -> {
@@ -409,8 +412,9 @@ class TypeInference(
                     )
                 }
 
-                ObjectType("ExclusiveRange", mapOf(
-                    "limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
+                ObjectType(
+                    QualifiedName(module = ModuleReference.homemade, simpleName = "ExclusiveRange"),
+                    mapOf("limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
             }
 
             else -> throw DIRUnsupportedOperationException(
@@ -423,10 +427,10 @@ class TypeInference(
         return type
     }
 
-    private fun inferConditional(conditional: Conditional) : ParserType {
+    private fun inferConditional(conditional: Conditional) : Type {
         val conditionType = inferExpression(conditional.condition)
 
-        if (conditionType !is ObjectType || conditionType.className != "Bool")
+        if (conditionType !is ObjectType || !conditionType.isPrimitiveBool())
             throw DIRUnexpectedTypeException()
 
         val thenType = inferStatement(conditional.thenBranch).lastType
@@ -435,7 +439,7 @@ class TypeInference(
             else NullType       // NOTE: if none else branch and condition equals FALSE,
                                 //  Null is implicitly returned
 
-        val type: ParserType = when {
+        val type: Type = when {
             thenType == elseType -> thenType
 
             thenType != NullType && elseType != NullType ->
@@ -455,7 +459,7 @@ class TypeInference(
         return type
     }
 
-    private fun inferAssign(assign: Assign) : ParserType {
+    private fun inferAssign(assign: Assign) : Type {
         val type = inferExpression(assign.value)
 
         typeResolutions[assign.nodeId] = type
@@ -464,16 +468,16 @@ class TypeInference(
                         //       the assign chaining 'x = y = value'
     }
 
-    private fun inferCall(call: Call) : ParserType {
+    private fun inferCall(call: Call) : Type {
         val callee = call.callee
 
 
-        fun handleVariable(callee: Reference): ParserType {
+        fun handleVariable(callee: Reference): Type {
             val defId = refResolutions[callee.nodeId]
                 ?: return UnknownType       // NOTE: if there isn't any ref, the structure
                                             //  isn't initialized (none ref linked to declaration)
 
-            val type: ParserType = when (val symbol = symbolTable.getSymbol(defId)) {
+            val type: Type = when (val symbol = symbolTable.getSymbol(defId)) {
                 is CallableSymbol -> {
                     symbol.signature.parameterTypes.zip(call.args).forEach { (param, arg) ->
                         val argExpr = arg.expr
@@ -485,7 +489,7 @@ class TypeInference(
                     typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
                 }
-                is ClassSymbol -> ObjectType(symbol.signature.qualifiedName.qualifiedName)
+                is ClassSymbol -> ObjectType(symbol.signature.qualifiedName)
                 is VariableSymbol -> {
                     val varType = typeResolutions[defId]
                         ?: throw DIRNotDefinedSymbolException(name = "nodeId#$defId")
@@ -505,7 +509,7 @@ class TypeInference(
             return type
         }
 
-        fun handleAccessor(callee: Get): ParserType {
+        fun handleAccessor(callee: Get): Type {
             val type = typeResolutions[callee.nodeId]
                 ?: throw DIRUnexpectedUnknownTypeException()
 
@@ -540,13 +544,13 @@ class TypeInference(
         }
     }
 
-    private fun inferGet(get: Get) : ParserType {
+    private fun inferGet(get: Get) : Type {
         val receiverType = inferExpression(get.receiver)
 
-        val type: ParserType = when (receiverType) {
+        val type: Type = when (receiverType) {
             is ObjectType -> {
-                val classId = symbolTable.lookupNodeId(receiverType.className)
-                    ?: throw DIRNotDefinedClassException(name = receiverType.className)
+                val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                    ?: throw DIRNotDefinedClassException(name = receiverType.qualifiedName.qualifiedName)
 
                 val classRef = symbolTable.getSymbol(classId) as ClassSymbol
 
@@ -560,8 +564,8 @@ class TypeInference(
                         name = "(instance of ${classRef.signature.qualifiedName}).${get.name}")
             }
             is ClassType -> {
-                val classId = symbolTable.lookupNodeId(receiverType.className)
-                    ?: throw DIRNotDefinedClassException(name = receiverType.className)
+                val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                    ?: throw DIRNotDefinedClassException(name = receiverType.qualifiedName.qualifiedName)
 
                 val classRef = symbolTable.getSymbol(classId) as ClassSymbol
 
@@ -583,13 +587,13 @@ class TypeInference(
         return type
     }
 
-    private fun inferSet(set: Set) : ParserType {
+    private fun inferSet(set: Set) : Type {
         val receiverType = inferExpression(set.receiver)
 
-        val type: ParserType = when (receiverType) {
+        val type: Type = when (receiverType) {
             is ObjectType -> {
-                val classId = symbolTable.lookupNodeId(receiverType.className)
-                    ?: throw DIRNotDefinedClassException(name = receiverType.className)
+                val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                    ?: throw DIRNotDefinedClassException(name = receiverType.qualifiedName.qualifiedName)
 
                 val classRef = symbolTable.getSymbol(classId) as ClassSymbol
 
@@ -604,8 +608,8 @@ class TypeInference(
                 type
             }
             is ClassType -> {
-                val classId = symbolTable.lookupNodeId(receiverType.className)
-                    ?: throw DIRNotDefinedClassException(name = receiverType.className)
+                val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                    ?: throw DIRNotDefinedClassException(name = receiverType.qualifiedName.qualifiedName)
 
                 val classRef = symbolTable.getSymbol(classId) as ClassSymbol
 
@@ -628,18 +632,18 @@ class TypeInference(
         return type
     }
 
-    private fun inferLambda(lambda: Lambda) : ParserType {
-        val type: ParserType
+    private fun inferLambda(lambda: Lambda) : Type {
+        val type: Type
 
         lambda.run {
             parameters.forEach { parameter ->
                 parameter.defaultValue?.let { defValue -> inferExpression(defValue) }
             }
 
-            val paramTypes = parameters.map { it.type }
+            val paramTypes = parameters.map { it.type.resolve(ModuleReference.unresolved, namespace) }
             val inferredBlock = inferBlock(body)
 
-            val returnType: ParserType = when (returnType) {
+            val resolvedReturnType: Type = when (val declaredReturnType = returnType) {
                 is AnyType -> {
                     val resolvedReturnTypes = inferredBlock
                         .resolvedReturnTypes
@@ -648,10 +652,10 @@ class TypeInference(
                 }
                 is LastType -> inferredBlock.lastType
 
-                else -> returnType
+                else -> declaredReturnType.resolve(ModuleReference.unresolved, namespace)
             }
 
-            type = FunctionType(paramTypes, returnType)
+            type = FunctionType(paramTypes, resolvedReturnType)
 
             typeResolutions[nodeId] = type
         }
@@ -659,8 +663,8 @@ class TypeInference(
         return type
     }
 
-    private fun inferArray(list: drift.ast.expressions.Array) : ParserType {
-        var firstType: ParserType = AnyType
+    private fun inferArray(list: drift.ast.expressions.Array) : Type {
+        var firstType: Type = AnyType
 
         if (list.values.isNotEmpty()) {
             firstType = inferExpression(list.values.first())
@@ -672,7 +676,9 @@ class TypeInference(
                 }
         }
 
-        val type = ArrayType(type = firstType)
+        val type = ObjectType(
+            ParserPrimitiveClass.Array,
+            args = mapOf("elementType" to SingleType(firstType)))
 
         typeResolutions[list.nodeId] = type
 
@@ -681,11 +687,11 @@ class TypeInference(
 
 
     private data class InferenceResult(
-        val resolvedReturnTypes: kotlin.collections.Set<ParserType> = emptySet(),
-        val lastType: ParserType = VoidType)
+        val resolvedReturnTypes: kotlin.collections.Set<Type> = emptySet(),
+        val lastType: Type = VoidType)
 
     data class TypeInferenceResult(
-        val typeResolutions: Map<NodeId, ParserType>) {
+        val typeResolutions: Map<NodeId, Type>) {
 
         companion object {
 

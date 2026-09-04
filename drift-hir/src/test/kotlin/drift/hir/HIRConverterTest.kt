@@ -26,6 +26,7 @@ import drift.types.*
 import drift.values.*
 import drift.values.primaries.*
 import drift.values.primaries.NullValue
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 import kotlin.test.*
@@ -33,12 +34,23 @@ import kotlin.test.*
 
 class HIRConverterTest {
 
+    /** Builds an [ObjectType] matching the real primitive identity when [name] is a primitive; otherwise a placeholder class reference. */
+    private fun objectType(name: String) : ObjectType {
+        val primitive = ParserPrimitiveClass.entries.find { it.className == name }
+
+        return if (primitive != null) ObjectType(primitive)
+        else ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = name))
+    }
+
+    /** Builds the [UnresolvedObjectType] a parser would have produced for [name], for use in AST-node (declared-type) positions. */
+    private fun unresolvedObjectType(name: String) : UnresolvedObjectType = UnresolvedObjectType(name)
+
     private fun createConverter(
         ast: List<ParserStatement>,
         namespace: Namespace = Namespace("test"),
         symbolTable: SymbolTable = SymbolTable(),
         refResolutions: Map<NodeId, NodeId> = emptyMap(),
-        typeResolution: Map<NodeId, ParserType> = emptyMap(),
+        typeResolution: Map<NodeId, Type> = emptyMap(),
         lambdaClosures: Map<NodeId, Map<String, NodeId>> = emptyMap()) : HIRConverter {
 
         HIRConverter.resetIds()
@@ -54,12 +66,12 @@ class HIRConverterTest {
 
     private fun SymbolTable.registerClass(
         name: String,
-        fields: LinkedHashMap<String, ParserType> = linkedMapOf()) {
+        fields: LinkedHashMap<String, Type> = linkedMapOf()) {
 
         addClass(
             nodeId = allocateSyntheticId(),
             signature = ClassSymbol.ClassSignature(
-                qualifiedName = QualifiedName(Namespace(), name),
+                qualifiedName = QualifiedName(module = ModuleReference.unresolved, namespace = Namespace(), simpleName = name),
                 constructorMethod = CallableSymbol(
                     CallableSymbol.CallableSignature(scopeType = TopLevelScope(Namespace()))),
                 fields = fields),
@@ -76,7 +88,7 @@ class HIRConverterTest {
         val literal = Literal(IntValue(42))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
-        val typeResolution = mapOf(literal.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(literal.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -96,7 +108,7 @@ class HIRConverterTest {
         val literal = Literal(StringValue("hello"))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
-        val typeResolution = mapOf(literal.nodeId to ObjectType("String"))
+        val typeResolution = mapOf(literal.nodeId to objectType("String"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -114,7 +126,7 @@ class HIRConverterTest {
         val literal = Literal(BoolValue(true))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
-        val typeResolution = mapOf(literal.nodeId to ObjectType("Bool"))
+        val typeResolution = mapOf(literal.nodeId to objectType("Bool"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -154,12 +166,14 @@ class HIRConverterTest {
         val initialValue = Literal(IntValue(10))
         val let = Let(
             name = "x",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
-        val typeResolution = mapOf(initialValue.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -181,7 +195,7 @@ class HIRConverterTest {
         val initialValue = Literal(IntValue(5))
         val let = Let(
             name = "y",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = true)
 
@@ -192,8 +206,9 @@ class HIRConverterTest {
         val ast = listOf(let, exprStmt)
         val refResolutions = mapOf(varRef.nodeId to let.nodeId)
         val typeResolution = mapOf(
-            initialValue.nodeId to ObjectType("Int"),
-            varRef.nodeId to ObjectType("Int")
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"),
+            varRef.nodeId to objectType("Int")
         )
 
         // When
@@ -223,9 +238,9 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            left.nodeId to ObjectType("Int"),
-            right.nodeId to ObjectType("Int"),
-            binary.nodeId to ObjectType("Int")
+            left.nodeId to objectType("Int"),
+            right.nodeId to objectType("Int"),
+            binary.nodeId to objectType("Int")
         )
 
         // When
@@ -249,9 +264,9 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            left.nodeId to ObjectType("Int"),
-            right.nodeId to ObjectType("Int"),
-            binary.nodeId to ObjectType("Int")
+            left.nodeId to objectType("Int"),
+            right.nodeId to objectType("Int"),
+            binary.nodeId to objectType("Int")
         )
 
         // When
@@ -272,9 +287,9 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            left.nodeId to ObjectType("Int"),
-            right.nodeId to ObjectType("Int"),
-            binary.nodeId to ObjectType("Bool")
+            left.nodeId to objectType("Int"),
+            right.nodeId to objectType("Int"),
+            binary.nodeId to objectType("Bool")
         )
 
         // When
@@ -296,9 +311,9 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(binary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            left.nodeId to ObjectType("Bool"),
-            right.nodeId to ObjectType("Bool"),
-            binary.nodeId to ObjectType("Bool")
+            left.nodeId to objectType("Bool"),
+            right.nodeId to objectType("Bool"),
+            binary.nodeId to objectType("Bool")
         )
 
         // When
@@ -322,8 +337,8 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(unary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            operand.nodeId to ObjectType("Int"),
-            unary.nodeId to ObjectType("Int")
+            operand.nodeId to objectType("Int"),
+            unary.nodeId to objectType("Int")
         )
 
         // When
@@ -343,8 +358,8 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(unary)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            operand.nodeId to ObjectType("Bool"),
-            unary.nodeId to ObjectType("Bool")
+            operand.nodeId to objectType("Bool"),
+            unary.nodeId to objectType("Bool")
         )
 
         // When
@@ -368,10 +383,12 @@ class HIRConverterTest {
             name = "getAnswer",
             parameters = emptyList(),
             body = Block(listOf(ExprStmt(returnExpr))),
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val ast = listOf(function)
-        val typeResolution = mapOf(returnExpr.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(
+            function.nodeId to objectType("Int"),
+            returnExpr.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -388,8 +405,8 @@ class HIRConverterTest {
     @Test
     fun `convert function with parameters`() {
         // Given
-        val param1 = FunctionParameter("a", isPositional = true, type = ObjectType("Int"))
-        val param2 = FunctionParameter("b", isPositional = true, type = ObjectType("Int"))
+        val param1 = FunctionParameter("a", isPositional = true, type = unresolvedObjectType("Int"))
+        val param2 = FunctionParameter("b", isPositional = true, type = unresolvedObjectType("Int"))
         val leftRef = Reference("a")
         val rightRef = Reference("b")
         val returnExpr = Binary(leftRef, "+", rightRef)
@@ -398,14 +415,14 @@ class HIRConverterTest {
             name = "add",
             parameters = listOf(param1, param2),
             body = Block(listOf(ExprStmt(returnExpr))),
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val ast = listOf(function)
         val refResolutions = mapOf(
             leftRef.nodeId to param1.nodeId,
             rightRef.nodeId to param2.nodeId
         )
-        val typeResolution = mapOf(returnExpr.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(returnExpr.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, refResolutions = refResolutions, typeResolution = typeResolution)
@@ -430,7 +447,7 @@ class HIRConverterTest {
         val thenBranch = ExprStmt(Literal(IntValue(1)))
         val ifStmt = If(condition, thenBranch, null)
         val ast = listOf(ifStmt)
-        val typeResolution = mapOf(condition.nodeId to ObjectType("Bool"))
+        val typeResolution = mapOf(condition.nodeId to objectType("Bool"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -451,7 +468,7 @@ class HIRConverterTest {
         val elseBranch = ExprStmt(Literal(IntValue(0)))
         val ifStmt = If(condition, thenBranch, elseBranch)
         val ast = listOf(ifStmt)
-        val typeResolution = mapOf(condition.nodeId to ObjectType("Bool"))
+        val typeResolution = mapOf(condition.nodeId to objectType("Bool"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -467,21 +484,24 @@ class HIRConverterTest {
         // Given
         val let1 = Let(
             name ="x",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(1)),
             isMutable = false)
 
         val let2 = Let(
             name ="y",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(2)),
             isMutable = false)
 
         val block = Block(listOf(let1, let2))
         val ast = listOf(block)
+        val typeResolution = mapOf(
+            let1.nodeId to objectType("Int"),
+            let2.nodeId to objectType("Int"))
 
         // When
-        val converter = createConverter(ast, typeResolution = emptyMap())
+        val converter = createConverter(ast, typeResolution = typeResolution)
         val hir = converter.convert()
 
         // Then
@@ -499,10 +519,10 @@ class HIRConverterTest {
     @Test
     fun `convert int type`() {
         // Given
-        val typeResolution = mapOf(0 to ObjectType("Int"))
+        val typeResolution = mapOf(0 to objectType("Int"))
 
         // When
-        val result = convertParserTypeToHIRType(ObjectType("Int"))
+        val result = convertTypeToHIRType(objectType("Int"))
 
         // Then
         assertEquals(HIRPrimitiveType(PrimitiveKind.INT), result)
@@ -511,7 +531,7 @@ class HIRConverterTest {
     @Test
     fun `convert string type`() {
         // When
-        val result = convertParserTypeToHIRType(ObjectType("String"))
+        val result = convertTypeToHIRType(objectType("String"))
 
         // Then
         assertEquals(HIRPrimitiveType(PrimitiveKind.STRING), result)
@@ -520,7 +540,7 @@ class HIRConverterTest {
     @Test
     fun `convert bool type`() {
         // When
-        val result = convertParserTypeToHIRType(ObjectType("Bool"))
+        val result = convertTypeToHIRType(objectType("Bool"))
 
         // Then
         assertEquals(HIRPrimitiveType(PrimitiveKind.BOOL), result)
@@ -529,7 +549,7 @@ class HIRConverterTest {
     @Test
     fun `convert optional type`() {
         // When
-        val result = convertParserTypeToHIRType(OptionalType(ObjectType("Int")))
+        val result = convertTypeToHIRType(OptionalType(objectType("Int")))
 
         // Then
         assertTrue(result is HIROptionalType)
@@ -539,7 +559,7 @@ class HIRConverterTest {
     @Test
     fun `convert union type`() {
         // When
-        val result = convertParserTypeToHIRType(UnionType(listOf(ObjectType("Int"), ObjectType("String"))))
+        val result = convertTypeToHIRType(UnionType(listOf(objectType("Int"), objectType("String"))))
 
         // Then
         assertTrue(result is HIRUnionType)
@@ -555,7 +575,7 @@ class HIRConverterTest {
         val initialValue = Literal(IntValue(0))
         val let = Let(
             name = "x",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = true)
 
@@ -568,14 +588,15 @@ class HIRConverterTest {
             nodeId = let.nodeId,
             name = "x",
             signature = VariableSignature(
-                type = ObjectType("Int"),
+                type = objectType("Int"),
                 isMutable = true,
                 scopeType = LocalScope))
 
         val refResolutions = mapOf(assign.nodeId to let.nodeId)
         val typeResolution = mapOf(
-            initialValue.nodeId to ObjectType("Int"),
-            assign.nodeId to ObjectType("Int"))
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"),
+            assign.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(
@@ -606,11 +627,11 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(mul)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            a.nodeId to ObjectType("Int"),
-            b.nodeId to ObjectType("Int"),
-            c.nodeId to ObjectType("Int"),
-            add.nodeId to ObjectType("Int"),
-            mul.nodeId to ObjectType("Int")
+            a.nodeId to objectType("Int"),
+            b.nodeId to objectType("Int"),
+            c.nodeId to objectType("Int"),
+            add.nodeId to objectType("Int"),
+            mul.nodeId to objectType("Int")
         )
 
         // When
@@ -628,26 +649,30 @@ class HIRConverterTest {
         // Given
         val let1 = Let(
             name = "a",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(10)),
             isMutable = false)
 
         val let2 = Let(
             name = "b",
-            type = ObjectType("String"),
+            type = unresolvedObjectType("String"),
             value = Literal(StringValue("hi")),
             isMutable = false)
 
         val let3 = Let(
             name = "c",
-            type = ObjectType("Bool"),
+            type = unresolvedObjectType("Bool"),
             value = Literal(BoolValue(true)),
             isMutable = false)
 
         val ast = listOf(let1, let2, let3)
+        val typeResolution = mapOf(
+            let1.nodeId to objectType("Int"),
+            let2.nodeId to objectType("String"),
+            let3.nodeId to objectType("Bool"))
 
         // When
-        val converter = createConverter(ast, typeResolution = emptyMap())
+        val converter = createConverter(ast, typeResolution = typeResolution)
         val hir = converter.convert()
 
         // Then
@@ -664,13 +689,13 @@ class HIRConverterTest {
         // Given
         val field1 = Let(
             name = "id",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(0)),
             isMutable = false)
 
         val field2 = Let(
             name = "name",
-            type = ObjectType("String"),
+            type = unresolvedObjectType("String"),
             value = Literal(StringValue("")),
             isMutable = false)
 
@@ -703,7 +728,7 @@ class HIRConverterTest {
             name = "getName",
             parameters = emptyList(),
             body = Block(listOf(ExprStmt(Literal(StringValue("test"))))),
-            returnType = ObjectType("String")
+            returnType = unresolvedObjectType("String")
         )
         val klass = Class(
             name = "Person",
@@ -730,7 +755,7 @@ class HIRConverterTest {
         // Given
         val staticField = Let(
             name = "count",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(0)),
             isMutable = false)
 
@@ -738,7 +763,7 @@ class HIRConverterTest {
             name = "getCount",
             parameters = emptyList(),
             body = Block(listOf(ExprStmt(Literal(IntValue(0))))),
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val klass = Class(
             name = "Counter",
@@ -769,7 +794,7 @@ class HIRConverterTest {
         // Given
         val itemsVar = Let(
             name = "items",
-            type = ObjectType("List"),
+            type = unresolvedObjectType("List"),
             value = Literal(IntValue(0)),
             isMutable = false)
         val iterable = Reference("items")
@@ -778,9 +803,10 @@ class HIRConverterTest {
         val forLoop = For(iterable, listOf(forVar), body)
         val ast = listOf(itemsVar, forLoop)
         val refResolutions = mapOf(iterable.nodeId to itemsVar.nodeId)
+        val typeResolution = mapOf(itemsVar.nodeId to objectType("List"))
 
         // When
-        val converter = createConverter(ast, refResolutions = refResolutions, typeResolution = emptyMap())
+        val converter = createConverter(ast, refResolutions = refResolutions, typeResolution = typeResolution)
         val hir = converter.convert()
 
         // Then
@@ -800,12 +826,12 @@ class HIRConverterTest {
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val exprStmt = ExprStmt(lambda)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            lambda.nodeId to ObjectType("Function")
+            lambda.nodeId to objectType("Function")
         )
         val lambdaClosures = mapOf(lambda.nodeId to emptyMap<String, NodeId>())
 
@@ -822,17 +848,17 @@ class HIRConverterTest {
     @Test
     fun `convert lambda with parameters`() {
         // Given
-        val param = FunctionParameter("x", isPositional = true, type = ObjectType("Int"))
+        val param = FunctionParameter("x", isPositional = true, type = unresolvedObjectType("Int"))
         val body = Block(listOf(ExprStmt(Literal(IntValue(0)))))
         val lambda = Lambda(
             parameters = listOf(param),
             body = body,
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val exprStmt = ExprStmt(lambda)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            lambda.nodeId to ObjectType("Function")
+            lambda.nodeId to objectType("Function")
         )
         val lambdaClosures = mapOf(lambda.nodeId to emptyMap<String, NodeId>())
 
@@ -851,7 +877,7 @@ class HIRConverterTest {
         // Given
         val letStmt = Let(
             name = "y",
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = Literal(IntValue(5)),
             isMutable = false)
 
@@ -860,15 +886,16 @@ class HIRConverterTest {
         val lambda = Lambda(
             parameters = emptyList(),
             body = body,
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val exprStmt = ExprStmt(lambda)
         val ast = listOf(letStmt, exprStmt)
         val refResolutions = mapOf(capturedRef.nodeId to letStmt.nodeId)
         val typeResolution = mapOf(
-            lambda.nodeId to ObjectType("Function"),
-            letStmt.value!!.nodeId to ObjectType("Int"),
-            capturedRef.nodeId to ObjectType("Int")
+            lambda.nodeId to objectType("Function"),
+            letStmt.nodeId to objectType("Int"),
+            letStmt.value!!.nodeId to objectType("Int"),
+            capturedRef.nodeId to objectType("Int")
         )
         val lambdaClosures = mapOf(lambda.nodeId to mapOf("y" to letStmt.nodeId))
 
@@ -897,7 +924,7 @@ class HIRConverterTest {
             name = "greet",
             parameters = emptyList(),
             body = Block(listOf(ExprStmt(Literal(StringValue("hi"))))),
-            returnType = ObjectType("String")
+            returnType = unresolvedObjectType("String")
         )
         val callee = Reference("greet")
         val call = Call(callee, emptyList())
@@ -905,8 +932,8 @@ class HIRConverterTest {
         val ast = listOf(greetFunc, exprStmt)
         val refResolutions = mapOf(callee.nodeId to greetFunc.nodeId)
         val typeResolution = mapOf(
-            callee.nodeId to ObjectType("Function"),
-            call.nodeId to ObjectType("String")
+            callee.nodeId to objectType("Function"),
+            call.nodeId to objectType("String")
         )
 
         // When
@@ -927,10 +954,10 @@ class HIRConverterTest {
         val addFunc = Func(
             name = "add",
             parameters = listOf(
-                FunctionParameter("a", isPositional = true, type = ObjectType("Int")),
-                FunctionParameter("b", isPositional = true, type = ObjectType("Int"))),
+                FunctionParameter("a", isPositional = true, type = unresolvedObjectType("Int")),
+                FunctionParameter("b", isPositional = true, type = unresolvedObjectType("Int"))),
             body = Block(listOf(ExprStmt(Literal(IntValue(0))))),
-            returnType = ObjectType("Int")
+            returnType = unresolvedObjectType("Int")
         )
         val callee = Reference("add")
         val arg1 = Argument(null, Literal(IntValue(1)))
@@ -940,10 +967,10 @@ class HIRConverterTest {
         val ast = listOf(addFunc, exprStmt)
         val refResolutions = mapOf(callee.nodeId to addFunc.nodeId)
         val typeResolution = mapOf(
-            callee.nodeId to ObjectType("Function"),
-            arg1.expr.nodeId to ObjectType("Int"),
-            arg2.expr.nodeId to ObjectType("Int"),
-            call.nodeId to ObjectType("Int")
+            callee.nodeId to objectType("Function"),
+            arg1.expr.nodeId to objectType("Int"),
+            arg2.expr.nodeId to objectType("Int"),
+            call.nodeId to objectType("Int")
         )
 
         // When
@@ -964,10 +991,10 @@ class HIRConverterTest {
         val createFunc = Func(
             name = "create",
             parameters = listOf(
-                FunctionParameter("name", type = ObjectType("String")),
-                FunctionParameter("age", type = ObjectType("Int"))),
+                FunctionParameter("name", type = unresolvedObjectType("String")),
+                FunctionParameter("age", type = unresolvedObjectType("Int"))),
             body = Block(listOf(ExprStmt(Literal(NullValue)))),
-            returnType = ObjectType("User")
+            returnType = unresolvedObjectType("User")
         )
         val callee = Reference("create")
         val arg1 = Argument("name", Literal(StringValue("Alice")))
@@ -977,10 +1004,10 @@ class HIRConverterTest {
         val ast = listOf(createFunc, exprStmt)
         val refResolutions = mapOf(callee.nodeId to createFunc.nodeId)
         val typeResolution = mapOf(
-            callee.nodeId to ObjectType("Function"),
-            arg1.expr.nodeId to ObjectType("String"),
-            arg2.expr.nodeId to ObjectType("Int"),
-            call.nodeId to ObjectType("User")
+            callee.nodeId to objectType("Function"),
+            arg1.expr.nodeId to objectType("String"),
+            arg2.expr.nodeId to objectType("Int"),
+            call.nodeId to objectType("User")
         )
 
         // When
@@ -1005,7 +1032,7 @@ class HIRConverterTest {
         // Given
         val userVar = Let(
             name = "user",
-            type = ObjectType("User"),
+            type = unresolvedObjectType("User"),
             value = Literal(NullValue),
             isMutable = false)
         val receiver = Reference("user")
@@ -1014,12 +1041,13 @@ class HIRConverterTest {
         val ast = listOf(userVar, exprStmt)
 
         val symbolTable = SymbolTable()
-        symbolTable.registerClass("User", linkedMapOf("name" to ObjectType("String")))
+        symbolTable.registerClass("User", linkedMapOf("name" to objectType("String")))
 
         val refResolutions = mapOf(receiver.nodeId to userVar.nodeId)
         val typeResolution = mapOf(
-            receiver.nodeId to ObjectType("User"),
-            get.nodeId to ObjectType("String")
+            userVar.nodeId to objectType("User"),
+            receiver.nodeId to objectType("User"),
+            get.nodeId to objectType("String")
         )
 
         // When
@@ -1041,7 +1069,7 @@ class HIRConverterTest {
         // Given
         val userVar = Let(
             name = "user",
-            type = ObjectType("User"),
+            type = unresolvedObjectType("User"),
             value = Literal(NullValue),
             isMutable = false)
         val receiver = Reference("user")
@@ -1050,12 +1078,13 @@ class HIRConverterTest {
         val ast = listOf(userVar, exprStmt)
 
         val symbolTable = SymbolTable()
-        symbolTable.registerClass("User", linkedMapOf("name" to ObjectType("String")))
+        symbolTable.registerClass("User", linkedMapOf("name" to objectType("String")))
 
         val refResolutions = mapOf(receiver.nodeId to userVar.nodeId)
         val typeResolution = mapOf(
-            receiver.nodeId to ObjectType("User"),
-            set.nodeId to ObjectType("String")
+            userVar.nodeId to objectType("User"),
+            receiver.nodeId to objectType("User"),
+            set.nodeId to objectType("String")
         )
 
         // When
@@ -1090,10 +1119,10 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(conditional)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            condition.nodeId to ObjectType("Bool"),
-            thenExpr.nodeId to ObjectType("Int"),
-            elseExpr.nodeId to ObjectType("Int"),
-            conditional.nodeId to ObjectType("Int")
+            condition.nodeId to objectType("Bool"),
+            thenExpr.nodeId to objectType("Int"),
+            elseExpr.nodeId to objectType("Int"),
+            conditional.nodeId to objectType("Int")
         )
 
         // When
@@ -1119,9 +1148,9 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(conditional)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            condition.nodeId to ObjectType("Bool"),
-            thenExpr.nodeId to ObjectType("Int"),
-            conditional.nodeId to ObjectType("Int")
+            condition.nodeId to objectType("Bool"),
+            thenExpr.nodeId to objectType("Int"),
+            conditional.nodeId to objectType("Int")
         )
 
         // When
@@ -1144,7 +1173,7 @@ class HIRConverterTest {
             name = "noop",
             parameters = emptyList(),
             body = Block.empty(),
-            returnType = ObjectType("Void")
+            returnType = unresolvedObjectType("Void")
         )
         val ast = listOf(function)
 
@@ -1202,13 +1231,13 @@ class HIRConverterTest {
         val exprStmt = ExprStmt(sub1)
         val ast = listOf(exprStmt)
         val typeResolution = mapOf(
-            a.nodeId to ObjectType("Int"),
-            b.nodeId to ObjectType("Int"),
-            c.nodeId to ObjectType("Int"),
-            d.nodeId to ObjectType("Int"),
-            add1.nodeId to ObjectType("Int"),
-            mul1.nodeId to ObjectType("Int"),
-            sub1.nodeId to ObjectType("Int")
+            a.nodeId to objectType("Int"),
+            b.nodeId to objectType("Int"),
+            c.nodeId to objectType("Int"),
+            d.nodeId to objectType("Int"),
+            add1.nodeId to objectType("Int"),
+            mul1.nodeId to objectType("Int"),
+            sub1.nodeId to objectType("Int")
         )
 
         // When
@@ -1227,7 +1256,7 @@ class HIRConverterTest {
         val literal = Literal(Int64Value(999999999L))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
-        val typeResolution = mapOf(literal.nodeId to ObjectType("Int64"))
+        val typeResolution = mapOf(literal.nodeId to objectType("Int64"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -1244,7 +1273,7 @@ class HIRConverterTest {
         val literal = Literal(UIntValue(42u))
         val exprStmt = ExprStmt(literal)
         val ast = listOf(exprStmt)
-        val typeResolution = mapOf(literal.nodeId to ObjectType("UInt"))
+        val typeResolution = mapOf(literal.nodeId to objectType("UInt"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -1374,12 +1403,14 @@ class HIRConverterTest {
         val let = Let(
             name = "x",
             annotations = mutableListOf(annotation),
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
-        val typeResolution = mapOf(initialValue.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -1404,14 +1435,15 @@ class HIRConverterTest {
         val let = Let(
             name = "x",
             annotations = mutableListOf(annotation),
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
         val typeResolution = mapOf(
-            initialValue.nodeId to ObjectType("Int"),
-            argExpr.nodeId to ObjectType("String")
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"),
+            argExpr.nodeId to objectType("String")
         )
 
         // When
@@ -1440,14 +1472,15 @@ class HIRConverterTest {
         val let = Let(
             name = "y",
             annotations = mutableListOf(annotation),
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
         val typeResolution = mapOf(
-            initialValue.nodeId to ObjectType("Int"),
-            argExpr.nodeId to ObjectType("String")
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"),
+            argExpr.nodeId to objectType("String")
         )
 
         // When
@@ -1469,12 +1502,14 @@ class HIRConverterTest {
         val let = Let(
             name = "z",
             annotations = mutableListOf(ann1, ann2),
-            type = ObjectType("Int"),
+            type = unresolvedObjectType("Int"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
-        val typeResolution = mapOf(initialValue.nodeId to ObjectType("Int"))
+        val typeResolution = mapOf(
+            let.nodeId to objectType("Int"),
+            initialValue.nodeId to objectType("Int"))
 
         // When
         val converter = createConverter(ast, typeResolution = typeResolution)
@@ -1496,7 +1531,7 @@ class HIRConverterTest {
             annotations = mutableListOf(annotation),
             parameters = emptyList(),
             body = Block.empty(),
-            returnType = ObjectType("Void")
+            returnType = unresolvedObjectType("Void")
         )
         val ast = listOf(function)
 
@@ -1517,7 +1552,7 @@ class HIRConverterTest {
             name = "noop",
             parameters = emptyList(),
             body = Block.empty(),
-            returnType = ObjectType("Void")
+            returnType = unresolvedObjectType("Void")
         )
         val ast = listOf(function)
 
@@ -1562,7 +1597,7 @@ class HIRConverterTest {
         val field = Let(
             name = "password",
             annotations = mutableListOf(annotation),
-            type = ObjectType("String"),
+            type = unresolvedObjectType("String"),
             value = Literal(StringValue("")),
             isMutable = false
         )
@@ -1604,15 +1639,16 @@ class HIRConverterTest {
         val let = Let(
             name = "flag",
             annotations = mutableListOf(annotation),
-            type = ObjectType("Bool"),
+            type = unresolvedObjectType("Bool"),
             value = initialValue,
             isMutable = false
         )
         val ast = listOf(let)
         val typeResolution = mapOf(
-            initialValue.nodeId to ObjectType("Bool"),
-            arg1.nodeId to ObjectType("String"),
-            arg2.nodeId to ObjectType("Int")
+            let.nodeId to objectType("Bool"),
+            initialValue.nodeId to objectType("Bool"),
+            arg1.nodeId to objectType("String"),
+            arg2.nodeId to objectType("Int")
         )
 
         // When

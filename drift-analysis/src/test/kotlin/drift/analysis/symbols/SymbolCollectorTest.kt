@@ -6,8 +6,12 @@ import drift.ast.statements.*
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.types.AnyType
 import drift.types.ObjectType
+import drift.types.UnresolvedObjectType
+import drift.types.resolve
+import drift.values.ParserPrimitiveClass
 import drift.values.primaries.IntValue
 import language.InjectedVariableUtils.injectedThis
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 import org.junit.jupiter.api.Assertions.*
@@ -21,7 +25,7 @@ class SymbolCollectorTest {
         SymbolCollector(Namespace(namespace), SymbolTable(), statements.toList()).collect()
 
     private fun qualifiedName(namespace: String, simpleName: String) =
-        QualifiedName(Namespace(namespace), simpleName).qualifiedName
+        QualifiedName(module = ModuleReference.unresolved, namespace = Namespace(namespace), simpleName = simpleName).qualifiedName
 
     private fun intLet(name: String, isMutable: Boolean = false) =
         Let(name = name, type = AnyType, value = Literal(IntValue(1)), isMutable = isMutable)
@@ -61,7 +65,7 @@ class SymbolCollectorTest {
         fun `Let with ObjectType annotation resolves to class when class is defined before`() {
             // Given
             val clazz = classWithInit("Foo")
-            val let = Let(name = "x", type = ObjectType("Foo"), isMutable = false)
+            val let = Let(name = "x", type = UnresolvedObjectType("Foo"), isMutable = false)
 
             // When
             val result = collect(statements = arrayOf(clazz, let))
@@ -73,7 +77,7 @@ class SymbolCollectorTest {
         @Test
         fun `Let with ObjectType annotation is not resolved when class is undefined`() {
             // Given
-            val let = Let(name = "x", type = ObjectType("Unknown"), value = Literal(IntValue(1)), isMutable = false)
+            val let = Let(name = "x", type = UnresolvedObjectType("Unknown"), value = Literal(IntValue(1)), isMutable = false)
 
             // When
             val result = collect(statements = arrayOf(let))
@@ -207,7 +211,7 @@ class SymbolCollectorTest {
         @Test
         fun `Class fields are included in the class signature`() {
             // Given
-            val field = Let(name = "x", type = ObjectType("Int"), isMutable = false)
+            val field = Let(name = "x", type = UnresolvedObjectType("Int"), isMutable = false)
             val clazz = classWithInit("Foo", fields = listOf(field))
 
             // When
@@ -215,7 +219,7 @@ class SymbolCollectorTest {
 
             // Then
             val symbol = result.symbolTable.getSymbol(clazz.nodeId) as ClassSymbol
-            assertEquals(ObjectType("Int"), symbol.signature.fields["x"])
+            assertEquals(ObjectType(ParserPrimitiveClass.Int), symbol.signature.fields["x"])
         }
 
         @Test
@@ -235,7 +239,7 @@ class SymbolCollectorTest {
         @Test
         fun `Class static fields are included in the class signature`() {
             // Given
-            val field = Let(name = "count", type = ObjectType("Int"), isMutable = false)
+            val field = Let(name = "count", type = UnresolvedObjectType("Int"), isMutable = false)
             val clazz = classWithInit("Foo", staticFields = listOf(field))
 
             // When
@@ -243,7 +247,7 @@ class SymbolCollectorTest {
 
             // Then
             val symbol = result.symbolTable.getSymbol(clazz.nodeId) as ClassSymbol
-            assertEquals(ObjectType("Int"), symbol.signature.staticFields["count"])
+            assertEquals(ObjectType(ParserPrimitiveClass.Int), symbol.signature.staticFields["count"])
         }
 
         @Test
@@ -352,7 +356,7 @@ class SymbolCollectorTest {
                 nodeId = let.nodeId,
                 name = let.name,
                 signature = VariableSymbol.VariableSignature(
-                    type = let.type,
+                    type = let.type.resolve(ModuleReference.unresolved, Namespace(importedNamespace)),
                     isMutable = let.isMutable,
                     scopeType = Symbol.TopLevelScope(Namespace(importedNamespace))))
             return st

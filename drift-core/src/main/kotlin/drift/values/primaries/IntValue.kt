@@ -9,10 +9,8 @@
 
 package drift.values.primaries
 
-import drift.types.ObjectType
 import drift.values.ObjectValue
 import drift.values.ParserPrimitiveClass
-import drift.types.ParserType
 
 
 /******************************************************************************

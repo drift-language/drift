@@ -35,15 +35,23 @@ import drift.ast.statements.*
 import drift.types.AnyType
 import drift.types.ClassType
 import drift.types.FunctionType
+import drift.types.LastType
 import drift.types.NullType
 import drift.types.ObjectType
 import drift.types.OptionalType
-import drift.types.ParserType
+import drift.types.Type
 import drift.types.UnionType
 import drift.types.UnknownType
+import drift.types.UnresolvedObjectType
+import drift.types.UnresolvedOptional
+import drift.types.UnresolvedType
+import drift.types.UnresolvedUnion
 import drift.types.VoidType
+import drift.types.resolve
+import drift.values.ParserPrimitiveClass
 import language.LangInfo.INJECTED_VAR_PREFIX
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.ModuleReference
 import language.Namespace
 
 
@@ -83,17 +91,20 @@ class SemanticChecker(
         let.annotations.forEach(this::checkAnnotation)
         checkType(let.type)
 
-        val letValue = let.value
+        val value = let.value
 
-        if (letValue != null) {
-            checkExpression(letValue)
+        if (value != null) {
+            val expectedType = resolutions.typeResolutions[let.nodeId]
+                ?: throw DTCTypeResolutionNotFoundException(value.nodeId)
+
+            checkExpression(value)
 
             val compatibleTypes = compareTypesInLiteralContext(
-                let.type,
-                letValue)
+                expectedType,
+                value)
 
             if (!compatibleTypes)
-                throw DTCUnexpectedTypeException(let.type)
+                throw DTCUnexpectedTypeException(let.type.asString())
         }
     }
     private fun checkClass(`class`: Class) {
@@ -115,11 +126,11 @@ class SemanticChecker(
 
             if (defaultValue != null) {
                 val paramDefaultValueCompatible = compareTypesInLiteralContext(
-                    expectedType = parameter.type,
+                    expectedType = parameter.type.resolve(ModuleReference.unresolved, namespace),
                     expression = defaultValue)
 
                 if (!paramDefaultValueCompatible)
-                    throw DTCUnexpectedTypeException(parameter.type)
+                    throw DTCUnexpectedTypeException(parameter.type.asString())
             }
         }
         function
@@ -140,12 +151,17 @@ class SemanticChecker(
         if (returnValue != null) {
             checkExpression(returnValue)
 
+            val declaredReturnType = funcCtx.returnType
+            val expectedType = resolutions.typeResolutions[funcCtx.nodeId]
+                ?: if (declaredReturnType is LastType) throw DTCTypeResolutionNotFoundException(funcCtx.nodeId)
+                   else declaredReturnType.resolve(ModuleReference.unresolved, namespace)
+
             val compatibleTypes = compareTypesInLiteralContext(
-                funcCtx.returnType,
+                expectedType,
                 returnValue)
 
             if (!compatibleTypes)
-                throw DTCUnexpectedTypeException(funcCtx.returnType)
+                throw DTCUnexpectedTypeException(expectedType.asString())
         }
     }
     private fun checkBlock(block: Block) = block.statements.forEach { checkStatement(it) }
@@ -161,8 +177,8 @@ class SemanticChecker(
         val iterableType = (resolutions.typeResolutions[iterable.nodeId]
             ?: throw DTCTypeResolutionNotFoundException(iterable.nodeId)) as? ObjectType
             ?: throw DTCUnsupportedIterationException()
-        val iterableClassId = symbolTable.lookupNodeId(iterableType.className)
-            ?: throw DTCClassNotFoundException(iterableType.className)
+        val iterableClassId = symbolTable.lookupNodeId(iterableType.qualifiedName.qualifiedName)
+            ?: throw DTCClassNotFoundException(iterableType.qualifiedName.qualifiedName)
         val iterableClass = symbolTable.getSymbol(iterableClassId) as ClassSymbol
 
         if (!iterableClass.signature.methods.containsKey("iterate"))
@@ -236,7 +252,7 @@ class SemanticChecker(
                     arg.expr)
 
                 if (!compatible)
-                    throw DTCUnexpectedTypeException(parameter.type)
+                    throw DTCUnexpectedTypeException(parameter.type.asString())
             }
 
 
@@ -257,7 +273,7 @@ class SemanticChecker(
                     arg.expr)
 
                 if (!compatible)
-                    throw DTCUnexpectedTypeException(parameter.type)
+                    throw DTCUnexpectedTypeException(parameter.type.asString())
             }
         }
 
@@ -282,8 +298,8 @@ class SemanticChecker(
 
             val methodSignature: CallableSignature = when (receiverType) {
                 is ObjectType -> {
-                    val classId = symbolTable.lookupNodeId(receiverType.className)
-                        ?: throw DTCClassNotFoundException(receiverType.className)
+                    val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                        ?: throw DTCClassNotFoundException(receiverType.qualifiedName.qualifiedName)
                     val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
                         ?: throw DTCUnexpectedCalleeException()
 
@@ -291,8 +307,8 @@ class SemanticChecker(
                         ?: throw DTCRefResolutionNotFoundException()
                 }
                 is ClassType -> {
-                    val classId = symbolTable.lookupNodeId(receiverType.className)
-                        ?: throw DTCClassNotFoundException(receiverType.className)
+                    val classId = symbolTable.lookupNodeId(receiverType.qualifiedName.qualifiedName)
+                        ?: throw DTCClassNotFoundException(receiverType.qualifiedName.qualifiedName)
                     val classSymbol = symbolTable.getSymbol(classId) as? ClassSymbol
                         ?: throw DTCUnexpectedCalleeException()
 
@@ -352,11 +368,11 @@ class SemanticChecker(
 
             if (defaultValue != null) {
                 val paramDefaultValueCompatible = compareTypesInLiteralContext(
-                    expectedType = parameter.type,
+                    expectedType = parameter.type.resolve(ModuleReference.unresolved, namespace),
                     expression = defaultValue)
 
                 if (!paramDefaultValueCompatible)
-                    throw DTCUnexpectedTypeException(parameter.type)
+                    throw DTCUnexpectedTypeException(parameter.type.asString())
             }
         }
         lambda
@@ -387,19 +403,19 @@ class SemanticChecker(
     /* TYPES */
 
     private fun compareTypesInLiteralContext(
-        expectedType: ParserType,
+        expectedType: Type,
         expression: ParserExpression) : Boolean {
 
         val resolvedType =
             if (expression is Literal) {
                 when (expression.value) {
                     is drift.values.primaries.NumericValue ->
-                        resolutions.typeResolutions[expression.nodeId] ?: ObjectType("Int")
-                    is drift.values.primaries.IntValue -> ObjectType("Int")
-                    is drift.values.primaries.Int64Value -> ObjectType("Int64")
-                    is drift.values.primaries.UIntValue -> ObjectType("UInt")
-                    is drift.values.primaries.BoolValue -> ObjectType("Bool")
-                    is drift.values.primaries.StringValue -> ObjectType("String")
+                        resolutions.typeResolutions[expression.nodeId] ?: ObjectType(ParserPrimitiveClass.Int)
+                    is drift.values.primaries.IntValue -> ObjectType(ParserPrimitiveClass.Int)
+                    is drift.values.primaries.Int64Value -> ObjectType(ParserPrimitiveClass.Int64)
+                    is drift.values.primaries.UIntValue -> ObjectType(ParserPrimitiveClass.UInt)
+                    is drift.values.primaries.BoolValue -> ObjectType(ParserPrimitiveClass.Bool)
+                    is drift.values.primaries.StringValue -> ObjectType(ParserPrimitiveClass.String)
                     is drift.values.primaries.NullValue -> NullType
                 }
             } else {
@@ -410,7 +426,7 @@ class SemanticChecker(
         return compareTypeStructures(expectedType, resolvedType)
     }
 
-    private fun compareTypeStructures(expectedType: ParserType, receivedType: ParserType): Boolean {
+    private fun compareTypeStructures(expectedType: Type, receivedType: Type): Boolean {
         return when (expectedType) {
             is OptionalType -> {
                 compareTypes(expectedType.inner, receivedType) ||
@@ -433,8 +449,8 @@ class SemanticChecker(
     }
 
     private fun compareTypes(
-        expectedType: ParserType,
-        receivedType: ParserType) : Boolean {
+        expectedType: Type,
+        receivedType: Type) : Boolean {
 
         if (receivedType is UnknownType)
             return true
@@ -443,7 +459,7 @@ class SemanticChecker(
             is AnyType -> true
             is ObjectType -> {
                 receivedType is ObjectType &&
-                expectedType.className == receivedType.className &&
+                expectedType.qualifiedName == receivedType.qualifiedName &&
                 expectedType.args == receivedType.args
             }
             is NullType -> {
@@ -459,7 +475,7 @@ class SemanticChecker(
             }
             is ClassType -> {
                 receivedType is ClassType &&
-                expectedType.className == receivedType.className &&
+                expectedType.qualifiedName == receivedType.qualifiedName &&
                 expectedType.generics == receivedType.generics
             }
 
@@ -467,12 +483,17 @@ class SemanticChecker(
         }
     }
 
-    private fun checkType(type: ParserType) {
+    private fun checkType(type: UnresolvedType) {
         when (type) {
-            is OptionalType -> checkType(type.inner)
-            is UnionType -> type.options.forEach { checkType(it) }
-            is ObjectType -> if (!symbolTable.hasClass("$namespace$NAMESPACE_SEPARATOR${type.className}")) {
-                throw DTCClassNotFoundException(type.className)
+            is UnresolvedOptional -> checkType(type.inner)
+            is UnresolvedUnion -> type.options.forEach { checkType(it) }
+            is UnresolvedObjectType -> {
+                val isKnownPrimitive = ParserPrimitiveClass.entries
+                    .any { it.className == type.name }
+
+                if (!isKnownPrimitive && !symbolTable.hasClass("$namespace$NAMESPACE_SEPARATOR${type.name}")) {
+                    throw DTCClassNotFoundException(type.name)
+                }
             }
 
             else -> { /* No check needed. */ }

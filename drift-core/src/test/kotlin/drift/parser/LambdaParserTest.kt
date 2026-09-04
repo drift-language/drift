@@ -6,7 +6,7 @@ import drift.ast.statements.Let
 import drift.lexer.lex
 import drift.parser.exceptions.DPParameterAlreadyDefinedException
 import drift.types.AnyType
-import drift.types.ObjectType
+import drift.types.UnresolvedObjectType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -42,7 +42,7 @@ class LambdaParserTest {
         @Test
         fun `lambda parameter with type`() {
             val lambda = parseLambdaFromLet("let f = (x: Int) -> {}")
-            assertEquals(ObjectType("Int"), lambda.parameters[0].type)
+            assertEquals(UnresolvedObjectType("Int"), lambda.parameters[0].type)
         }
 
         @Test
@@ -78,7 +78,7 @@ class LambdaParserTest {
         @Test
         fun `lambda with explicit return type`() {
             val lambda = parseLambdaFromLet("let f = (): Int -> {}")
-            assertEquals(ObjectType("Int"), lambda.returnType)
+            assertEquals(UnresolvedObjectType("Int"), lambda.returnType)
         }
     }
 }

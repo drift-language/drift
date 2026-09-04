@@ -10,7 +10,8 @@ package drift.analysis.inference
 
 import drift.analysis.exceptions.DIRUnexpectedTypeException
 import drift.types.ObjectType
-import drift.types.ParserType
+import drift.types.Type
+import drift.values.ParserPrimitiveClass
 import kotlin.math.max
 
 
@@ -22,6 +23,12 @@ enum class NumericRank(val rank: Int, val className: String) {
     Int(1, "Int"),
     UInt(2, "UInt"),
     Int64(3, "Int64");
+
+    fun toPrimitiveClass() : ParserPrimitiveClass = when (this) {
+        Int -> ParserPrimitiveClass.Int
+        UInt -> ParserPrimitiveClass.UInt
+        Int64 -> ParserPrimitiveClass.Int64
+    }
 
     companion object {
         fun from(expression: String) : NumericRank? {
@@ -46,26 +53,22 @@ enum class NumericRank(val rank: Int, val className: String) {
     }
 }
 
-val numericClassNames = listOf<String>(
-    "Int", "UInt", "Int64",
-)
-
-fun promoteNumericTypes(left: ParserType, right: ParserType) : ParserType {
+fun promoteNumericTypes(left: Type, right: Type) : Type {
     val leftClass =
-        if (left is ObjectType) left.className
+        if (left is ObjectType) left.qualifiedName
         else throw DIRUnexpectedTypeException()
     val rightClass =
-        if (right is ObjectType) right.className
+        if (right is ObjectType) right.qualifiedName
         else throw DIRUnexpectedTypeException()
 
-    val leftNumericRank = NumericRank.from(leftClass)
+    val leftNumericRank = NumericRank.from(leftClass.simpleName)
         ?: throw DIRUnexpectedTypeException()
-    val rightNumericRank = NumericRank.from(rightClass)
+    val rightNumericRank = NumericRank.from(rightClass.simpleName)
         ?: throw DIRUnexpectedTypeException()
 
     val maxRank = NumericRank.from(
         max(leftNumericRank.rank, rightNumericRank.rank))
         ?: throw DIRUnexpectedTypeException()
 
-    return ObjectType(maxRank.className)
+    return ObjectType(maxRank.toPrimitiveClass())
 }

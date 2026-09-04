@@ -18,6 +18,7 @@ import drift.analysis.symbols.Symbol.TopLevelScope
 import drift.analysis.symbols.VariableSymbol.VariableSignature
 import drift.ast.NodeId
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 
@@ -159,7 +160,10 @@ data class SymbolTable(
             }
 
             is TopLevelScope -> addBinding(
-                qualifiedName = QualifiedName(scope.namespace, name),
+                qualifiedName = QualifiedName(
+                    module = ModuleReference.unresolved,
+                    namespace = scope.namespace,
+                    simpleName = name),
                 nodeId = nodeId)
         }
     }
@@ -190,7 +194,10 @@ data class SymbolTable(
             }
 
             is TopLevelScope -> addBinding(
-                qualifiedName = QualifiedName(scope.namespace, name),
+                qualifiedName = QualifiedName(
+                    module = ModuleReference.unresolved,
+                    namespace = scope.namespace,
+                    simpleName = name),
                 nodeId = nodeId)
         }
     }

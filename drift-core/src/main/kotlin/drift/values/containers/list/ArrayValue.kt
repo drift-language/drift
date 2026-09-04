@@ -10,7 +10,7 @@
 package drift.values.containers.list
 
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.Type
 import drift.values.Value
 import drift.types.ObjectType
 import drift.types.SingleType
@@ -53,10 +53,10 @@ data class ArrayValue(
 
 
     @Deprecated("To delete with old interpreter")
-    override fun type(): ParserType {
+    override fun type(): Type {
         val types = items.map { it.type() }.toSet()
 
-        val type: ParserType = when {
+        val type: Type = when {
             types.isEmpty() -> AnyType
             types.size == 1 -> types.first()
 

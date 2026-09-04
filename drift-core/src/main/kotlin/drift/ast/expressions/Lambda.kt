@@ -13,7 +13,7 @@ import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.statements.Block
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 
 /******************************************************************************
@@ -36,6 +36,6 @@ import drift.types.ParserType
 data class Lambda(
     override val parameters: List<FunctionParameter> = emptyList(),
     override val body: Block = Block.empty(),
-    override val returnType: ParserType = AnyType)
+    override val returnType: UnresolvedType = AnyType)
     : ParserExpression(),
     ParserReturnable

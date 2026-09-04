@@ -9,6 +9,7 @@
 
 package drift.hir
 
+import language.ModuleReference
 import language.QualifiedName
 import kotlin.test.*
 
@@ -47,16 +48,16 @@ class HIRTypeTest {
 
     @Test
     fun `create class type`() {
-        val userType = HIRClassType(QualifiedName(simpleName = "User"))
-        assertEquals(QualifiedName(simpleName = "User"), userType.qualifiedName)
+        val userType = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "User"))
+        assertEquals(QualifiedName(module = ModuleReference.unresolved, simpleName = "User"), userType.qualifiedName)
         assertEquals(emptyMap(), userType.typeArguments)
     }
 
     @Test
     fun `create generic class type`() {
         val intType = HIRPrimitiveType(PrimitiveKind.INT)
-        val listIntType = HIRClassType(QualifiedName(simpleName = "List"), mapOf("elementType" to intType))
-        assertEquals(QualifiedName(simpleName = "List"), listIntType.qualifiedName)
+        val listIntType = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "List"), mapOf("elementType" to intType))
+        assertEquals(QualifiedName(module = ModuleReference.unresolved, simpleName = "List"), listIntType.qualifiedName)
         assertEquals(1, listIntType.typeArguments.size)
         assertTrue(listIntType.typeArguments.containsKey("elementType"))
     }
@@ -131,15 +132,15 @@ class HIRTypeTest {
 
     @Test
     fun `type equality for classes`() {
-        val user1 = HIRClassType(QualifiedName(simpleName = "User"))
-        val user2 = HIRClassType(QualifiedName(simpleName = "User"))
+        val user1 = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "User"))
+        val user2 = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "User"))
         assertEquals(user1, user2)
     }
 
     @Test
     fun `type inequality for different classes`() {
-        val user = HIRClassType(QualifiedName(simpleName = "User"))
-        val admin = HIRClassType(QualifiedName(simpleName = "Admin"))
+        val user = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "User"))
+        val admin = HIRClassType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Admin"))
         assertNotEquals(user, admin)
     }
 

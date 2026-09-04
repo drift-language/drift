@@ -9,7 +9,7 @@
 
 package drift.values
 
-import drift.types.ParserType
+import drift.types.Type
 
 
 /******************************************************************************
@@ -30,5 +30,5 @@ interface Value {
     fun asString() : String
 
     @Deprecated("To delete with old interpreter")
-    fun type() : ParserType
+    fun type() : Type
 }

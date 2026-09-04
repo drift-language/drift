@@ -25,6 +25,7 @@ import drift.types.*
 import drift.values.*
 import drift.values.primaries.*
 import drift.values.primaries.NullValue
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,15 +37,32 @@ import kotlin.collections.mapOf
 
 class TypeInferenceTest {
 
-    private val intOT = ObjectType(ParserPrimitiveClass.Int.className)
-    private val int64OT = ObjectType(ParserPrimitiveClass.Int64.className)
-    private val boolOT = ObjectType(ParserPrimitiveClass.Bool.className)
-    private val stringOT = ObjectType(ParserPrimitiveClass.String.className)
+    private val intOT = ObjectType(ParserPrimitiveClass.Int)
+    private val int64OT = ObjectType(ParserPrimitiveClass.Int64)
+    private val boolOT = ObjectType(ParserPrimitiveClass.Bool)
+    private val stringOT = ObjectType(ParserPrimitiveClass.String)
 
     private val intSample = Literal(IntValue(1))
     private val int64Sample = Literal(Int64Value(2L))
     private val stringSample = Literal(StringValue("Hello, Drift!"))
     private val boolSample = Literal(BoolValue(true))
+
+    /** Rebuilds a resolved fixture [Type] as the [UnresolvedType] a parser would have produced for it, for use in AST-node (declared-type) positions. */
+    private fun Type.toUnresolved() : UnresolvedType = when (this) {
+        NullType -> NullType
+        VoidType -> VoidType
+        AnyType -> AnyType
+        UnknownType -> error("UnknownType has no unresolved counterpart")
+        is ObjectType -> UnresolvedObjectType(qualifiedName.simpleName)
+        is ClassType -> error("ClassType has no unresolved counterpart")
+        is FunctionType -> error("FunctionType has no unresolved counterpart")
+        is OptionalType -> UnresolvedOptional(inner.toUnresolved())
+        is UnionType -> UnresolvedUnion(options.map { it.toUnresolved() })
+    }
+
+    /** What a bare [name] annotation resolves to under the "test" namespace (no real module system wired up yet, so it never matches a real primitive's Homemade identity). */
+    private fun resolvedInTestNamespace(name: String) : Type =
+        UnresolvedObjectType(name).resolve(ModuleReference.unresolved, Namespace("test"))
 
 
     @Nested
@@ -61,12 +79,12 @@ class TypeInferenceTest {
                 ExprStmt(literal)
             )
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[literal.nodeId],
-                ObjectType(ParserPrimitiveClass.Int.className))
+                ObjectType(ParserPrimitiveClass.Int))
         }
 
         @Test
@@ -76,12 +94,12 @@ class TypeInferenceTest {
                 ExprStmt(literal)
             )
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[literal.nodeId],
-                ObjectType(ParserPrimitiveClass.Int64.className))
+                ObjectType(ParserPrimitiveClass.Int64))
         }
 
         @Test
@@ -91,12 +109,12 @@ class TypeInferenceTest {
                 ExprStmt(literal)
             )
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[literal.nodeId],
-                ObjectType(ParserPrimitiveClass.UInt.className))
+                ObjectType(ParserPrimitiveClass.UInt))
         }
 
         @Test
@@ -106,12 +124,12 @@ class TypeInferenceTest {
                 ExprStmt(literal)
             )
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[literal.nodeId],
-                ObjectType(ParserPrimitiveClass.String.className))
+                ObjectType(ParserPrimitiveClass.String))
         }
 
         @Test
@@ -121,12 +139,12 @@ class TypeInferenceTest {
                 ExprStmt(literal)
             )
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[literal.nodeId],
-                ObjectType(ParserPrimitiveClass.Bool.className))
+                ObjectType(ParserPrimitiveClass.Bool))
         }
     }
 
@@ -142,11 +160,11 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(array))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
-                ArrayType(type = AnyType),
+                ObjectType(ParserPrimitiveClass.Array, args = mapOf("elementType" to SingleType(AnyType))),
                 inference.typeResolutions[array.nodeId])
         }
 
@@ -158,11 +176,11 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(array))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
-                ArrayType(type = stringOT),
+                ObjectType(ParserPrimitiveClass.Array, args = mapOf("elementType" to SingleType(stringOT))),
                 inference.typeResolutions[array.nodeId])
         }
 
@@ -175,7 +193,7 @@ class TypeInferenceTest {
             val ast = listOf<ParserStatement>(ExprStmt(array))
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -198,30 +216,30 @@ class TypeInferenceTest {
 
             val ast: List<ParserStatement> = listOf(let)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[let.nodeId],
-                ObjectType(ParserPrimitiveClass.Int.className))
+                ObjectType(ParserPrimitiveClass.Int))
         }
 
         @Test
         fun `Let with explicit typing should keep its type`() {
             val let = Let(
                 name = "foo",
-                type = ObjectType(ParserPrimitiveClass.String.className),
+                type = UnresolvedObjectType("String"),
                 value = Literal(StringValue("Hello, Drift!")),
                 isMutable = true)
 
             val ast: List<ParserStatement> = listOf(let)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
                 inference.typeResolutions[let.nodeId],
-                ObjectType(ParserPrimitiveClass.String.className))
+                resolvedInTestNamespace("String"))
         }
     }
 
@@ -246,7 +264,7 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(function)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -270,12 +288,12 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(function)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     inference.typeResolutions[function.nodeId],
-                    ObjectType(ParserPrimitiveClass.Int.className))
+                    ObjectType(ParserPrimitiveClass.Int))
             }
 
             @Test
@@ -304,13 +322,13 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(function)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     UnionType(listOf(
-                        ObjectType(ParserPrimitiveClass.Int.className),
-                        ObjectType(ParserPrimitiveClass.String.className))),
+                        ObjectType(ParserPrimitiveClass.Int),
+                        ObjectType(ParserPrimitiveClass.String))),
                     inference.typeResolutions[function.nodeId])
             }
 
@@ -325,18 +343,18 @@ class TypeInferenceTest {
                  */
                 val function = Func(
                     name = "foo",
-                    returnType = ObjectType(ParserPrimitiveClass.Int.className),
+                    returnType = UnresolvedObjectType("Int"),
                     body = Block(listOf(
                         Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(function)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     inference.typeResolutions[function.nodeId],
-                    ObjectType(ParserPrimitiveClass.Int.className))
+                    resolvedInTestNamespace("Int"))
             }
         }
 
@@ -358,7 +376,7 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -381,12 +399,12 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     FunctionType(
-                        returnType = ObjectType(ParserPrimitiveClass.Int.className)),
+                        returnType = ObjectType(ParserPrimitiveClass.Int)),
                     inference.typeResolutions[lambda.nodeId])
             }
 
@@ -415,12 +433,12 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 val unionType = UnionType(listOf(
-                    ObjectType(ParserPrimitiveClass.Int.className),
-                    ObjectType(ParserPrimitiveClass.String.className)))
+                    ObjectType(ParserPrimitiveClass.Int),
+                    ObjectType(ParserPrimitiveClass.String)))
 
                 assertEquals(
                     FunctionType(returnType = unionType),
@@ -437,18 +455,18 @@ class TypeInferenceTest {
                  * ```
                  */
                 val lambda = Lambda(
-                    returnType = ObjectType(ParserPrimitiveClass.Int.className),
+                    returnType = UnresolvedObjectType("Int"),
                     body = Block(listOf(
                         Return(Literal(IntValue(42))))))
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
                     FunctionType(
-                        returnType = ObjectType(ParserPrimitiveClass.Int.className)),
+                        returnType = resolvedInTestNamespace("Int")),
                     inference.typeResolutions[lambda.nodeId])
             }
 
@@ -471,11 +489,11 @@ class TypeInferenceTest {
 
                 val ast: List<ParserStatement> = listOf(ExprStmt(lambda))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                        FunctionType(returnType = ObjectType(ParserPrimitiveClass.String.className)),
+                        FunctionType(returnType = ObjectType(ParserPrimitiveClass.String)),
                         inference.typeResolutions[lambda.nodeId])
             }
         }
@@ -491,7 +509,7 @@ class TypeInferenceTest {
             fun `Function returning explicitly an integer should return ObjectType(Int)`() {
                 val function = Func(
                     name = "foo",
-                    returnType = ObjectType(ParserPrimitiveClass.Int.className))
+                    returnType = UnresolvedObjectType("Int"))
                 val reference = Reference(name = function.name)
                 val call = Call(callee = reference)
                 val ast: List<ParserStatement> = listOf(function, ExprStmt(call))
@@ -504,11 +522,11 @@ class TypeInferenceTest {
                     function.nodeId to symbol))
                 val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                    ObjectType(ParserPrimitiveClass.Int.className),
+                    resolvedInTestNamespace("Int"),
                     inference.typeResolutions[call.nodeId])
             }
 
@@ -527,7 +545,7 @@ class TypeInferenceTest {
                     mutableMapOf(function.nodeId to symbol))
                 val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -537,10 +555,9 @@ class TypeInferenceTest {
 
             @Test
             fun `Variable referring to function structure should return FunctionType`() {
-                val returnType = ObjectType(ParserPrimitiveClass.Int.className)
                 val function = Func(
                     name = "foo",
-                    returnType = returnType)
+                    returnType = UnresolvedObjectType("Int"))
                 val reference = Reference(name = function.name)
                 val call = Call(callee = reference)
                 val ast: List<ParserStatement> = listOf(function, ExprStmt(call))
@@ -553,11 +570,11 @@ class TypeInferenceTest {
                     mutableMapOf(function.nodeId to symbol))
                 val refResolutions = mapOf(reference.nodeId to function.nodeId)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                    FunctionType(returnType = returnType),
+                    FunctionType(returnType = resolvedInTestNamespace("Int")),
                     inference.typeResolutions[reference.nodeId])
             }
         }
@@ -579,7 +596,8 @@ class TypeInferenceTest {
                 val classSymbol = ClassSymbol(
                     signature = ClassSymbol.ClassSignature(
                         qualifiedName = QualifiedName(
-                            Namespace(),
+                            module = ModuleReference.unresolved,
+                            namespace = Namespace(),
                             simpleName = clazz.name),
                         constructorMethod = initSymbol),
                     hasPrimaryConstructor = false)
@@ -588,11 +606,11 @@ class TypeInferenceTest {
                     clazz.nodeId to classSymbol))
                 val refResolutions = mapOf(reference.nodeId to clazz.nodeId)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                    ObjectType(clazz.name),
+                    ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = clazz.name)),
                     inference.typeResolutions[call.nodeId])
             }
         }
@@ -604,7 +622,8 @@ class TypeInferenceTest {
             fun `Method call should return method return type`() {
                 val clazz = Class(name = "A")
                 val classQualifiedName = QualifiedName(
-                    Namespace(),
+                    module = ModuleReference.unresolved,
+                    namespace = Namespace(),
                     simpleName = clazz.name)
                 val signature = ClassSymbol.ClassSignature(
                     qualifiedName = classQualifiedName,
@@ -632,7 +651,7 @@ class TypeInferenceTest {
 
                 val ast = listOf<ParserStatement>(ExprStmt(outerCall))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
                 assertEquals(intOT, inference.typeResolutions[outerCall.nodeId])
             }
@@ -641,7 +660,8 @@ class TypeInferenceTest {
             fun `Method call on field (non-callable) should throw`() {
                 val clazz = Class(name = "A")
                 val classQualifiedName = QualifiedName(
-                    Namespace(),
+                    module = ModuleReference.unresolved,
+                    namespace = Namespace(),
                     simpleName = clazz.name)
                 val signature = ClassSymbol.ClassSignature(
                     qualifiedName = classQualifiedName,
@@ -666,7 +686,7 @@ class TypeInferenceTest {
                 val ast = listOf<ParserStatement>(ExprStmt(outerCall))
 
                 assertThrows<DIRUnexpectedTypeException> {
-                    TypeInference(ast, symbolTable, refResolutions).infer()
+                    TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
                 }
             }
         }
@@ -678,7 +698,7 @@ class TypeInferenceTest {
             fun `Call on variable storing a callable should return callable return type`() {
                 val function = Func(
                     name = "foo",
-                    returnType = intOT)
+                    returnType = UnresolvedObjectType("Int"))
                 val callVar = Reference(
                     name = "callVar")
                 val letVar = Reference(
@@ -709,11 +729,11 @@ class TypeInferenceTest {
                     letVar.nodeId to function.nodeId,
                     callVar.nodeId to let.nodeId)
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                    intOT,
+                    resolvedInTestNamespace("Int"),
                     inference.typeResolutions[call.nodeId])
             }
 
@@ -742,7 +762,7 @@ class TypeInferenceTest {
                     letVar.nodeId to let.nodeId)
 
                 assertThrows<DIRUnexpectedExpressionException> {
-                    TypeInference(ast, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -766,11 +786,11 @@ class TypeInferenceTest {
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
-                ObjectType(ParserPrimitiveClass.Int.className),
+                ObjectType(ParserPrimitiveClass.Int),
                 inference.typeResolutions[unary.nodeId])
         }
 
@@ -783,7 +803,7 @@ class TypeInferenceTest {
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
             assertThrows<DIRUnsupportedOperationException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -796,11 +816,11 @@ class TypeInferenceTest {
 
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
-                ObjectType(ParserPrimitiveClass.Bool.className),
+                ObjectType(ParserPrimitiveClass.Bool),
                 inference.typeResolutions[unary.nodeId])
         }
 
@@ -813,7 +833,7 @@ class TypeInferenceTest {
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
             assertThrows<DIRUnsupportedOperationException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -827,7 +847,7 @@ class TypeInferenceTest {
             val ast: List<ParserStatement> = listOf(ExprStmt(unary))
 
             assertThrows<DIRUnsupportedOperationException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -860,7 +880,7 @@ class TypeInferenceTest {
             val ast = listOf<ParserStatement>(ExprStmt(binary))
 
             assertThrows<DIRUnsupportedOperationException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -878,11 +898,11 @@ class TypeInferenceTest {
 
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
-                    ObjectType(ParserPrimitiveClass.String.className),
+                    ObjectType(ParserPrimitiveClass.String),
                     inference.typeResolutions[binary.nodeId])
             }
 
@@ -895,7 +915,7 @@ class TypeInferenceTest {
 
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -913,7 +933,7 @@ class TypeInferenceTest {
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
                 assertThrows<DIRUnsupportedOperationException> {
-                    TypeInference(ast, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -939,16 +959,16 @@ class TypeInferenceTest {
                 val divAst = listOf<ParserStatement>(ExprStmt(divBinary))
                 val modAst = listOf<ParserStatement>(ExprStmt(modBinary))
                 
-                val subInf = TypeInference(subAst, symbolTable, refResolutions)
+                val subInf = TypeInference(Namespace("test"), subAst, symbolTable, refResolutions)
                     .infer()
 
-                val mulInf = TypeInference(mulAst, symbolTable, refResolutions)
+                val mulInf = TypeInference(Namespace("test"), mulAst, symbolTable, refResolutions)
                     .infer()
 
-                val divInf = TypeInference(divAst, symbolTable, refResolutions)
+                val divInf = TypeInference(Namespace("test"), divAst, symbolTable, refResolutions)
                     .infer()
 
-                val modInf = TypeInference(modAst, symbolTable, refResolutions)
+                val modInf = TypeInference(Namespace("test"), modAst, symbolTable, refResolutions)
                     .infer()
                 
                 assertEquals(
@@ -1000,28 +1020,28 @@ class TypeInferenceTest {
                 assertThrows<DIRUnsupportedOperationException>(
                     "Substraction with unsupported type should throw") {
 
-                    TypeInference(subAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), subAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     "Multiplication with unsupported type should throw") {
 
-                    TypeInference(mulAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), mulAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     "Division with unsupported type should throw") {
 
-                    TypeInference(divAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), divAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     "Modulo with unsupported type should throw") {
 
-                    TypeInference(modAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), modAst, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -1049,16 +1069,16 @@ class TypeInferenceTest {
                 val gtAst = listOf<ParserStatement>(ExprStmt(gtBinary))
                 val goeAst = listOf<ParserStatement>(ExprStmt(goeBinary))
 
-                val ltInf = TypeInference(ltAst, symbolTable, refResolutions)
+                val ltInf = TypeInference(Namespace("test"), ltAst, symbolTable, refResolutions)
                     .infer()
 
-                val loeInf = TypeInference(loeAst, symbolTable, refResolutions)
+                val loeInf = TypeInference(Namespace("test"), loeAst, symbolTable, refResolutions)
                     .infer()
 
-                val gtInf = TypeInference(gtAst, symbolTable, refResolutions)
+                val gtInf = TypeInference(Namespace("test"), gtAst, symbolTable, refResolutions)
                     .infer()
 
-                val goeInf = TypeInference(goeAst, symbolTable, refResolutions)
+                val goeInf = TypeInference(Namespace("test"), goeAst, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -1112,28 +1132,28 @@ class TypeInferenceTest {
                 assertThrows<DIRUnsupportedOperationException>(
                     errorMsg) {
 
-                    TypeInference(ltAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), ltAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     errorMsg) {
 
-                    TypeInference(loeAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), loeAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     errorMsg) {
 
-                    TypeInference(gtAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), gtAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     errorMsg) {
 
-                    TypeInference(goeAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), goeAst, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -1155,10 +1175,10 @@ class TypeInferenceTest {
                 val andAst = listOf<ParserStatement>(ExprStmt(andBinary))
                 val orAst = listOf<ParserStatement>(ExprStmt(orBinary))
 
-                val andInf = TypeInference(andAst, symbolTable, refResolutions)
+                val andInf = TypeInference(Namespace("test"), andAst, symbolTable, refResolutions)
                     .infer()
 
-                val orInf = TypeInference(orAst, symbolTable, refResolutions)
+                val orInf = TypeInference(Namespace("test"), orAst, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -1192,14 +1212,14 @@ class TypeInferenceTest {
                 assertThrows<DIRUnsupportedOperationException>(
                     "AND with unsupported type as operand should throw") {
 
-                    TypeInference(andAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), andAst, symbolTable, refResolutions)
                         .infer()
                 }
 
                 assertThrows<DIRUnsupportedOperationException>(
                     "OR with unsupported type as operand should throw") {
 
-                    TypeInference(orAst, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), orAst, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -1221,10 +1241,10 @@ class TypeInferenceTest {
                 val eqAst = listOf<ParserStatement>(ExprStmt(eqBinary))
                 val neqAst = listOf<ParserStatement>(ExprStmt(neqBinary))
 
-                val eqInference = TypeInference(eqAst, symbolTable, refResolutions)
+                val eqInference = TypeInference(Namespace("test"), eqAst, symbolTable, refResolutions)
                     .infer()
 
-                val neqInference = TypeInference(neqAst, symbolTable, refResolutions)
+                val neqInference = TypeInference(Namespace("test"), neqAst, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -1246,15 +1266,15 @@ class TypeInferenceTest {
         @Nested
         inner class InclusiveRangeTests {
 
-            private fun rangeType(leftType: ParserType, rightType: ParserType) =
-                ObjectType("InclusiveRange", mapOf(
-                    "limitType" to SingleType(
-                        promoteNumericTypes(leftType, rightType))))
+            private fun rangeType(leftType: Type, rightType: Type) =
+                ObjectType(
+                    QualifiedName(module = ModuleReference.homemade, simpleName = "InclusiveRange"),
+                    mapOf("limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
 
             @Test
             fun `Range with numeric operands should return ObjectType(InclusiveRange) of promoted numeric type`() {
-                val leftType = ObjectType(ParserPrimitiveClass.Int64.className)
-                val rightType = ObjectType(ParserPrimitiveClass.Int.className)
+                val leftType = ObjectType(ParserPrimitiveClass.Int64)
+                val rightType = ObjectType(ParserPrimitiveClass.Int)
 
                 val binary = Binary(
                     left = int64Sample,
@@ -1263,7 +1283,7 @@ class TypeInferenceTest {
 
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -1281,7 +1301,7 @@ class TypeInferenceTest {
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
                 assertThrows<DIRUnsupportedOperationException> {
-                    TypeInference(ast, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -1290,15 +1310,15 @@ class TypeInferenceTest {
         @Nested
         inner class ExclusiveRangeTests {
 
-            private fun rangeType(leftType: ParserType, rightType: ParserType) =
-                ObjectType("ExclusiveRange", mapOf(
-                    "limitType" to SingleType(
-                        promoteNumericTypes(leftType, rightType))))
+            private fun rangeType(leftType: Type, rightType: Type) =
+                ObjectType(
+                    QualifiedName(module = ModuleReference.homemade, simpleName = "ExclusiveRange"),
+                    mapOf("limitType" to SingleType(promoteNumericTypes(leftType, rightType))))
 
             @Test
             fun `Range with numeric operands should return ObjectType(ExclusiveRange) of promoted numeric type`() {
-                val leftType = ObjectType(ParserPrimitiveClass.Int64.className)
-                val rightType = ObjectType(ParserPrimitiveClass.Int.className)
+                val leftType = ObjectType(ParserPrimitiveClass.Int64)
+                val rightType = ObjectType(ParserPrimitiveClass.Int)
 
                 val binary = Binary(
                     left = int64Sample,
@@ -1307,7 +1327,7 @@ class TypeInferenceTest {
 
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
-                val inference = TypeInference(ast, symbolTable, refResolutions)
+                val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
 
                 assertEquals(
@@ -1325,7 +1345,7 @@ class TypeInferenceTest {
                 val ast = listOf<ParserStatement>(ExprStmt(binary))
 
                 assertThrows<DIRUnsupportedOperationException> {
-                    TypeInference(ast, symbolTable, refResolutions)
+                    TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                         .infer()
                 }
             }
@@ -1348,7 +1368,7 @@ class TypeInferenceTest {
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1364,7 +1384,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1386,7 +1406,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1408,7 +1428,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1430,7 +1450,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1449,7 +1469,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(conditional))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1473,7 +1493,7 @@ class TypeInferenceTest {
 
             val ast = listOf<ParserStatement>(ExprStmt(assign))
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1498,7 +1518,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1513,9 +1533,7 @@ class TypeInferenceTest {
             val stringClass = Class(
                 name = "String",
                 fields = mutableListOf(fooField))
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
                     qualifiedName = stringClassQualifiedName,
@@ -1542,7 +1560,7 @@ class TypeInferenceTest {
                 hasPrimaryConstructor = false)
             val refResolutions = mapOf<NodeId, NodeId>()
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1561,7 +1579,8 @@ class TypeInferenceTest {
                 name = "String",
                 staticFields = mutableListOf(fooField))
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -1591,7 +1610,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf(
                 receiver.nodeId to stringClass.nodeId)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1607,9 +1626,7 @@ class TypeInferenceTest {
                 name = "String",
                 methods = mutableListOf(
                     fooField))
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassMemberScope = Symbol.MemberScope(stringClassQualifiedName)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -1637,7 +1654,7 @@ class TypeInferenceTest {
                 hasPrimaryConstructor = false)
             val refResolutions = mapOf<NodeId, NodeId>()
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1654,7 +1671,8 @@ class TypeInferenceTest {
                 staticMethods = mutableListOf(
                     fooField))
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassMemberScope = Symbol.MemberScope(stringClassQualifiedName)
             val stringClassSymbol = ClassSymbol(
@@ -1684,7 +1702,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf(
                 receiver.nodeId to stringClass.nodeId)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1696,9 +1714,7 @@ class TypeInferenceTest {
         fun `Get unexisting member from object should throw`() {
             val stringClass = Class(
                 name = "String")
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
                     qualifiedName = stringClassQualifiedName,
@@ -1722,7 +1738,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRNotDefinedSymbolException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1732,7 +1748,8 @@ class TypeInferenceTest {
             val stringClass = Class(
                 name = "String")
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -1759,7 +1776,7 @@ class TypeInferenceTest {
                 receiver.nodeId to stringClass.nodeId)
 
             assertThrows<DIRNotDefinedSymbolException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1782,7 +1799,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1798,9 +1815,7 @@ class TypeInferenceTest {
                 name = "String",
                 fields = mutableListOf(
                     fooField))
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
                     qualifiedName = stringClassQualifiedName,
@@ -1826,7 +1841,7 @@ class TypeInferenceTest {
                 hasPrimaryConstructor = false)
             val refResolutions = mapOf<NodeId, NodeId>()
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1846,7 +1861,8 @@ class TypeInferenceTest {
                 staticFields = mutableListOf(
                     fooField))
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -1875,7 +1891,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf(
                 receiver.nodeId to stringClass.nodeId)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions)
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                 .infer()
 
             assertEquals(
@@ -1887,9 +1903,7 @@ class TypeInferenceTest {
         fun `Set unexisting field from object should throw`() {
             val stringClass = Class(
                 name = "String")
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
                     qualifiedName = stringClassQualifiedName,
@@ -1914,7 +1928,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRNotDefinedSymbolException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1924,7 +1938,8 @@ class TypeInferenceTest {
             val stringClass = Class(
                 name = "String")
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -1952,7 +1967,7 @@ class TypeInferenceTest {
                 receiver.nodeId to stringClass.nodeId)
 
             assertThrows<DIRNotDefinedSymbolException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -1961,16 +1976,14 @@ class TypeInferenceTest {
         fun `Set field with not compatible value should throw`() {
             val fooField = Let(
                 name = "foo",
-                type = stringOT,
+                type = UnresolvedObjectType("String"),
                 value = stringSample,
                 isMutable = false)
             val stringClass = Class(
                 name = "String",
                 fields = mutableListOf(
                     fooField))
-            val stringClassQualifiedName = QualifiedName(
-                Namespace(),
-                simpleName = stringClass.name)
+            val stringClassQualifiedName = ParserPrimitiveClass.String.qualifiedName
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
                     qualifiedName = stringClassQualifiedName,
@@ -1997,7 +2010,7 @@ class TypeInferenceTest {
             val refResolutions = mapOf<NodeId, NodeId>()
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -2006,7 +2019,7 @@ class TypeInferenceTest {
         fun `Set static field with not compatible value should throw`() {
             val fooField = Let(
                 name = "foo",
-                type = stringOT,
+                type = UnresolvedObjectType("String"),
                 value = stringSample,
                 isMutable = false)
             val stringClass = Class(
@@ -2014,7 +2027,8 @@ class TypeInferenceTest {
                 staticFields = mutableListOf(
                     fooField))
             val stringClassQualifiedName = QualifiedName(
-                Namespace(),
+                module = ModuleReference.unresolved,
+                namespace = Namespace(),
                 simpleName = stringClass.name)
             val stringClassSymbol = ClassSymbol(
                 signature = ClassSymbol.ClassSignature(
@@ -2044,7 +2058,7 @@ class TypeInferenceTest {
                 receiver.nodeId to stringClass.nodeId)
 
             assertThrows<DIRUnexpectedTypeException> {
-                TypeInference(ast, symbolTable, refResolutions)
+                TypeInference(Namespace("test"), ast, symbolTable, refResolutions)
                     .infer()
             }
         }
@@ -2067,7 +2081,7 @@ class TypeInferenceTest {
                 body = Block.empty())
             val ast: List<ParserStatement> = listOf(forStmt)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[iterable.nodeId])
         }
@@ -2083,7 +2097,7 @@ class TypeInferenceTest {
                 body = Block(listOf(forStmt)))
             val ast: List<ParserStatement> = listOf(func)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(VoidType, inference.typeResolutions[func.nodeId])
         }
@@ -2099,44 +2113,44 @@ class TypeInferenceTest {
 
         @Test
         fun `Class field type is resolved after class inference`() {
-            val field = Let(name = "x", type = intOT, value = intSample, isMutable = false)
+            val field = Let(name = "x", type = UnresolvedObjectType("Int"), value = intSample, isMutable = false)
             val clazz = Class(name = "Foo", fields = mutableListOf(field))
             val ast: List<ParserStatement> = listOf(clazz)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[field.nodeId])
         }
 
         @Test
         fun `Class method return type is resolved after class inference`() {
-            val method = Func(name = "get", returnType = intOT)
+            val method = Func(name = "get", returnType = UnresolvedObjectType("Int"))
             val clazz = Class(name = "Foo", methods = mutableListOf(method))
             val ast: List<ParserStatement> = listOf(clazz)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[method.nodeId])
         }
 
         @Test
         fun `Class static field type is resolved after class inference`() {
-            val field = Let(name = "count", type = intOT, value = intSample, isMutable = false)
+            val field = Let(name = "count", type = UnresolvedObjectType("Int"), value = intSample, isMutable = false)
             val clazz = Class(name = "Foo", staticFields = mutableListOf(field))
             val ast: List<ParserStatement> = listOf(clazz)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[field.nodeId])
         }
 
         @Test
         fun `Class static method return type is resolved after class inference`() {
-            val method = Func(name = "create", returnType = intOT)
+            val method = Func(name = "create", returnType = UnresolvedObjectType("Int"))
             val clazz = Class(name = "Foo", staticMethods = mutableListOf(method))
             val ast: List<ParserStatement> = listOf(clazz)
 
-            val inference = TypeInference(ast, symbolTable, refResolutions).infer()
+            val inference = TypeInference(Namespace("test"), ast, symbolTable, refResolutions).infer()
 
             assertEquals(intOT, inference.typeResolutions[method.nodeId])
         }
@@ -2148,7 +2162,7 @@ class TypeInferenceTest {
 
         private val importedNamespace = "test/users"
 
-        private fun tableWithVar(qualifiedName: String, let: Let, type: ParserType): SymbolTable {
+        private fun tableWithVar(qualifiedName: String, let: Let, type: Type): SymbolTable {
             val st = SymbolTable()
             st.addVariable(
                 nodeId = let.nodeId,
@@ -2168,6 +2182,7 @@ class TypeInferenceTest {
 
             val ref = Reference("myValue")
             val inference = TypeInference(
+                Namespace("test"),
                 listOf(ExprStmt(ref)),
                 st,
                 mapOf(ref.nodeId to importedLet.nodeId)).infer()
@@ -2182,6 +2197,7 @@ class TypeInferenceTest {
 
             val alias = Reference("mv")
             val inference = TypeInference(
+                Namespace("test"),
                 listOf(ExprStmt(alias)),
                 st,
                 mapOf(alias.nodeId to importedLet.nodeId)).infer()
@@ -2196,6 +2212,7 @@ class TypeInferenceTest {
 
             val ref = Reference("myValue")
             val inference = TypeInference(
+                Namespace("test"),
                 listOf(ExprStmt(ref)),
                 st,
                 mapOf(ref.nodeId to importedLet.nodeId)).infer()
@@ -2207,6 +2224,7 @@ class TypeInferenceTest {
         fun `unresolved imported reference has no type resolution`() {
             val ref = Reference("notImported")
             val inference = TypeInference(
+                Namespace("test"),
                 listOf(ExprStmt(ref)),
                 SymbolTable(),
                 emptyMap()).infer()

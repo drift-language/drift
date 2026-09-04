@@ -19,7 +19,7 @@ import drift.parser.exceptions.DPMissingHookParameterException
 import drift.parser.exceptions.DPUnallowedHookNameException
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 import drift.types.VoidType
 
 
@@ -85,7 +85,7 @@ internal fun Parser.parseHook(
         expectSymbol(")")
     }
 
-    var hookReturnType: ParserType = VoidType
+    var hookReturnType: UnresolvedType = VoidType
 
     if (matchSymbol(":")) {
         if (disableReturnStatement)

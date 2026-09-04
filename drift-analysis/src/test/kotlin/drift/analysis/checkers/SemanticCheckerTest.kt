@@ -41,13 +41,24 @@ import drift.ast.statements.Let
 import drift.ast.statements.ParserStatement
 import drift.ast.statements.Return
 import drift.types.AnyType
+import drift.types.ClassType
+import drift.types.FunctionType
+import drift.types.NullType
 import drift.types.ObjectType
 import drift.types.OptionalType
+import drift.types.Type
 import drift.types.UnionType
+import drift.types.UnknownType
+import drift.types.UnresolvedObjectType
+import drift.types.UnresolvedOptional
+import drift.types.UnresolvedType
+import drift.types.UnresolvedUnion
 import drift.types.VoidType
+import drift.values.ParserPrimitiveClass
 import drift.values.primaries.IntValue
 import drift.values.primaries.StringValue
 import drift.values.primaries.NullValue
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 import org.junit.jupiter.api.Assertions.*
@@ -57,6 +68,19 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class SemanticCheckerTest {
+
+    /** Rebuilds a resolved fixture [Type] as the [UnresolvedType] a parser would have produced for it, for use in AST-node (declared-type) positions. */
+    private fun Type.toUnresolved() : UnresolvedType = when (this) {
+        NullType -> NullType
+        VoidType -> VoidType
+        AnyType -> AnyType
+        UnknownType -> error("UnknownType has no unresolved counterpart")
+        is ObjectType -> UnresolvedObjectType(qualifiedName.simpleName)
+        is ClassType -> error("ClassType has no unresolved counterpart")
+        is FunctionType -> error("FunctionType has no unresolved counterpart")
+        is OptionalType -> UnresolvedOptional(inner.toUnresolved())
+        is UnionType -> UnresolvedUnion(options.map { it.toUnresolved() })
+    }
 
     private val namespace = Namespace("test")
 
@@ -73,7 +97,10 @@ class SemanticCheckerTest {
     ): ClassFixture {
 
         val declaration = Class(name = name)
-        val qualifiedName = QualifiedName(namespace, simpleName = name)
+        val qualifiedName = ParserPrimitiveClass.entries
+            .find { it.className == name }
+            ?.qualifiedName
+            ?: QualifiedName(module = ModuleReference.unresolved, namespace = namespace, simpleName = name)
         val constructorSignature = CallableSignature(
             scopeType = Symbol.MemberScope(qualifiedName))
         val signature = ClassSymbol.ClassSignature(
@@ -83,7 +110,7 @@ class SemanticCheckerTest {
 
         return ClassFixture(
             declaration, qualifiedName, signature,
-            valueType = ObjectType(className = name))
+            valueType = ObjectType(qualifiedName))
     }
 
     private fun SymbolTable.register(fixture: ClassFixture, hasPrimaryConstructor: Boolean = false) {
@@ -145,7 +172,7 @@ class SemanticCheckerTest {
         fun `Let with defined type class should not throw`() {
             val let = Let(
                 name = "x",
-                type = intValueType,
+                type = intValueType.toUnresolved(),
                 value = Literal(IntValue(1)),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
@@ -159,7 +186,7 @@ class SemanticCheckerTest {
         fun `Let with defined type class in optional context should not throw`() {
             val let = Let(
                 name = "x",
-                type = OptionalType(intValueType),
+                type = OptionalType(intValueType).toUnresolved(),
                 value = Literal(IntValue(1)),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
@@ -175,7 +202,7 @@ class SemanticCheckerTest {
             val expectedTypes = listOf(intValueType, secondTypeFixture.valueType)
             val let = Let(
                 name = "x",
-                type = UnionType(expectedTypes),
+                type = UnionType(expectedTypes).toUnresolved(),
                 value = Literal(IntValue(1)),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(intClassDeclaration, let)
@@ -192,7 +219,7 @@ class SemanticCheckerTest {
             val ast: List<ParserStatement> = listOf(
                 Let(
                     name = "x",
-                    type = ObjectType(className = "Unknown"),
+                    type = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved(),
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -203,7 +230,7 @@ class SemanticCheckerTest {
             val ast: List<ParserStatement> = listOf(
                 Let(
                     name = "x",
-                    type = OptionalType(ObjectType(className = "Unknown")),
+                    type = OptionalType(ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown"))).toUnresolved(),
                     isMutable = false))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -211,12 +238,12 @@ class SemanticCheckerTest {
 
         @Test
         fun `Let with undefined type class in union context should throw`() {
-            val expectedTypes = listOf(intValueType, ObjectType(className = "Unknown"))
+            val expectedTypes = listOf(intValueType, ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")))
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 Let(
                     name = "x",
-                    type = UnionType(expectedTypes),
+                    type = UnionType(expectedTypes).toUnresolved(),
                     value = Literal(IntValue(1)),
                     isMutable = false))
 
@@ -227,7 +254,7 @@ class SemanticCheckerTest {
         fun `Non literal value should not throw`() {
             val fooLet = Let(
                 name = "foo",
-                type = intValueType,
+                type = intValueType.toUnresolved(),
                 value = Literal(IntValue(1)),
                 isMutable = false)
             val fooRef = Reference(fooLet.name)
@@ -235,7 +262,7 @@ class SemanticCheckerTest {
                 type = intValueType,
                 isMutable = false,
                 scopeType = Symbol.LocalScope)
-            val xLet = Let(name = "x", type = intValueType, value = fooRef, isMutable = false)
+            val xLet = Let(name = "x", type = intValueType.toUnresolved(), value = fooRef, isMutable = false)
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
                 fooLet,
@@ -257,7 +284,7 @@ class SemanticCheckerTest {
         fun `Let with type mismatch should throw`() {
             val let = Let(
                 name = "x",
-                type = intValueType,
+                type = intValueType.toUnresolved(),
                 value = Literal(StringValue("Hello, Drift!")),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
@@ -271,7 +298,7 @@ class SemanticCheckerTest {
         fun `Let with type mismatch in optional context should throw`() {
             val let = Let(
                 name = "x",
-                type = OptionalType(intValueType),
+                type = OptionalType(intValueType).toUnresolved(),
                 value = Literal(StringValue("Hello, Drift!")),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
@@ -285,7 +312,7 @@ class SemanticCheckerTest {
         fun `Let with null as value and type in optional context should not throw`() {
             val let = Let(
                 name = "x",
-                type = OptionalType(intValueType),
+                type = OptionalType(intValueType).toUnresolved(),
                 value = Literal(NullValue),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
@@ -300,7 +327,7 @@ class SemanticCheckerTest {
             val expectedTypes = listOf(intValueType, stringValueType)
             val let = Let(
                 name = "x",
-                type = UnionType(expectedTypes),
+                type = UnionType(expectedTypes).toUnresolved(),
                 value = Literal(NullValue),
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(stringClassDeclaration, let)
@@ -315,7 +342,7 @@ class SemanticCheckerTest {
             val (binary, binaryResolutions) = stringPlusIntWithResolvedType(stringValueType)
             val let = Let(
                 name = "x",
-                type = intValueType,
+                type = intValueType.toUnresolved(),
                 value = binary,
                 isMutable = false)
             val ast: List<ParserStatement> = listOf(
@@ -363,7 +390,7 @@ class SemanticCheckerTest {
         fun `Func with valid return type should not throw`() {
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
-                Func(name = "foo", returnType = intValueType))
+                Func(name = "foo", returnType = intValueType.toUnresolved()))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -371,7 +398,7 @@ class SemanticCheckerTest {
         @Test
         fun `Func with undefined return type class should throw`() {
             val ast: List<ParserStatement> = listOf(
-                Func(name = "foo", returnType = ObjectType("Unknown")))
+                Func(name = "foo", returnType = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved()))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -383,7 +410,7 @@ class SemanticCheckerTest {
                 Func(
                     name = "foo",
                     parameters = listOf(
-                        FunctionParameter(name = "x", type = intValueType))))
+                        FunctionParameter(name = "x", type = intValueType.toUnresolved()))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -394,7 +421,7 @@ class SemanticCheckerTest {
                 Func(
                     name = "foo",
                     parameters = listOf(
-                        FunctionParameter(name = "x", type = ObjectType("Unknown")))))
+                        FunctionParameter(name = "x", type = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved()))))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -408,7 +435,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = Literal(IntValue(0))))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -423,7 +450,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = Literal(StringValue("hello"))))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -439,7 +466,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = binary))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -476,7 +503,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 Func(
                     name = "foo",
-                    returnType = intValueType,
+                    returnType = intValueType.toUnresolved(),
                     body = Block(listOf(
                         Return(value = Literal(IntValue(1)))))))
 
@@ -489,7 +516,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 Func(
                     name = "foo",
-                    returnType = intValueType,
+                    returnType = intValueType.toUnresolved(),
                     body = Block(listOf(
                         Return(value = Literal(StringValue("hello")))))))
 
@@ -503,7 +530,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 Func(
                     name = "foo",
-                    returnType = intValueType,
+                    returnType = intValueType.toUnresolved(),
                     body = Block(listOf(
                         Return(value = binary)))))
 
@@ -547,7 +574,7 @@ class SemanticCheckerTest {
         fun `Call with optional parameter omitted`() {
             val param = FunctionParameter(
                 name = "a",
-                type = intValueType,
+                type = intValueType.toUnresolved(),
                 defaultValue = Literal(IntValue(1)))
             val calleeVar = Reference("foo")
             val funcDecl = Func(
@@ -715,9 +742,10 @@ class SemanticCheckerTest {
 
         private val aClassDeclaration = Class(name = "A")
         private val aClassQualifiedName = QualifiedName(
-            namespace,
+            module = ModuleReference.unresolved,
+            namespace = namespace,
             simpleName = aClassDeclaration.name)
-        private val aValueType = ObjectType(className = "test/${aClassDeclaration.name}")
+        private val aValueType = ObjectType(aClassQualifiedName)
         private val aClassMemberScope = Symbol.MemberScope(aClassQualifiedName)
         private val anyAClassMethodSignature = CallableSignature(
             scopeType = aClassMemberScope)
@@ -811,7 +839,7 @@ class SemanticCheckerTest {
                 hasPrimaryConstructor = false)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(receiverCall.nodeId to ObjectType("Unknown")))
+                typeResolutions = mapOf(receiverCall.nodeId to ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown"))))
 
             assertThrows<DTCClassNotFoundException> {
                 checkAst(
@@ -944,7 +972,8 @@ class SemanticCheckerTest {
         private val myListLet = Let(name = "myList", type = AnyType, isMutable = false)
         private val listClassDeclaration = Class(name = "List")
         private val listClassQualifiedName = QualifiedName(
-            namespace,
+            module = ModuleReference.unresolved,
+            namespace = namespace,
             simpleName = listClassDeclaration.name)
         private val anyListClassCallableSignature = CallableSignature(
             scopeType = Symbol.MemberScope(listClassQualifiedName))
@@ -955,7 +984,7 @@ class SemanticCheckerTest {
         private val listClassWithoutIterate = ClassSymbol.ClassSignature(
             qualifiedName = listClassQualifiedName,
             constructorMethod = CallableSymbol(anyListClassCallableSignature))
-        private val listType = ObjectType(className = listClassQualifiedName.qualifiedName)
+        private val listType = ObjectType(listClassQualifiedName)
 
 
         @BeforeEach
@@ -1015,7 +1044,7 @@ class SemanticCheckerTest {
             refResolutions = mapOf(iterable.nodeId to myListLet.nodeId)
 
             val resolutions = TypeInference.TypeInferenceResult(
-                typeResolutions = mapOf(iterable.nodeId to ObjectType("Unknown")))
+                typeResolutions = mapOf(iterable.nodeId to ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown"))))
 
             val ast: List<ParserStatement> = listOf(
                 For(iterable = iterable, variables = emptyList(), body = Block.empty()))
@@ -1063,7 +1092,7 @@ class SemanticCheckerTest {
         fun `Lambda with valid return type should not throw`() {
             val ast: List<ParserStatement> = listOf(
                 intClassDeclaration,
-                ExprStmt(Lambda(returnType = intValueType)))
+                ExprStmt(Lambda(returnType = intValueType.toUnresolved())))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1071,7 +1100,7 @@ class SemanticCheckerTest {
         @Test
         fun `Lambda with undefined return type class should throw`() {
             val ast: List<ParserStatement> = listOf(
-                ExprStmt(Lambda(returnType = ObjectType("Unknown"))))
+                ExprStmt(Lambda(returnType = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved())))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1082,7 +1111,7 @@ class SemanticCheckerTest {
                 intClassDeclaration,
                 ExprStmt(Lambda(
                     parameters = listOf(
-                        FunctionParameter(name = "x", type = intValueType)))))
+                        FunctionParameter(name = "x", type = intValueType.toUnresolved())))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1092,7 +1121,7 @@ class SemanticCheckerTest {
             val ast: List<ParserStatement> = listOf(
                 ExprStmt(Lambda(
                     parameters = listOf(
-                        FunctionParameter(name = "x", type = ObjectType("Unknown"))))))
+                        FunctionParameter(name = "x", type = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved())))))
 
             assertThrows<DTCClassNotFoundException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
         }
@@ -1105,7 +1134,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = Literal(IntValue(0)))))))
 
             assertDoesNotThrow { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -1119,7 +1148,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = Literal(StringValue("hello")))))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -1134,7 +1163,7 @@ class SemanticCheckerTest {
                     parameters = listOf(
                         FunctionParameter(
                             name = "x",
-                            type = intValueType,
+                            type = intValueType.toUnresolved(),
                             defaultValue = binary)))))
 
             assertThrows<DTCUnexpectedTypeException> { checkAst(ast, symbolTable, refResolutions, resolutions) }
@@ -1162,7 +1191,7 @@ class SemanticCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 fields = mutableListOf(
-                    Let(name = "x", type = ObjectType("Unknown"), isMutable = false)))
+                    Let(name = "x", type = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved(), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> { checkAst(listOf(clazz), symbolTable, refResolutions, resolutions) }
         }
@@ -1172,7 +1201,7 @@ class SemanticCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 staticFields = mutableListOf(
-                    Let(name = "count", type = ObjectType("Unknown"), isMutable = false)))
+                    Let(name = "count", type = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved(), isMutable = false)))
 
             assertThrows<DTCClassNotFoundException> { checkAst(listOf(clazz), symbolTable, refResolutions, resolutions) }
         }
@@ -1182,7 +1211,7 @@ class SemanticCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 methods = mutableListOf(
-                    Func(name = "get", returnType = ObjectType("Unknown"))))
+                    Func(name = "get", returnType = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved())))
 
             assertThrows<DTCClassNotFoundException> { checkAst(listOf(clazz), symbolTable, refResolutions, resolutions) }
         }
@@ -1192,7 +1221,7 @@ class SemanticCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 staticMethods = mutableListOf(
-                    Func(name = "create", returnType = ObjectType("Unknown"))))
+                    Func(name = "create", returnType = ObjectType(QualifiedName(module = ModuleReference.unresolved, simpleName = "Unknown")).toUnresolved())))
 
             assertThrows<DTCClassNotFoundException> { checkAst(listOf(clazz), symbolTable, refResolutions, resolutions) }
         }
@@ -1202,13 +1231,13 @@ class SemanticCheckerTest {
             val clazz = Class(
                 name = "Foo",
                 fields = mutableListOf(
-                    Let(name = "x", type = intValueType, isMutable = false)),
+                    Let(name = "x", type = intValueType.toUnresolved(), isMutable = false)),
                 methods = mutableListOf(
-                    Func(name = "get", returnType = intValueType)),
+                    Func(name = "get", returnType = intValueType.toUnresolved())),
                 staticFields = mutableListOf(
-                    Let(name = "count", type = intValueType, isMutable = false)),
+                    Let(name = "count", type = intValueType.toUnresolved(), isMutable = false)),
                 staticMethods = mutableListOf(
-                    Func(name = "create", returnType = intValueType)))
+                    Func(name = "create", returnType = intValueType.toUnresolved())))
 
             assertDoesNotThrow {
                 checkAst(listOf(intClassDeclaration, clazz), symbolTable, refResolutions, resolutions)
@@ -1270,7 +1299,7 @@ class SemanticCheckerTest {
         fun `Let with imported value matching declared type should not throw`() {
             val ref = Reference("myValue")
             refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
-            val let = Let(name = "x", type = intValueType, value = ref, isMutable = false)
+            val let = Let(name = "x", type = intValueType.toUnresolved(), value = ref, isMutable = false)
             val typeResolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(ref.nodeId to intValueType, let.nodeId to intValueType))
 
@@ -1283,7 +1312,7 @@ class SemanticCheckerTest {
         fun `Let with imported value mismatching declared type should throw`() {
             val ref = Reference("myValue")
             refResolutions = mapOf(ref.nodeId to importedLet.nodeId)
-            val let = Let(name = "x", type = stringValueType, value = ref, isMutable = false)
+            val let = Let(name = "x", type = stringValueType.toUnresolved(), value = ref, isMutable = false)
             val typeResolutions = TypeInference.TypeInferenceResult(
                 typeResolutions = mapOf(ref.nodeId to intValueType, let.nodeId to stringValueType))
 

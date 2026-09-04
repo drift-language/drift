@@ -10,7 +10,7 @@ package drift.analysis.symbols
 
 import drift.ast.NodeId
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.Type
 import language.Namespace
 import language.QualifiedName
 
@@ -57,7 +57,7 @@ data class VariableSymbol(
     val signature: VariableSignature) : Symbol() {
 
     data class VariableSignature(
-        val type: ParserType,
+        val type: Type,
         val isMutable: Boolean,
         val scopeType: ScopeType)
 }
@@ -72,12 +72,12 @@ data class CallableSymbol(
 
     data class CallableSignature(
         val parameterTypes: List<Parameter> = emptyList(),
-        val returnType: ParserType = AnyType,
+        val returnType: Type = AnyType,
         val scopeType: ScopeType) {
 
         data class Parameter(
             val name: String,
-            val type: ParserType,
+            val type: Type,
             val isRequired: Boolean)
     }
 }
@@ -94,8 +94,8 @@ data class ClassSymbol(
     data class ClassSignature(
         val qualifiedName: QualifiedName,
         val constructorMethod: CallableSymbol,
-        val fields: LinkedHashMap<String, ParserType> = linkedMapOf(),
-        val staticFields: LinkedHashMap<String, ParserType> = linkedMapOf(),
+        val fields: LinkedHashMap<String, Type> = linkedMapOf(),
+        val staticFields: LinkedHashMap<String, Type> = linkedMapOf(),
         val methods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf(),
         val staticMethods: LinkedHashMap<String, CallableSymbol.CallableSignature> = linkedMapOf())
 }

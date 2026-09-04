@@ -22,7 +22,7 @@ import drift.parser.expressions.parseExpression
 import drift.parser.statements.parseBlock
 import drift.parser.types.parseType
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 
 /******************************************************************************
@@ -67,7 +67,7 @@ internal fun Parser.parseFunction() : Func {
         expectSymbol(")")
     }
 
-    val returnType: ParserType =
+    val returnType: UnresolvedType =
         if (matchSymbol(":")) parseType()
         else AnyType
 
@@ -151,7 +151,7 @@ internal fun Parser.parseLambda() : Lambda {
 
     expectSymbol(")")
 
-    val returnType: ParserType =
+    val returnType: UnresolvedType =
         if (matchSymbol(":")) parseType()
         else AnyType
 
@@ -181,7 +181,7 @@ internal fun Parser.parseFunctionParameter(parameters: MutableList<FunctionParam
 
     advance()
 
-    var paramType: ParserType = AnyType
+    var paramType: UnresolvedType = AnyType
 
     if (matchSymbol(":"))
         paramType = parseType()

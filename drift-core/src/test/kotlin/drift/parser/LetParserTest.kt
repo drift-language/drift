@@ -61,18 +61,18 @@ class LetParserTest {
 
         @Test
         fun `explicit ObjectType annotation`() {
-            assertEquals(ObjectType("Int"), parse("let x: Int = 1").type)
+            assertEquals(UnresolvedObjectType("Int"), parse("let x: Int = 1").type)
         }
 
         @Test
         fun `optional type annotation`() {
-            assertEquals(OptionalType(ObjectType("Int")), parse("let x: Int? = 1").type)
+            assertEquals(UnresolvedOptional(UnresolvedObjectType("Int")), parse("let x: Int? = 1").type)
         }
 
         @Test
         fun `union type annotation`() {
-            val type = parse("let x: Int|String = 1").type as UnionType
-            assertEquals(listOf(ObjectType("Int"), ObjectType("String")), type.options)
+            val type = parse("let x: Int|String = 1").type as UnresolvedUnion
+            assertEquals(listOf(UnresolvedObjectType("Int"), UnresolvedObjectType("String")), type.options)
         }
     }
 

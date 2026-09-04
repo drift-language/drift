@@ -8,9 +8,9 @@
  ******************************************************************************/
 package drift.ast
 
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 interface ParserReturnable : ParserCallable {
 
-    val returnType: ParserType
+    val returnType: UnresolvedType
 }

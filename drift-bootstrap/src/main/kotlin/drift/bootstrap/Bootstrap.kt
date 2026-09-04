@@ -118,7 +118,7 @@ abstract class Bootstrap(
     protected fun bootTypeInference(
         refResolutions: Map<NodeId, NodeId>) : TypeInference.TypeInferenceResult {
 
-        return TypeInference(ast, symbolTable, refResolutions)
+        return TypeInference(namespace, ast, symbolTable, refResolutions)
             .infer()
     }
 

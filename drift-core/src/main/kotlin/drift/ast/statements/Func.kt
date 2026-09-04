@@ -12,7 +12,7 @@ import drift.ast.ParserReturnable
 import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 
 /******************************************************************************
@@ -39,6 +39,6 @@ data class Func(
     val annotations: MutableList<Annotation> = mutableListOf(),
     override val parameters: List<FunctionParameter> = mutableListOf(),
     override val body: Block = Block.empty(),
-    override val returnType: ParserType = AnyType)
+    override val returnType: UnresolvedType = AnyType)
     : ParserStatement(),
     ParserReturnable

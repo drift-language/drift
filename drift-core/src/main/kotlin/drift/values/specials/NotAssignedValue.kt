@@ -8,7 +8,7 @@
  ******************************************************************************/
 package drift.values.specials
 
-import drift.types.ParserType
+import drift.types.Type
 import drift.values.Value
 import drift.types.UnknownType
 
@@ -32,5 +32,5 @@ data object NotAssignedValue : Value {
 
     override fun asString(): String = UnknownType.asString()
 
-    override fun type(): ParserType = UnknownType
+    override fun type(): Type = UnknownType
 }

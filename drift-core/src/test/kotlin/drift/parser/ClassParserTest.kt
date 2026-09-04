@@ -5,7 +5,7 @@ import drift.lexer.lex
 import drift.parser.exceptions.DPOnlyOneConstructorPerClassException
 import drift.parser.exceptions.DPOnlyOneStaticBlockPerClassException
 import drift.parser.exceptions.DPUnexpectedStatementInClassBodyException
-import drift.types.ObjectType
+import drift.types.UnresolvedObjectType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ class ClassParserTest {
             val clazz = parse("class Foo(x: Int) {}")
             assertEquals(1, clazz.fields.size)
             assertEquals("x", clazz.fields[0].name)
-            assertEquals(ObjectType("Int"), clazz.fields[0].type)
+            assertEquals(UnresolvedObjectType("Int"), clazz.fields[0].type)
         }
 
         @Test

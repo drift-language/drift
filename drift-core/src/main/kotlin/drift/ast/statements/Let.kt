@@ -11,7 +11,7 @@ package drift.ast.statements
 
 import drift.ast.expressions.ParserExpression
 import drift.ast.metadata.Annotation
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 
 /******************************************************************************
@@ -33,6 +33,6 @@ import drift.types.ParserType
 data class Let(
     val name: String,
     val annotations: MutableList<Annotation> = mutableListOf(),
-    val type: ParserType,
+    val type: UnresolvedType,
     val value: ParserExpression? = null,
     val isMutable: Boolean) : ParserStatement()

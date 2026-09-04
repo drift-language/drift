@@ -4,7 +4,7 @@ import drift.ast.statements.Func
 import drift.lexer.lex
 import drift.parser.exceptions.DPParameterAlreadyDefinedException
 import drift.types.AnyType
-import drift.types.ObjectType
+import drift.types.UnresolvedObjectType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -38,7 +38,7 @@ class FunctionParserTest {
             val params = parse("fun foo(x: Int) {}").parameters
             assertEquals(1, params.size)
             assertEquals("x", params[0].name)
-            assertEquals(ObjectType("Int"), params[0].type)
+            assertEquals(UnresolvedObjectType("Int"), params[0].type)
         }
 
         @Test
@@ -92,12 +92,12 @@ class FunctionParserTest {
 
         @Test
         fun `explicit return type`() {
-            assertEquals(ObjectType("Int"), parse("fun foo: Int {}").returnType)
+            assertEquals(UnresolvedObjectType("Int"), parse("fun foo: Int {}").returnType)
         }
 
         @Test
         fun `return type with parameters`() {
-            assertEquals(ObjectType("Int"), parse("fun foo(x: Int): Int {}").returnType)
+            assertEquals(UnresolvedObjectType("Int"), parse("fun foo(x: Int): Int {}").returnType)
         }
     }
 }

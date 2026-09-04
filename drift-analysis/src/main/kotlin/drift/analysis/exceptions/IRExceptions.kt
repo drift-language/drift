@@ -9,7 +9,7 @@
 package drift.analysis.exceptions
 
 import drift.exceptions.DriftException
-import drift.types.ParserType
+import drift.types.Type
 
 
 sealed class IRException(
@@ -185,7 +185,7 @@ class DIRUnexpectedUnknownTypeException(
 
 class DIRUnsupportedOperationException(
     operator: String,
-    types: Pair<ParserType, ParserType?>,
+    types: Pair<Type, Type?>,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0,

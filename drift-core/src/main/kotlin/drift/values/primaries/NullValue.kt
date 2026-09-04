@@ -11,7 +11,7 @@
 package drift.values.primaries
 
 import drift.types.NullType
-import drift.types.ParserType
+import drift.types.Type
 
 /******************************************************************************
  * DRIFT NULL LITERAL VALUE
@@ -37,5 +37,5 @@ data object NullValue : PrimaryValue<Nothing?> {
     fun asString() = "null"
 
     @Deprecated("From old interpreter. Will be deleted.")
-    fun type(): ParserType = NullType
+    fun type(): Type = NullType
 }

@@ -14,92 +14,37 @@ import language.QualifiedName
 
 
 /******************************************************************************
- * DRIFT TYPES
+ * DRIFT RESOLVED TYPES
  *
- * Type definitions and hierarchy used across the language.
+ * Type definitions and hierarchy used across the language once name
+ * resolution has happened: every structure reference carries a real
+ * [QualifiedName] (module, namespace, simple name).
  ******************************************************************************/
 
 
 
 /**
- * This interface represents the whole special and complex
- * types, like null, void, any, last, unknown, classes, and
- * united, optional types.
+ * This interface represents every fully resolved type used across the
+ * language, from special types (null, void, any, unknown) to classes and
+ * their compositions (optional, united types).
+ *
+ * **Attention!** [Type] must not be confused with [UnresolvedType]. A value
+ * of [Type] always carries enough identity (a real [QualifiedName], for
+ * structure references) to be compared for equality safely; [UnresolvedType]
+ * may still be a bare, unqualified name.
+ *
+ * @see UnresolvedType
  */
-sealed interface ParserType {
+sealed interface Type {
 
     /** @return A prepared string version of the type */
     fun asString() : String
 }
 
 
-
-/**********************************
- * SPECIAL TYPES
- **********************************/
-
-
-/**
- * NULL type represents the absence of a value in Drift.
- *
- * It is used for variables or expressions that do not
- * reference any object or value.
- *
- * @see ParserType
- */
-data object NullType : ParserType {
-
-    override fun asString(): String = "Null"
-}
-
-
-
-/**
- * VOID type represents the absence of return for a function.
- *
- * @see ParserType
- */
-data object VoidType : ParserType {
-
-    override fun asString(): String = "Void"
-}
-
-
-
-/**
- * ANY type represents the absence of type for a variable,
- * function return, parameter, etc.
- *
- * ANY is applied to any variable, function without explicit
- * type.
- *
- * @see ParserType
- */
-data object AnyType : ParserType {
-
-    override fun asString(): String = "Any"
-}
-
-
-
-/**
- * LAST special type allows the function to use the last
- * expression as return value.
- *
- * ```
- * // This function returns 1
- * fun test : Last {
- *      1
- * }
- * ```
- *
- * @see ParserType
- */
-data object LastType : ParserType {
-
-    override fun asString(): String = "Last"
-}
-
+// NOTE: NullType, VoidType, and AnyType are declared in UnresolvedType.kt,
+//  implementing both interfaces: they carry no name-resolution dependency, so
+//  the same instances are valid before and after resolution.
 
 
 /**
@@ -108,9 +53,13 @@ data object LastType : ParserType {
  *
  * It is linked to [drift.values.specials.NotAssignedValue].
  *
- * @see ParserType
+ * Unlike the shared leaves, [UnknownType] is never produced by the parser —
+ * it is purely an inference-time marker for "this value's type could not be
+ * determined" — so it only exists as a resolved [Type].
+ *
+ * @see Type
  */
-data object UnknownType : ParserType {
+data object UnknownType : Type {
 
     override fun asString(): String = "Unknown"
 }
@@ -126,20 +75,11 @@ data object UnknownType : ParserType {
  * This type container adds the optional behavior
  * to the inner type. It allows using NULL as a value.
  *
- * By default, an entity is non-nullable.
- *
- * A type is optional if `?` character follows it.
- *
- * ```
- * var optional: String? = null
- * optional: String? = "Hello!"
- * ```
- *
  * @param inner Inner type to make optional
- * @see ParserType
+ * @see Type
  */
 data class OptionalType(
-    val inner: ParserType) : ParserType {
+    val inner: Type) : Type {
 
     override fun asString() = "${inner.asString()}?"
 }
@@ -149,19 +89,11 @@ data class OptionalType(
  * This type container permits uniting provided
  * types. It allows typing an entity with many types.
  *
- * Many types can be united using the `|` character between
- * them.
- *
- * ```
- * var united: String|Int = "Hello"
- * united = 1
- * ```
- *
  * @param options United types (inner)
- * @see ParserType
+ * @see Type
  */
 data class UnionType(
-    val options: List<ParserType>) : ParserType {
+    val options: List<Type>) : Type {
 
     override fun asString() =
         options.joinToString(" | ") { it.asString() }
@@ -181,12 +113,15 @@ data class UnionType(
  * Drift represents all types as objects from injected
  * native classes.
  *
- * @param className Object's class name
+ * This includes every native structure — primitives, arrays, tuples, ranges —
+ * each identified by its own [QualifiedName] under the `Homemade` module.
+ *
+ * @param qualifiedName Object's class qualified name
  * @param args Object arguments
  */
 data class ObjectType(
     val qualifiedName: QualifiedName,
-    val args: Map<String, TypeArgument> = emptyMap()) : ParserType {
+    val args: Map<String, TypeArgument> = emptyMap()) : Type {
 
     constructor(
         primitive: ParserPrimitiveClass,
@@ -201,6 +136,7 @@ data class ObjectType(
     fun isPrimitiveUInt() = qualifiedName == ParserPrimitiveClass.UInt.qualifiedName
     fun isPrimitiveString() = qualifiedName == ParserPrimitiveClass.String.qualifiedName
     fun isPrimitiveBool() = qualifiedName == ParserPrimitiveClass.Bool.qualifiedName
+    fun isArray() = qualifiedName == ParserPrimitiveClass.Array.qualifiedName
 
 
     override fun asString() = qualifiedName.qualifiedName
@@ -217,12 +153,12 @@ data class ObjectType(
  * @param returnType Type of the return value
  */
 data class FunctionType(
-    val paramTypes: List<ParserType> = emptyList(),
-    val returnType: ParserType = AnyType) : ParserType {
-    
+    val paramTypes: List<Type> = emptyList(),
+    val returnType: Type = AnyType) : Type {
+
     override fun asString() : String {
         val params = paramTypes.joinToString(", ") { it.asString() }
-        
+
         return "($params) -> ${returnType.asString()}"
     }
 }
@@ -233,12 +169,12 @@ data class FunctionType(
  *
  * Drift represents all classes using this parser type.
  *
- * @param className
+ * @param qualifiedName The class's qualified name
  * @param generics
  */
 data class ClassType(
     val qualifiedName: QualifiedName,
-    val generics: Map<String, ParserType> = emptyMap()) : ParserType {
+    val generics: Map<String, Type> = emptyMap()) : Type {
 
     override fun asString(): String =
         if (generics.isEmpty()) "Class<${qualifiedName.qualifiedName}>"
@@ -252,19 +188,6 @@ data class ClassType(
 
 
 /**
- * This type represents a Drift array.
- *
- * Drift represents all arrays using this parser type.
- */
-data class ArrayType(
-    val type: ParserType) : ParserType {
-
-    override fun asString(): String =
-        "($type[])"
-}
-
-
-/**
  * Verify if the provided value type could be used
  * with the expected one.
  *
@@ -274,7 +197,7 @@ data class ArrayType(
  * @param expected Expected type from entity
  * @return If both types can cooperate on assign
  */
-fun isAssignable(valueType: ParserType, expected: ParserType): Boolean {
+fun isAssignable(valueType: Type, expected: Type): Boolean {
     if (valueType == UnknownType
         || expected == AnyType
         || expected == VoidType && valueType == VoidType) {
@@ -286,7 +209,7 @@ fun isAssignable(valueType: ParserType, expected: ParserType): Boolean {
         return expected.qualifiedName == valueType.qualifiedName
 
     if (expected is FunctionType && valueType is FunctionType)
-        return expected.paramTypes == valueType.paramTypes && 
+        return expected.paramTypes == valueType.paramTypes &&
                expected.returnType == valueType.returnType
 
     return when (expected) {

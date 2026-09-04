@@ -13,12 +13,12 @@ import drift.ast.bindings.FunctionParameter
 import drift.ast.metadata.Annotation
 import drift.ast.statements.Block
 import drift.ast.statements.ParserStatement
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 data class ReturnableHook(
     override val name: String,
     override val annotations: MutableList<Annotation> = mutableListOf(),
     override val parameters: List<FunctionParameter> = listOf(),
     override val body: Block = Block.empty(),
-    override val returnType: ParserType)
+    override val returnType: UnresolvedType)
     : ParserStatement(), Hook, ParserReturnable

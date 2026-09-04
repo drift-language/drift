@@ -36,11 +36,11 @@ interface TypeArgument
  * This data class permits containing one type,
  * a powerful component of [TypeArgument] interface.
  */
-data class SingleType(val type: ParserType) : TypeArgument
+data class SingleType(val type: Type) : TypeArgument
 
 
 /**
  * This data class permits containing many types,
  * a powerful component of [TypeArgument] interface.
  */
-data class MultiTypes(val types: List<ParserType>) : TypeArgument
+data class MultiTypes(val types: List<Type>) : TypeArgument

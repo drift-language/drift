@@ -14,6 +14,7 @@ import drift.ast.statements.Block
 
 interface ParserCallable {
 
+    val nodeId: NodeId
     val parameters: List<FunctionParameter>
     val body: Block
 }

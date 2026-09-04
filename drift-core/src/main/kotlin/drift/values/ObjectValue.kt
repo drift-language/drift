@@ -9,7 +9,7 @@
 package drift.values
 
 import drift.types.ObjectType
-import drift.types.ParserType
+import drift.types.Type
 import language.QualifiedName
 
 
@@ -19,5 +19,5 @@ interface ObjectValue : Value {
 
 
     @Deprecated("To delete with old interpreter")
-    override fun type(): ParserType = ObjectType(qualifiedName)
+    override fun type(): Type = ObjectType(qualifiedName)
 }

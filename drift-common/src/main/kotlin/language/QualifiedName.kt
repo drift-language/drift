@@ -28,6 +28,9 @@ package language
  * a class name too, but for composition purposes
  * (cf. [Namespace] documentation).
  *
+ * @param module The module declaring this structure. It disambiguates
+ *               structures sharing an identical namespace and simple name but
+ *               declared by different modules.
  * @param namespace A qualified name takes a namespace which starts it. This
  *                  namespace can be empty only for structures whose file has no
  *                  package, living at the project's source root directory.
@@ -36,7 +39,8 @@ package language
  * @author Jonathan (GitHub: belicfr)
  */
 data class QualifiedName(
-    val namespace: Namespace,
+    val module: ModuleReference,
+    val namespace: Namespace = Namespace.empty,
     val simpleName: String) {
 
     /**
@@ -55,7 +59,8 @@ data class QualifiedName(
      *                               name.
      *   TODO DOC: replace IllegalStateException by a dedicated exception class.
      */
-    constructor(namespace: Namespace) : this(
+    constructor(module: ModuleReference, namespace: Namespace) : this(
+        module = module,
         namespace = namespace.parent(),
         simpleName = namespace.last())
 

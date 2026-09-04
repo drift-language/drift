@@ -11,7 +11,7 @@ package drift.ast.bindings
 
 import drift.ast.expressions.ParserExpression
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 
 
 /******************************************************************************
@@ -34,5 +34,5 @@ import drift.types.ParserType
 data class FunctionParameter(
     override val name: String,
     val isPositional: Boolean = false,
-    val type: ParserType = AnyType,
+    val type: UnresolvedType = AnyType,
     val defaultValue: ParserExpression? = null) : VariableBinding(name)

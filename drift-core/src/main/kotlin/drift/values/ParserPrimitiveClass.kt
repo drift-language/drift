@@ -8,6 +8,7 @@
  ******************************************************************************/
 package drift.values
 
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 
@@ -26,6 +27,7 @@ enum class ParserPrimitiveClass(
 
 
     val qualifiedName = QualifiedName(
+        module = ModuleReference.homemade,
         namespace = Namespace("lang"),
         simpleName = className)
 }

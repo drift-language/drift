@@ -10,7 +10,6 @@ package drift.analysis.exceptions
 
 import drift.ast.NodeId
 import drift.exceptions.DriftException
-import drift.types.ParserType
 
 
 sealed class DTCException(
@@ -22,12 +21,12 @@ sealed class DTCException(
 
 
 class DTCUnexpectedTypeException(
-    expected: ParserType,
+    expected: String,
     sourceName: String? = null,
     line: Int = 0,
     pos: Int = 0
 ) : DTCException(
-    message = "Expected type '${expected.asString()}' in this context",
+    message = "Expected type '$expected' in this context",
     sourceName = sourceName,
     line = line,
     pos = pos

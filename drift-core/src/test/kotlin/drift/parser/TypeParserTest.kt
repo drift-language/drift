@@ -13,7 +13,7 @@ import org.junit.jupiter.api.assertThrows
 
 class TypeParserTest {
 
-    private fun parseType(code: String): ParserType {
+    private fun parseType(code: String): UnresolvedType {
         val let = Parser(lex("let x: $code")).parse().first() as drift.ast.statements.Let
         return let.type
     }
@@ -24,7 +24,7 @@ class TypeParserTest {
 
         @Test
         fun `ObjectType is parsed`() {
-            assertEquals(ObjectType("Int"), parseType("Int"))
+            assertEquals(UnresolvedObjectType("Int"), parseType("Int"))
         }
 
         @Test
@@ -49,7 +49,7 @@ class TypeParserTest {
 
         @Test
         fun `optional type with question mark`() {
-            assertEquals(OptionalType(ObjectType("String")), parseType("String?"))
+            assertEquals(UnresolvedOptional(UnresolvedObjectType("String")), parseType("String?"))
         }
     }
 
@@ -59,16 +59,16 @@ class TypeParserTest {
 
         @Test
         fun `union of two types`() {
-            val type = parseType("Int|String") as UnionType
-            assertEquals(listOf(ObjectType("Int"), ObjectType("String")), type.options)
+            val type = parseType("Int|String") as UnresolvedUnion
+            assertEquals(listOf(UnresolvedObjectType("Int"), UnresolvedObjectType("String")), type.options)
         }
 
         @Test
         fun `union of three types`() {
-            val type = parseType("Int|String|Bool") as UnionType
+            val type = parseType("Int|String|Bool") as UnresolvedUnion
             assertEquals(2, type.options.size)
-            assertTrue(type.options[1] is UnionType)
-            assertEquals(2, (type.options[1] as UnionType).options.size)
+            assertTrue(type.options[1] is UnresolvedUnion)
+            assertEquals(2, (type.options[1] as UnresolvedUnion).options.size)
         }
 
         @Test

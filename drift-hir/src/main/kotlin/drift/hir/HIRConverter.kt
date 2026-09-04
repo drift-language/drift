@@ -27,11 +27,14 @@ import drift.ast.statements.hooks.ReturnableHook
 import drift.ast.statements.hooks.UnreturnableHook
 import drift.hir.exceptions.DHIRUnsupported
 import drift.hir.metadata.HIRAnnotation
-import drift.types.ParserType
+import drift.types.Type
+import drift.types.UnresolvedType
+import drift.types.resolve
 import drift.types.AnyType
 import drift.types.ClassType
 import drift.types.ObjectType
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.ModuleReference
 import language.Namespace
 
 /**
@@ -42,7 +45,7 @@ class HIRConverter(
     private val ast: List<ParserStatement>,
     private val symbolTable: SymbolTable,
     private val refResolutions: Map<NodeId, NodeId>,
-    private val typeResolution: Map<NodeId, ParserType>,
+    private val typeResolution: Map<NodeId, Type>,
     private val closures: Map<NodeId, Map<String, NodeId>>) {
 
     companion object {
@@ -120,7 +123,7 @@ class HIRConverter(
             .annotations
             .map(this::convertAnnotation)
             .toMutableList()
-        val returnType = convertType(function.returnType)
+        val returnType = convertType(typeResolution[function.nodeId] ?: AnyType)
         val parameters = function
             .parameters
             .map(this::convertParameter)
@@ -156,7 +159,7 @@ class HIRConverter(
             .annotations
             .map(this::convertAnnotation)
             .toMutableList()
-        val returnType = convertType(function.returnType)
+        val returnType = convertType(typeResolution[function.nodeId] ?: AnyType)
         val parameters = function
             .parameters
             .map(this::convertParameter)
@@ -188,7 +191,7 @@ class HIRConverter(
         val hirId = allocateHirId()
 
         val returnType =
-            if (hook is ReturnableHook) convertType(hook.returnType)
+            if (hook is ReturnableHook) convertDeclaredType(hook.returnType)
             else HIRPrimitiveType(PrimitiveKind.VOID)
 
         val parameters = hook
@@ -223,7 +226,7 @@ class HIRConverter(
         return HIRParameter(
             hirId = paramHirId,
             name = param.name,
-            type = convertType(param.type),
+            type = convertDeclaredType(param.type),
             defaultValue = param.defaultValue?.let { convertExpression(it) })
     }
 
@@ -277,7 +280,7 @@ class HIRConverter(
             hirId = hirId,
             name = field.name,
             annotations = fieldAnnotations,
-            type = convertType(field.type),
+            type = convertType(typeResolution[field.nodeId] ?: AnyType),
             isStatic = isStatic)
     }
 
@@ -689,7 +692,7 @@ class HIRConverter(
             HIRParameter(
                 hirId = paramHirId,
                 name = param.name,
-                type = convertType(param.type))
+                type = convertDeclaredType(param.type))
         }
         val captures = computeCaptures(lambda.nodeId)
 
@@ -730,8 +733,18 @@ class HIRConverter(
     // TYPE CONVERSION
     // ========================================================================
 
-    private fun convertType(parserType: ParserType) : HIRType {
-        return convertParserTypeToHIRType(parserType)
+    private fun convertType(type: Type) : HIRType {
+        return convertTypeToHIRType(type)
+    }
+
+    /**
+     * Converts a declared, not-yet-resolved type annotation (e.g. a
+     * parameter or hook return type, which [drift.analysis.inference.TypeInference]
+     * never registers a resolution for) directly, rather than going through
+     * [typeResolution].
+     */
+    private fun convertDeclaredType(type: UnresolvedType) : HIRType {
+        return convertTypeToHIRType(type.resolve(ModuleReference.unresolved, namespace))
     }
 
 
@@ -739,10 +752,10 @@ class HIRConverter(
     // HELPER FUNCTIONS
     // ========================================================================
 
-    private fun extractClassName(parserType: ParserType?) : String {
-        return when (parserType) {
-            is ObjectType -> parserType.className
-            is ClassType  -> parserType.className
+    private fun extractClassName(type: Type?) : String {
+        return when (type) {
+            is ObjectType -> type.qualifiedName.qualifiedName
+            is ClassType  -> type.qualifiedName.qualifiedName
 
             else -> $$"$Unknown$"
         }

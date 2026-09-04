@@ -20,11 +20,16 @@ import drift.ast.NodeId
 import drift.ast.expressions.*
 import drift.ast.statements.*
 import drift.types.AnyType
+import drift.types.LastType
 import drift.types.ObjectType
-import drift.types.ParserType
+import drift.types.Type
+import drift.types.UnresolvedObjectType
+import drift.types.UnresolvedType
 import drift.types.VoidType
+import drift.types.resolve
 import language.InjectedVariableUtils.injectedThis
 import language.LangInfo.NAMESPACE_SEPARATOR
+import language.ModuleReference
 import language.Namespace
 import language.QualifiedName
 import kotlin.collections.Set as KtSet
@@ -60,6 +65,19 @@ class SymbolCollector(
      * This set contains all imported namespaces from the current [ast].
      */
     private val importedNamespaces = mutableSetOf<String>()
+
+
+    /**
+     * Resolves a declared return type into a [Type] for storage in a
+     * [CallableSignature]. [LastType] has no resolved counterpart (it means
+     * "inferred from the body's last expression", which isn't known yet at
+     * collection time), so it falls back to [AnyType] here — the precise
+     * value is computed later by [drift.analysis.inference.TypeInference]
+     * and stored per-node, not in the signature.
+     */
+    private fun resolveReturnType(returnType: UnresolvedType) : Type =
+        if (returnType is LastType) AnyType
+        else returnType.resolve(ModuleReference.unresolved, namespace)
 
 
     /**
@@ -103,8 +121,8 @@ class SymbolCollector(
     private fun collectLet(statement: Let) {
         statement.value?.let(this::collectExpression)
 
-        if (statement.type is ObjectType) {
-            val className = (statement.type as ObjectType).className
+        if (statement.type is UnresolvedObjectType) {
+            val className = (statement.type as UnresolvedObjectType).name
             val nodeId = symbolTable.lookupNodeId(className)
                 ?: symbolTable.lookupNodeId("$namespace$NAMESPACE_SEPARATOR$className")
 
@@ -117,7 +135,7 @@ class SymbolCollector(
             if (isTopLevel) TopLevelScope(namespace)
             else            LocalScope
         val signature = VariableSignature(
-            type = statement.type,
+            type = statement.type.resolve(ModuleReference.unresolved, namespace),
             isMutable = statement.isMutable,
             scopeType = scopeType)
 
@@ -144,7 +162,7 @@ class SymbolCollector(
         val parameterTypes = func.parameters.map {
             CallableSignature.Parameter(
                 name = it.name,
-                type = it.type,
+                type = it.type.resolve(ModuleReference.unresolved, namespace),
                 isRequired = it.defaultValue == null)
         }
         val scopeType: ScopeType =
@@ -152,7 +170,7 @@ class SymbolCollector(
             else                            LocalScope
         val signature = CallableSignature(
             parameterTypes = parameterTypes,
-            returnType = func.returnType,
+            returnType = resolveReturnType(func.returnType),
             scopeType = scopeType)
         val refsBefore = refResolutions.keys.toSet()
 
@@ -167,7 +185,7 @@ class SymbolCollector(
         symbolTable.scope {
             func.parameters.forEach { parameter ->
                 val signature = VariableSignature(
-                    type = parameter.type,
+                    type = parameter.type.resolve(ModuleReference.unresolved, namespace),
                     isMutable = false,
                     scopeType = LocalScope)
 
@@ -181,8 +199,9 @@ class SymbolCollector(
 
             if (receiverClass != null) {
                 val receiverQualifiedName = QualifiedName(
+                    module = ModuleReference.unresolved,
                     namespace = namespace,
-                    simpleName = receiverClass.name).qualifiedName
+                    simpleName = receiverClass.name)
                 val thisSignature = VariableSignature(
                     type = ObjectType(receiverQualifiedName),
                     isMutable = false,
@@ -271,14 +290,15 @@ class SymbolCollector(
 
     private fun collectClass(`class`: Class) {
         val classQualifiedName = QualifiedName(
+            module = ModuleReference.unresolved,
             namespace = namespace,
             simpleName = `class`.name)
 
-        fun prepareFields(source: List<Let>): LinkedHashMap<String, ParserType> {
+        fun prepareFields(source: List<Let>): LinkedHashMap<String, Type> {
             return source
                 .associate { field ->
                     collectLet(field)
-                    field.name to field.type
+                    field.name to field.type.resolve(ModuleReference.unresolved, namespace)
                 }
                 .toMap(linkedMapOf())
         }
@@ -290,12 +310,12 @@ class SymbolCollector(
                     val parameterTypes = method.parameters.map {
                         CallableSignature.Parameter(
                             name = it.name,
-                            type = it.type,
+                            type = it.type.resolve(ModuleReference.unresolved, namespace),
                             isRequired = it.defaultValue != null)
                     }
                     val signature = CallableSignature(
                         parameterTypes = parameterTypes,
-                        returnType = method.returnType,
+                        returnType = resolveReturnType(method.returnType),
                         scopeType = MemberScope(classQualifiedName))
 
                     method.name to signature
@@ -314,7 +334,7 @@ class SymbolCollector(
         val ctorParameterTypes = constructorMethod.parameters.map { param ->
             CallableSignature.Parameter(
                 name = param.name,
-                type = param.type,
+                type = param.type.resolve(ModuleReference.unresolved, namespace),
                 isRequired = param.defaultValue == null)
         }
         val constructorSignature = CallableSignature(
@@ -352,11 +372,13 @@ class SymbolCollector(
                 ?.filter { it.alias != null }
                 ?.forEach { part ->
                     val qualifiedName = QualifiedName(
+                        module = ModuleReference.unresolved,
                         namespace = Namespace(import.namespace),
                         simpleName = part.source)
                     val nodeId = importedNodeIds[qualifiedName.qualifiedName]
                         ?: return@forEach
                     val importNewQualifiedName = QualifiedName(
+                        module = ModuleReference.unresolved,
                         namespace = namespace,
                         simpleName = part.alias!!)
 
@@ -369,7 +391,10 @@ class SymbolCollector(
                 .forEach { (importedNamespace, importedNodeId) ->
                     val simpleName = importedNamespace
                         .substringAfterLast(NAMESPACE_SEPARATOR)
-                    val qualifiedName = QualifiedName(namespace, simpleName)
+                    val qualifiedName = QualifiedName(
+                        module = ModuleReference.unresolved,
+                        namespace = namespace,
+                        simpleName = simpleName)
 
                     symbolTable.addBinding(qualifiedName, importedNodeId)
                 }
@@ -382,6 +407,7 @@ class SymbolCollector(
                     val namespaceEnding = part.alias ?: part.source
                     val originalQualifiedName = "${import.namespace}$NAMESPACE_SEPARATOR${part.source}"
                     val qualifiedName = QualifiedName(
+                        module = ModuleReference.unresolved,
                         namespace = namespace,
                         simpleName = namespaceEnding)
 
@@ -404,6 +430,7 @@ class SymbolCollector(
                 .toMap()
 
             val moduleQualifiedName = QualifiedName(
+                module = ModuleReference.unresolved,
                 namespace = namespace,
                 simpleName = import.namespace.substringAfterLast(NAMESPACE_SEPARATOR))
             val signature = ModuleSignature(
@@ -504,7 +531,7 @@ class SymbolCollector(
         symbolTable.scope {
             lambda.parameters.forEach { parameter ->
                 val signature = VariableSignature(
-                    type = parameter.type,
+                    type = parameter.type.resolve(ModuleReference.unresolved, namespace),
                     isMutable = false,
                     scopeType = LocalScope)
 

@@ -9,6 +9,10 @@
 
 package drift.hir
 
+import language.ModuleReference
+import language.QualifiedName
+
+
 /**
  * Base interface for all HIR types.
  * 
@@ -37,16 +41,17 @@ enum class PrimitiveKind {
  */
 data class HIRPrimitiveType(val kind: PrimitiveKind) : HIRType
 
+
 /**
  * A class type reference (e.g., User, List<Int>).
  * 
- * @param className The name of the class
+ * @param qualifiedName The qualified name object of the class
  * @param typeArguments Generic type arguments (e.g., List -> {"elementType": Int})
  */
 data class HIRClassType(
-    val className: String,
-    val typeArguments: Map<String, HIRType> = emptyMap()
-) : HIRType
+    val qualifiedName: QualifiedName,
+    val typeArguments: Map<String, HIRType> = emptyMap()) : HIRType
+
 
 /**
  * An optional type (nullable type).
@@ -84,39 +89,44 @@ object HIRAnyType : HIRType
 
 
 /**
- * Helper function to convert a ParserType to an HIRType.
+ * Helper function to convert a resolved [drift.types.Type] to an HIRType.
  * This is used during AST-to-HIR conversion.
  */
-fun convertParserTypeToHIRType(parserType: drift.types.ParserType): HIRType {
-    return when (parserType) {
-        is drift.types.ObjectType -> when (parserType.qualifiedName) {
-            "Int" -> HIRPrimitiveType(PrimitiveKind.INT)
-            "Int64" -> HIRPrimitiveType(PrimitiveKind.INT64)
-            "UInt" -> HIRPrimitiveType(PrimitiveKind.UINT)
-            "Bool" -> HIRPrimitiveType(PrimitiveKind.BOOL)
-            "String" -> HIRPrimitiveType(PrimitiveKind.STRING)
+fun convertTypeToHIRType(type: drift.types.Type): HIRType {
+    return when (type) {
+        is drift.types.ObjectType -> when {
+            type.isPrimitiveInt() -> HIRPrimitiveType(PrimitiveKind.INT)
+            type.isPrimitiveInt64() -> HIRPrimitiveType(PrimitiveKind.INT64)
+            type.isPrimitiveUInt() -> HIRPrimitiveType(PrimitiveKind.UINT)
+            type.isPrimitiveBool() -> HIRPrimitiveType(PrimitiveKind.BOOL)
+            type.isPrimitiveString() -> HIRPrimitiveType(PrimitiveKind.STRING)
 
             else -> {
-                val args = parserType.args.mapValues { (_, argValue) ->
+                val args = type.args.mapValues { (_, argValue) ->
                     when (argValue) {
-                        is drift.oldruntime.SingleType -> convertParserTypeToHIRType(argValue.type)
-                        is drift.oldruntime.MultiTypes -> HIRClassType("Tuple",
-                            argValue.types.mapIndexed { idx, t -> "$idx" to convertParserTypeToHIRType(t) }.toMap())
+                        is drift.types.SingleType -> convertTypeToHIRType(argValue.type)
+                        is drift.types.MultiTypes -> HIRClassType(
+                            QualifiedName(module = ModuleReference.homemade, simpleName = "Tuple"),
+                            argValue.types.mapIndexed { idx, t -> "$idx" to convertTypeToHIRType(t) }.toMap())
+
                         else -> HIRAnyType
                     }
                 }
-                HIRClassType(parserType.className, args)
+
+                HIRClassType(type.qualifiedName, args)
             }
         }
         is drift.types.FunctionType -> HIRFunctionType(
-            parameterTypes = parserType.paramTypes.map { convertParserTypeToHIRType(it) },
-            returnType = convertParserTypeToHIRType(parserType.returnType))
-        is drift.types.OptionalType -> HIROptionalType(convertParserTypeToHIRType(parserType.inner))
-        is drift.types.UnionType -> HIRUnionType(parserType.options.map { convertParserTypeToHIRType(it) })
+            parameterTypes = type.paramTypes.map { convertTypeToHIRType(it) },
+            returnType = convertTypeToHIRType(type.returnType))
+        is drift.types.ClassType -> HIRClassType(
+            type.qualifiedName,
+            type.generics.mapValues { (_, generic) -> convertTypeToHIRType(generic) })
+        is drift.types.OptionalType -> HIROptionalType(convertTypeToHIRType(type.inner))
+        is drift.types.UnionType -> HIRUnionType(type.options.map { convertTypeToHIRType(it) })
         is drift.types.VoidType -> HIRPrimitiveType(PrimitiveKind.VOID)
         is drift.types.NullType -> HIRPrimitiveType(PrimitiveKind.NULL)
         is drift.types.AnyType -> HIRAnyType
-
-        else -> HIRAnyType
+        is drift.types.UnknownType -> HIRAnyType
     }
 }

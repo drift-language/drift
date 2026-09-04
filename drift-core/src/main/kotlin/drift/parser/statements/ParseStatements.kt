@@ -22,7 +22,7 @@ import drift.parser.expressions.parseExpression
 import drift.parser.modifiers.parseNativeModifier
 import drift.parser.types.parseType
 import drift.types.AnyType
-import drift.types.ParserType
+import drift.types.UnresolvedType
 import drift.values.specials.NotAssignedValue
 import drift.values.specials.VoidValue
 import language.LangInfo.NAMESPACE_SEPARATOR
@@ -144,7 +144,7 @@ internal fun Parser.parseLet(isMutable: Boolean, acceptUnassigned: Boolean = tru
             || peekSymbol("=", true))
 
     // Type definition
-    val type : ParserType = if (matchSymbol(":")) {
+    val type : UnresolvedType = if (matchSymbol(":")) {
         parseType()
     } else {
         AnyType

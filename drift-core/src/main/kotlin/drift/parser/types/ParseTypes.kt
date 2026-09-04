@@ -38,23 +38,23 @@ import drift.values.*
  * @throws DPWrongOptionalUnionTypeException
  * @throws DPSpecialInUnionTypeException
  */
-internal fun Parser.parseType() : ParserType {
-    val types = mutableListOf<ParserType>()
+internal fun Parser.parseType() : UnresolvedType {
+    val types = mutableListOf<UnresolvedType>()
     var foundOptional = false
     val token = expect<Token.Identifier>("type name")
-    var type: ParserType = when (token.value) {
+    var type: UnresolvedType = when (token.value) {
         "Null"      -> NullType
         "Void"      -> VoidType
         "Any"       -> AnyType
         "Last"      -> LastType
 
-        else        -> ObjectType(token.value)
+        else        -> UnresolvedObjectType(token.value)
     }
 
     advance(false)
 
     if (matchSymbol("?")) {
-        type = OptionalType(type)
+        type = UnresolvedOptional(type)
         foundOptional = true
     }
 
@@ -68,7 +68,7 @@ internal fun Parser.parseType() : ParserType {
         when (next) {
             is LastType, is AnyType, is VoidType ->
                 throw DPSpecialInUnionTypeException()
-            is OptionalType ->
+            is UnresolvedOptional ->
                 throw DPWrongOptionalUnionTypeException()
             else ->
                 types.add(next)
@@ -77,6 +77,6 @@ internal fun Parser.parseType() : ParserType {
 
     return when (types.size) {
         0, 1 -> types.firstOrNull() ?: AnyType
-        else -> UnionType(types)
+        else -> UnresolvedUnion(types)
     }
 }
