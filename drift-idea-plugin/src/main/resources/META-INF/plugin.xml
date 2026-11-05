@@ -1,0 +1,68 @@
+<idea-plugin>
+    <id>dev.drift.intellij</id>
+    <name>Drift Language Support</name>
+    <version>0.1.0</version>
+    <vendor>Drift Project</vendor>
+    <description>
+        Syntax highlighting, brace matching, and editor support for the Drift programming language.
+        Provides a "Drift" menu with quick links to the GitHub organization and repository.
+    </description>
+
+    <idea-version since-build="242" until-build="243.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!-- File type -->
+        <fileType
+            name="Drift"
+            implementationClass="dev.drift.intellij.DriftFileType"
+            language="Drift"
+            extensions="drift"
+            fieldName="INSTANCE"/>
+
+        <!-- Language parser definition -->
+        <lang.parserDefinition
+            language="Drift"
+            implementationClass="dev.drift.intellij.parser.DriftParserDefinition"/>
+
+        <!-- Syntax highlighting -->
+        <lang.syntaxHighlighterFactory
+            language="Drift"
+            implementationClass="dev.drift.intellij.highlight.DriftSyntaxHighlighterFactory"/>
+
+        <!-- Brace matching -->
+        <lang.braceMatcher
+            language="Drift"
+            implementationClass="dev.drift.intellij.editor.DriftBraceMatcher"/>
+
+        <!-- Line commenter (Ctrl+/ / Cmd+/) -->
+        <lang.commenter
+            language="Drift"
+            implementationClass="dev.drift.intellij.editor.DriftCommenter"/>
+
+        <!-- Color settings page -->
+        <colorSettingsPage
+            implementation="dev.drift.intellij.highlight.DriftColorSettingsPage"/>
+
+    </extensions>
+
+    <actions>
+        <group id="DriftActionGroup" text="Drift" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action
+                id="Drift.SeeOrganization"
+                class="dev.drift.intellij.actions.SeeOrganizationAction"
+                text="See Organization"
+                description="Open the Drift language GitHub organization in your browser"/>
+            <action
+                id="Drift.SeeRepository"
+                class="dev.drift.intellij.actions.SeeRepositoryAction"
+                text="See Repository"
+                description="Open the current project's Drift repository on GitHub (only available for drift-language projects)"/>
+        </group>
+    </actions>
+
+</idea-plugin>
